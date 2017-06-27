@@ -320,7 +320,7 @@ func resourceCloudStackSecurityGroupRuleRead(d *schema.ResourceData, meta interf
 	)
 	if err != nil {
 		if count == 0 {
-			log.Printf("[DEBUG] Security group %s does not longer exist", d.Get("name").(string))
+			log.Printf("[DEBUG] Security group %s does not longer exist", d.Id())
 			d.SetId("")
 			return nil
 		}
