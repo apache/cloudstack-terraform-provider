@@ -39,6 +39,12 @@ The following arguments are supported:
 * `security_group_id` - (Required) The security group ID for which to create
     the rules. Changing this forces a new resource to be created.
 
+* `project` - (Optional) The name or ID of the project to register this
+    affinity group to. Changing this forces a new resource to be created.
+
+* `parallelism` (Optional) Specifies how much rules will be created or deleted
+    concurrently. (defaults 2)
+
 * `rule` - (Required) Can be specified multiple times. Each rule block supports
     fields documented below.
 
