@@ -64,6 +64,13 @@ func resourceCloudStackVPNCustomerGateway() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+
+			"project": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -92,6 +99,11 @@ func resourceCloudStackVPNCustomerGatewayCreate(d *schema.ResourceData, meta int
 
 	if ikelifetime, ok := d.GetOk("ike_lifetime"); ok {
 		p.SetIkelifetime(int64(ikelifetime.(int)))
+	}
+
+	// If there is a project supplied, we retrieve and set the project id
+	if err := setProjectid(p, cs, d); err != nil {
+		return err
 	}
 
 	// Create the new VPN Customer Gateway
@@ -130,6 +142,8 @@ func resourceCloudStackVPNCustomerGatewayRead(d *schema.ResourceData, meta inter
 	d.Set("dpd", v.Dpd)
 	d.Set("esp_lifetime", int(v.Esplifetime))
 	d.Set("ike_lifetime", int(v.Ikelifetime))
+
+	setValueOrID(d, "project", v.Project, v.Projectid)
 
 	return nil
 }
