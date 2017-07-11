@@ -6,6 +6,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
+* `cloudstack_instance`: Prevent a potential crash when deleting an instance [GH-7]
 * `cloudstack_security_group_rule`: Fix a panic when trying to read a deleted security group [GH-2]
 
 ## 0.1.0 (June 20, 2017)
