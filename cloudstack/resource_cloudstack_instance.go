@@ -300,9 +300,14 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	// Update the config
 	d.Set("name", vm.Name)
 	d.Set("display_name", vm.Displayname)
-	d.Set("network_id", vm.Nic[0].Networkid)
-	d.Set("ip_address", vm.Nic[0].Ipaddress)
 	d.Set("group", vm.Group)
+
+	// In some rare cases (when destroying a machine failes) it can happen that
+	// an instance does not have any attached NIC anymore.
+	if len(vm.Nic) > 0 {
+		d.Set("network_id", vm.Nic[0].Networkid)
+		d.Set("ip_address", vm.Nic[0].Ipaddress)
+	}
 
 	if _, ok := d.GetOk("affinity_group_ids"); ok {
 		groups := &schema.Set{F: schema.HashString}
