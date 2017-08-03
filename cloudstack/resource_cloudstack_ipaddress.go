@@ -41,6 +41,13 @@ func resourceCloudStackIPAddress() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"isportable": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+			},
+
 			"ip_address": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -72,6 +79,11 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 	if zoneid, ok := d.GetOk("zone_id"); ok {
 		// Set the vpcid
 		p.SetZoneid(zoneid.(string))
+	}
+
+	if isportable, ok := d.GetOk("isportable"); ok {
+		// Set the vpcid
+		p.SetIsportable(isportable.(bool))
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
@@ -151,12 +163,13 @@ func resourceCloudStackIPAddressDelete(d *schema.ResourceData, meta interface{})
 }
 
 func verifyIPAddressParams(d *schema.ResourceData) error {
+	_, isportable := d.GetOk("isportable")
 	_, network := d.GetOk("network_id")
 	_, vpc := d.GetOk("vpc_id")
 
-	if (network && vpc) || (!network && !vpc) {
+	if isportable && ((network && vpc) || (!network && !vpc)) {
 		return fmt.Errorf(
-			"You must supply a value for either (so not both) the 'network_id' or 'vpc_id' parameter")
+			"You must supply a value for either (so not both) the 'network_id' or 'vpc_id' parameter for portable IP")
 	}
 
 	return nil
