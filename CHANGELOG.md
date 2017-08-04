@@ -1,13 +1,13 @@
-## 0.1.1 (Unreleased)
+## 0.1.1 (August 04, 2017)
 
 IMPROVEMENTS:
 
-* `cloudstack_customer_gateway`: Add support for using projects [GH-3]
+* `cloudstack_customer_gateway`: Add support for using projects ([#3](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/3))
 
 BUG FIXES:
 
-* `cloudstack_instance`: Prevent a potential crash when deleting an instance [GH-7]
-* `cloudstack_security_group_rule`: Fix a panic when trying to read a deleted security group [GH-2]
+* `cloudstack_instance`: Prevent a potential crash when deleting an instance ([#7](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/7))
+* `cloudstack_security_group_rule`: Fix a panic when trying to read a deleted security group ([#2](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/2))
 
 ## 0.1.0 (June 20, 2017)
 
