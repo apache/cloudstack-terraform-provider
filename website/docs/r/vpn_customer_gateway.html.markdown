@@ -18,9 +18,9 @@ Basic usage:
 resource "cloudstack_vpn_customer_gateway" "default" {
   name       = "test-vpc"
   cidr       = "10.0.0.0/8"
-  esp_policy = "aes256-sha1"
+  esp_policy = "aes256-sha1;modp1024"
   gateway    = "192.168.0.1"
-  ike_policy = "aes256-sha1"
+  ike_policy = "aes256-sha1;modp1024"
   ipsec_psk  = "terraform"
 }
 ```
