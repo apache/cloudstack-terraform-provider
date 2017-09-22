@@ -1,4 +1,9 @@
 ## 0.1.2 (Unreleased)
+
+BUG FIXES:
+
+* `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP [GH-18]
+
 ## 0.1.1 (August 04, 2017)
 
 IMPROVEMENTS:
