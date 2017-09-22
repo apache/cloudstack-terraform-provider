@@ -158,7 +158,7 @@ func resourceCloudStackIPAddressDelete(d *schema.ResourceData, meta interface{})
 			return nil
 		}
 
-		return fmt.Errorf("Error disassociating IP address %s: %s", d.Get("name").(string), err)
+		return fmt.Errorf("Error disassociating IP address %s: %s", d.Id(), err)
 	}
 
 	return nil
