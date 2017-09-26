@@ -126,6 +126,8 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
+	d.Set("is_portable", ip.Isportable)
+
 	// Updated the IP address
 	d.Set("ip_address", ip.Ipaddress)
 
