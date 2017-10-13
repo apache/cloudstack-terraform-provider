@@ -3,6 +3,7 @@
 BUG FIXES:
 
 * `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP [GH-18]
+* Add tags in resources vpc, instance, ipadress, template and vpc [GH-16]
 
 ## 0.1.1 (August 04, 2017)
 
