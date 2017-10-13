@@ -64,6 +64,8 @@ func resourceCloudStackVPC() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -118,6 +120,12 @@ func resourceCloudStackVPCCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.SetId(r.Id)
+
+	// Put tags if necessary
+	err = setTags(cs, d, "Vpc")
+	if err != nil {
+		return fmt.Errorf("Error setting tags on the VPC: %s", err)
+	}
 
 	return resourceCloudStackVPCRead(d, meta)
 }
@@ -220,6 +228,12 @@ func resourceCloudStackVPCUpdate(d *schema.ResourceData, meta interface{}) error
 			return fmt.Errorf(
 				"Error updating display test of VPC %s: %s", name, err)
 		}
+	}
+
+	// Update tags if necessary
+	err := setTags(cs, d, "Vpc")
+	if err != nil {
+		return fmt.Errorf("Error updating tags on the VPC: %s", err)
 	}
 
 	return resourceCloudStackVPCRead(d, meta)

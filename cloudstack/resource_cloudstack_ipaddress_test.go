@@ -23,6 +23,7 @@ func TestAccCloudStackIPAddress_basic(t *testing.T) {
 					testAccCheckCloudStackIPAddressExists(
 						"cloudstack_ipaddress.foo", &ipaddr),
 					testAccCheckCloudStackIPAddressAttributes(&ipaddr),
+					testAccCheckResourceTags(&ipaddr),
 				),
 			},
 		},
@@ -113,6 +114,9 @@ func testAccCheckCloudStackIPAddressDestroy(s *terraform.State) error {
 var testAccCloudStackIPAddress_basic = fmt.Sprintf(`
 resource "cloudstack_ipaddress" "foo" {
   network_id = "%s"
+  tags = {
+	terraform-tag = "true"
+  }
 }`, CLOUDSTACK_NETWORK_1)
 
 var testAccCloudStackIPAddress_vpc = fmt.Sprintf(`

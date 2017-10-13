@@ -51,6 +51,15 @@ func setTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcety
 	return nil
 }
 
+// setTags is an helper to update only when tags field change
+// tags field to be named "tags"
+func updateTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcetype string) error {
+	if !d.HasChange("tags") {
+		return nil
+	}
+	return setTags(cs, d, resourcetype)
+}
+
 // diffTags takes the old and the new tag sets and returns the difference of
 // both. The remaining tags are those that need to be removed and created
 func diffTags(oldTags, newTags map[string]string) (map[string]string, map[string]string) {

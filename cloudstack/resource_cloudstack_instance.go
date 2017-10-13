@@ -140,6 +140,8 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -269,6 +271,12 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(r.Id)
+
+	// Put tags if necessary
+	err = setTags(cs, d, "userVm")
+	if err != nil {
+		return fmt.Errorf("Error setting tags on the new instance %s: %s", name, err)
+	}
 
 	// Set the connection info for any configured provisioners
 	d.SetConnInfo(map[string]string{
@@ -536,8 +544,13 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				"Error starting instance %s after making changes", name)
 		}
 	}
-
 	d.Partial(false)
+
+	// Update tags if they have changed
+	err := updateTags(cs, d, "userVm")
+	if err != nil {
+		return fmt.Errorf("Error updating tags on the instance %s: %s", name, err)
+	}
 
 	return resourceCloudStackInstanceRead(d, meta)
 }

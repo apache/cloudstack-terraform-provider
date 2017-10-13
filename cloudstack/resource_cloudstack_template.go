@@ -106,6 +106,8 @@ func resourceCloudStackTemplate() *schema.Resource {
 				Optional: true,
 				Default:  300,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -180,6 +182,12 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(r.RegisterTemplate[0].Id)
+
+	// Put tags if necessary
+	err = setTags(cs, d, "Template")
+	if err != nil {
+		return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
+	}
 
 	// Wait until the template is ready to use, or timeout with an error...
 	currentTime := time.Now().Unix()
@@ -277,7 +285,13 @@ func resourceCloudStackTemplateUpdate(d *schema.ResourceData, meta interface{}) 
 		p.SetPasswordenabled(d.Get("password_enabled").(bool))
 	}
 
-	_, err := cs.Template.UpdateTemplate(p)
+	// Update tags if necessary
+	err := updateTags(cs, d, "Template")
+	if err != nil {
+		return fmt.Errorf("Error updating tags on the template %s: %s", name, err)
+	}
+
+	_, err = cs.Template.UpdateTemplate(p)
 	if err != nil {
 		return fmt.Errorf("Error updating template %s: %s", name, err)
 	}

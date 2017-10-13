@@ -23,7 +23,7 @@ func TestAccCloudStackNetwork_basic(t *testing.T) {
 					testAccCheckCloudStackNetworkExists(
 						"cloudstack_network.foo", &network),
 					testAccCheckCloudStackNetworkBasicAttributes(&network),
-					testAccCheckNetworkTags(&network, "terraform-tag", "true"),
+					testAccCheckResourceTags(&network),
 				),
 			},
 		},
@@ -129,17 +129,6 @@ func testAccCheckCloudStackNetworkBasicAttributes(
 		}
 
 		return nil
-	}
-}
-
-func testAccCheckNetworkTags(
-	n *cloudstack.Network, key string, value string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		tags := make(map[string]string)
-		for item := range n.Tags {
-			tags[n.Tags[item].Key] = n.Tags[item].Value
-		}
-		return testAccCheckTags(tags, key, value)
 	}
 }
 

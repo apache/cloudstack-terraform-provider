@@ -52,6 +52,8 @@ func resourceCloudStackIPAddress() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -103,6 +105,12 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId(r.Id)
+
+	// Put tags if necessary
+	err = setTags(cs, d, "PublicIpAddress")
+	if err != nil {
+		return fmt.Errorf("Error setting tags on the IP address: %s", err)
+	}
 
 	return resourceCloudStackIPAddressRead(d, meta)
 }

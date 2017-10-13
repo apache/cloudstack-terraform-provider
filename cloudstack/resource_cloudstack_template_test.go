@@ -24,6 +24,7 @@ func TestAccCloudStackTemplate_basic(t *testing.T) {
 					testAccCheckCloudStackTemplateBasicAttributes(&template),
 					resource.TestCheckResourceAttr(
 						"cloudstack_template.foo", "display_text", "terraform-test"),
+					testAccCheckResourceTags(&template),
 				),
 			},
 		},
@@ -166,6 +167,9 @@ resource "cloudstack_template" "foo" {
 	os_type = "%s"
 	url = "%s"
   zone = "%s"
+  tags = {
+	terraform-tag = "true"
+  }
 }
 `,
 	CLOUDSTACK_TEMPLATE_FORMAT,

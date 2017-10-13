@@ -25,6 +25,7 @@ func TestAccCloudStackInstance_basic(t *testing.T) {
 					testAccCheckCloudStackInstanceAttributes(&instance),
 					resource.TestCheckResourceAttr(
 						"cloudstack_instance.foobar", "user_data", "0cf3dcdc356ec8369494cb3991985ecd5296cdd5"),
+					testAccCheckResourceTags(&instance),
 				),
 			},
 		},
@@ -239,6 +240,9 @@ resource "cloudstack_instance" "foobar" {
   zone = "%s"
   user_data = "foobar\nfoo\nbar"
   expunge = true
+  tags = {
+	terraform-tag = "true"
+  }
 }`,
 	CLOUDSTACK_SERVICE_OFFERING_1,
 	CLOUDSTACK_NETWORK_1,

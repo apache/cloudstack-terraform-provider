@@ -1,7 +1,10 @@
 package cloudstack
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
 	"reflect"
 	"testing"
 )
@@ -52,6 +55,26 @@ func TestDiffTags(t *testing.T) {
 		if !reflect.DeepEqual(c, tc.Create) {
 			t.Fatalf("%d: bad create: %#v", i, c)
 		}
+	}
+}
+
+// testAccCheckResourceTags is an helper to test tags creation on any resource.
+func testAccCheckResourceTags(
+	n interface{}) resource.TestCheckFunc {
+	b, _ := json.Marshal(n)
+	res := struct {
+		Tags []struct {
+			Key   string `json:"key,omitempty"`
+			Value string `json:"value,omitempty"`
+		} `json:"tags,omitempty"`
+	}{}
+	json.Unmarshal(b, &res)
+	return func(s *terraform.State) error {
+		tags := make(map[string]string)
+		for _, tag := range res.Tags {
+			tags[tag.Key] = tag.Value
+		}
+		return testAccCheckTags(tags, "terraform-tag", "true")
 	}
 }
 
