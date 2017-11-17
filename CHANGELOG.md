@@ -1,5 +1,9 @@
 ## 0.1.2 (Unreleased)
 
+FEATURES:
+
+* **New Data Source:** `cloudstack_template` [GH-21]
+
 BUG FIXES:
 
 * `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP [GH-18]
