@@ -58,6 +58,10 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 
+		DataSourcesMap: map[string]*schema.Resource{
+			"cloudstack_template": dataSourceCloudstackTemplate(),
+		},
+
 		ResourcesMap: map[string]*schema.Resource{
 			"cloudstack_affinity_group":       resourceCloudStackAffinityGroup(),
 			"cloudstack_disk":                 resourceCloudStackDisk(),
