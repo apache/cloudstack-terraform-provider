@@ -3,11 +3,12 @@ package cloudstack
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/xanzy/go-cloudstack/cloudstack"
 	"log"
 	"regexp"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/xanzy/go-cloudstack/cloudstack"
 )
 
 func dataSourceCloudstackTemplate() *schema.Resource {
@@ -15,6 +16,7 @@ func dataSourceCloudstackTemplate() *schema.Resource {
 		Read: dataSourceCloudstackTemplateRead,
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
+
 			"template_filter": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -25,34 +27,42 @@ func dataSourceCloudstackTemplate() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"account": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"created": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"display_text": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"format": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"hypervisor": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+
 			"name": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"display_text": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"format": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"hypervisor": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
 			"size": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -62,45 +72,38 @@ func dataSourceCloudstackTemplateRead(d *schema.ResourceData, meta interface{}) 
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	p := cloudstack.ListTemplatesParams{}
-
 	p.SetListall(true)
 	p.SetTemplatefilter(d.Get("template_filter").(string))
+
 	csTemplates, err := cs.Template.ListTemplates(&p)
 	if err != nil {
 		return fmt.Errorf("Failed to list templates: %s", err)
 	}
 
-	filters, filtersOk := d.GetOk("filter")
-	var template *cloudstack.Template
+	filters := d.Get("filter")
 	var templates []*cloudstack.Template
 
-	if filtersOk {
-		for _, t := range csTemplates.Templates {
-			match, err := applyFilters(t, filters.(*schema.Set))
-			if err != nil {
-				return err
-			}
-
-			if match {
-				templates = append(templates, t)
-			}
-		}
-	} else {
-		return fmt.Errorf("No specified filter, too many results.")
-	}
-
-	if len(templates) > 1 {
-		template, err = latestTemplate(templates)
+	for _, t := range csTemplates.Templates {
+		match, err := applyFilters(t, filters.(*schema.Set))
 		if err != nil {
 			return err
 		}
-	} else if len(templates) == 1 {
-		template = templates[0]
-	} else {
-		return fmt.Errorf("No template is matching with the specified regex.\n")
+
+		if match {
+			templates = append(templates, t)
+		}
 	}
 
+	if len(templates) == 0 {
+		return fmt.Errorf("No template is matching with the specified regex")
+	}
+
+	template, err := latestTemplate(templates)
+	if err != nil {
+		return err
+	}
 	log.Printf("[DEBUG] Selected template: %s\n", template.Displaytext)
+
 	return templateDescriptionAttributes(d, template)
 }
 
@@ -119,7 +122,7 @@ func templateDescriptionAttributes(d *schema.ResourceData, template *cloudstack.
 }
 
 func latestTemplate(templates []*cloudstack.Template) (*cloudstack.Template, error) {
-	var latest *time.Time
+	var latest time.Time
 	var template *cloudstack.Template
 
 	for _, t := range templates {
@@ -128,8 +131,8 @@ func latestTemplate(templates []*cloudstack.Template) (*cloudstack.Template, err
 			return nil, fmt.Errorf("Failed to parse creation date of a template: %s", err)
 		}
 
-		if latest == nil || created.After(*latest) {
-			latest = &created
+		if created.After(latest) {
+			latest = created
 			template = t
 		}
 	}
@@ -156,5 +159,6 @@ func applyFilters(template *cloudstack.Template, filters *schema.Set) (bool, err
 		}
 
 	}
+
 	return true, nil
 }
