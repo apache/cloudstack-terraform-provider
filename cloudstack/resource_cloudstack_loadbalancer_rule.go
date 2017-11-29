@@ -60,8 +60,8 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 			"protocol": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 
 			"member_ids": &schema.Schema{
@@ -84,6 +84,12 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 
 func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Make sure all required parameters are there
+	if err := verifyLoadBalancerRule(d); err != nil {
+		return err
+	}
+
 	d.Partial(true)
 
 	// Create a new parameter struct
@@ -176,8 +182,8 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("algorithm", lb.Algorithm)
 	d.Set("public_port", lb.Publicport)
 	d.Set("private_port", lb.Privateport)
-	d.Set("ip_address_id", lb.Publicipid)
 	d.Set("protocol", lb.Protocol)
+	d.Set("ip_address_id", lb.Publicipid)
 
 	// Only set network if user specified it to avoid spurious diffs
 	if _, ok := d.GetOk("network_id"); ok {
@@ -203,6 +209,11 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 
 func resourceCloudStackLoadBalancerRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Make sure all required parameters are there
+	if err := verifyLoadBalancerRule(d); err != nil {
+		return err
+	}
 
 	if d.HasChange("name") || d.HasChange("description") || d.HasChange("algorithm") {
 		name := d.Get("name").(string)
@@ -293,6 +304,22 @@ func resourceCloudStackLoadBalancerRuleDelete(d *schema.ResourceData, meta inter
 			"Invalid parameter id value=%s due to incorrect long value format, "+
 				"or entity does not exist", d.Id())) {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func verifyLoadBalancerRule(d *schema.ResourceData) error {
+	if protocol, ok := d.GetOk("protocol"); ok {
+		protocol := protocol.(string)
+
+		switch protocol {
+		case "tcp", "udp", "tcp-proxy":
+			// These are supported
+		default:
+			return fmt.Errorf(
+				"%q is not a valid protocol. Valid options are 'tcp', 'udp' of 'tcp-proxy'", protocol)
 		}
 	}
 

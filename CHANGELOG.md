@@ -4,6 +4,10 @@ FEATURES:
 
 * **New Data Source:** `cloudstack_template` [GH-21]
 
+IMPROVEMENTS:
+
+* `cloudstack_loadbalancer_rule`: Support setting a `protocol` [GH-22]
+
 BUG FIXES:
 
 * `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP [GH-18]
