@@ -52,6 +52,9 @@ The following arguments are supported:
     will be load balanced from. Changing this forces a new resource to be
     created.
 
+* `protocol` - (Optional) Load balancer protocol (tcp, udp, tcp-proxy).
+    Changing this forces a new resource to be created.
+
 * `member_ids` - (Required) List of instance IDs to assign to the load balancer
     rule. Changing this forces a new resource to be created.
 
