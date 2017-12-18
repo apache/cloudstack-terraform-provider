@@ -1,17 +1,17 @@
-## 0.1.2 (Unreleased)
+## 0.1.2 (December 18, 2017)
 
 FEATURES:
 
-* **New Data Source:** `cloudstack_template` [GH-21]
+* **New Data Source:** `cloudstack_template` ([#21](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/21))
 
 IMPROVEMENTS:
 
-* `cloudstack_loadbalancer_rule`: Support setting a `protocol` [GH-22]
+* `cloudstack_loadbalancer_rule`: Support setting a `protocol` ([#22](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/22))
 
 BUG FIXES:
 
-* `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP [GH-18]
-* Add tags in resources vpc, instance, ipadress, template and vpc [GH-16]
+* `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP ([#18](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/18))
+* Add tags in resources vpc, instance, ipadress, template and vpc ([#16](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/16))
 
 ## 0.1.1 (August 04, 2017)
 
