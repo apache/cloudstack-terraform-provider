@@ -121,7 +121,7 @@ func resourceCloudStackVPCCreate(d *schema.ResourceData, meta interface{}) error
 
 	d.SetId(r.Id)
 
-	// Put tags if necessary
+	// Set tags if necessary
 	err = setTags(cs, d, "Vpc")
 	if err != nil {
 		return fmt.Errorf("Error setting tags on the VPC: %s", err)
@@ -153,6 +153,12 @@ func resourceCloudStackVPCRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("display_text", v.Displaytext)
 	d.Set("cidr", v.Cidr)
 	d.Set("network_domain", v.Networkdomain)
+
+	tags := make(map[string]interface{})
+	for _, tag := range v.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	// Get the VPC offering details
 	o, _, err := cs.VPC.GetVPCOfferingByID(v.Vpcofferingid)
@@ -230,10 +236,13 @@ func resourceCloudStackVPCUpdate(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 
-	// Update tags if necessary
-	err := setTags(cs, d, "Vpc")
-	if err != nil {
-		return fmt.Errorf("Error updating tags on the VPC: %s", err)
+	// Check is the tags have changed
+	if d.HasChange("tags") {
+		err := updateTags(cs, d, "Vpc")
+		if err != nil {
+			return fmt.Errorf("Error updating tags on VPC %s: %s", name, err)
+		}
+		d.SetPartial("tags")
 	}
 
 	return resourceCloudStackVPCRead(d, meta)

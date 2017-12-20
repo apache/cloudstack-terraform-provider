@@ -183,7 +183,7 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(r.RegisterTemplate[0].Id)
 
-	// Put tags if necessary
+	// Set tags if necessary
 	err = setTags(cs, d, "Template")
 	if err != nil {
 		return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
@@ -243,6 +243,12 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("password_enabled", t.Passwordenabled)
 	d.Set("is_ready", t.Isready)
 
+	tags := make(map[string]interface{})
+	for _, tag := range t.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
+
 	setValueOrID(d, "os_type", t.Ostypename, t.Ostypeid)
 	setValueOrID(d, "project", t.Project, t.Projectid)
 	setValueOrID(d, "zone", t.Zonename, t.Zoneid)
@@ -285,15 +291,16 @@ func resourceCloudStackTemplateUpdate(d *schema.ResourceData, meta interface{}) 
 		p.SetPasswordenabled(d.Get("password_enabled").(bool))
 	}
 
-	// Update tags if necessary
-	err := updateTags(cs, d, "Template")
-	if err != nil {
-		return fmt.Errorf("Error updating tags on the template %s: %s", name, err)
-	}
-
-	_, err = cs.Template.UpdateTemplate(p)
+	_, err := cs.Template.UpdateTemplate(p)
 	if err != nil {
 		return fmt.Errorf("Error updating template %s: %s", name, err)
+	}
+
+	if d.HasChange("tags") {
+		err := updateTags(cs, d, "Template")
+		if err != nil {
+			return fmt.Errorf("Error updating tags on template %s: %s", name, err)
+		}
 	}
 
 	return resourceCloudStackTemplateRead(d, meta)

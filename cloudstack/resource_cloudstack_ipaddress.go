@@ -106,7 +106,7 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 
 	d.SetId(r.Id)
 
-	// Put tags if necessary
+	// Set tags if necessary
 	err = setTags(cs, d, "PublicIpAddress")
 	if err != nil {
 		return fmt.Errorf("Error setting tags on the IP address: %s", err)
@@ -146,6 +146,12 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 	if _, ok := d.GetOk("vpc_id"); ok {
 		d.Set("vpc_id", ip.Vpcid)
 	}
+
+	tags := make(map[string]interface{})
+	for _, tag := range ip.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	setValueOrID(d, "project", ip.Project, ip.Projectid)
 	setValueOrID(d, "zone", ip.Zonename, ip.Zoneid)

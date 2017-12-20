@@ -19,6 +19,20 @@ func tagsSchema() *schema.Schema {
 // setTags is a helper to set the tags for a resource. It expects the
 // tags field to be named "tags"
 func setTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcetype string) error {
+	if tags, ok := d.Get("tags").(map[string]interface{}); ok {
+		p := cs.Resourcetags.NewCreateTagsParams([]string{d.Id()}, resourcetype, tagsFromSchema(tags))
+		_, err := cs.Resourcetags.CreateTags(p)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// updateTags is a helper to update only when tags field change tags
+// field to be named "tags"
+func updateTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcetype string) error {
 	oraw, nraw := d.GetChange("tags")
 	o := oraw.(map[string]interface{})
 	n := nraw.(map[string]interface{})
@@ -49,15 +63,6 @@ func setTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcety
 	}
 
 	return nil
-}
-
-// setTags is an helper to update only when tags field change
-// tags field to be named "tags"
-func updateTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcetype string) error {
-	if !d.HasChange("tags") {
-		return nil
-	}
-	return setTags(cs, d, resourcetype)
 }
 
 // diffTags takes the old and the new tag sets and returns the difference of

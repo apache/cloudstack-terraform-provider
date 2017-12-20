@@ -116,15 +116,6 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error creating the new disk %s: %s", name, err)
 	}
 
-	// Set the volume ID and partials
-	d.SetId(r.Id)
-
-	// Put tags if necessary
-	err = setTags(cs, d, "Volume")
-	if err != nil {
-		return fmt.Errorf("Error setting tags on the new disk %s: %s", name, err)
-	}
-
 	d.SetPartial("name")
 	d.SetPartial("device_id")
 	d.SetPartial("disk_offering")
@@ -132,6 +123,16 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 	d.SetPartial("virtual_machine_id")
 	d.SetPartial("project")
 	d.SetPartial("zone")
+
+	// Set the volume ID and partials
+	d.SetId(r.Id)
+
+	// Set tags if necessary
+	err = setTags(cs, d, "Volume")
+	if err != nil {
+		return fmt.Errorf("Error setting tags on the new disk %s: %s", name, err)
+	}
+	d.SetPartial("tags")
 
 	if d.Get("attach").(bool) {
 		err := resourceCloudStackDiskAttach(d, meta)
@@ -167,6 +168,12 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("name", v.Name)
 	d.Set("attach", v.Attached != "")           // If attached this contains a timestamp when attached
 	d.Set("size", int(v.Size/(1024*1024*1024))) // Needed to get GB's again
+
+	tags := make(map[string]interface{})
+	for _, tag := range v.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	setValueOrID(d, "disk_offering", v.Diskofferingname, v.Diskofferingid)
 	setValueOrID(d, "project", v.Project, v.Projectid)
@@ -251,13 +258,16 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	d.Partial(false)
-
-	// Update tags if they have changed
-	err := updateTags(cs, d, "Volume")
-	if err != nil {
-		return fmt.Errorf("Error updating tags on the disk %s: %s", name, err)
+	// Check is the tags have changed and if so, update the tags
+	if d.HasChange("tags") {
+		err := updateTags(cs, d, "Volume")
+		if err != nil {
+			return fmt.Errorf("Error updating tags on disk %s: %s", name, err)
+		}
+		d.SetPartial("tags")
 	}
+
+	d.Partial(false)
 
 	return resourceCloudStackDiskRead(d, meta)
 }
