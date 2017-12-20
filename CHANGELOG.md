@@ -1,8 +1,8 @@
-## 0.1.3 (Unreleased)
+## 0.1.3 (December 20, 2017)
 
 BUG FIXES:
 
-* Make sure tags work as expected on all resources [GH-26]
+* Make sure tags work as expected on all resources ([#26](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/26))
 
 ## 0.1.2 (December 18, 2017)
 
