@@ -1,4 +1,9 @@
 ## 0.1.4 (Unreleased)
+
+IMPROVEMENTS:
+
+* `cloudstack_instance`: Properly reflect changes to the `root_disk_size` [GH-28]
+
 ## 0.1.3 (December 20, 2017)
 
 BUG FIXES:
