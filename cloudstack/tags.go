@@ -19,8 +19,11 @@ func tagsSchema() *schema.Schema {
 // setTags is a helper to set the tags for a resource. It expects the
 // tags field to be named "tags"
 func setTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resourcetype string) error {
-	if tags, ok := d.Get("tags").(map[string]interface{}); ok {
-		p := cs.Resourcetags.NewCreateTagsParams([]string{d.Id()}, resourcetype, tagsFromSchema(tags))
+	if tags, ok := d.GetOk("tags"); ok {
+		p := cs.Resourcetags.NewCreateTagsParams(
+			[]string{d.Id()},
+			resourcetype, tagsFromSchema(tags.(map[string]interface{})),
+		)
 		_, err := cs.Resourcetags.CreateTags(p)
 		if err != nil {
 			return err
