@@ -1,12 +1,12 @@
-## 0.1.4 (Unreleased)
+## 0.1.4 (January 04, 2018)
 
 IMPROVEMENTS:
 
-* `cloudstack_instance`: Properly reflect changes to the `root_disk_size` [GH-28]
+* `cloudstack_instance`: Properly reflect changes to the `root_disk_size` ([#28](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/28))
 
 BUG FIXES:
 
-* Fix the check that determines if tags should be set [GH-29]
+* Fix the check that determines if tags should be set ([#29](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/29))
 
 ## 0.1.3 (December 20, 2017)
 
