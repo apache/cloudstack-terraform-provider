@@ -4,6 +4,10 @@ IMPROVEMENTS:
 
 * `r/cloudstack_secondary_ipaddress`: Read back the secondary IP address details after creation [GH-34]
 
+BUG FIXES:
+
+* `r/cloudstack_instance`: Root volume size in returned in bytes instead of GiB [GH-32]
+
 ## 0.1.4 (January 04, 2018)
 
 IMPROVEMENTS:
