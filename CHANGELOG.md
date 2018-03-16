@@ -1,9 +1,14 @@
 ## 0.1.5 (Unreleased)
+
+IMPROVEMENTS:
+
+* `r/cloudstack_secondary_ipaddress`: Read back the secondary IP address details after creation [GH-34]
+
 ## 0.1.4 (January 04, 2018)
 
 IMPROVEMENTS:
 
-* `cloudstack_instance`: Properly reflect changes to the `root_disk_size` ([#28](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/28))
+* `r/cloudstack_instance`: Properly reflect changes to the `root_disk_size` ([#28](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/28))
 
 BUG FIXES:
 
@@ -19,27 +24,27 @@ BUG FIXES:
 
 FEATURES:
 
-* **New Data Source:** `cloudstack_template` ([#21](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/21))
+* **New Data Source:** `d/cloudstack_template` ([#21](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/21))
 
 IMPROVEMENTS:
 
-* `cloudstack_loadbalancer_rule`: Support setting a `protocol` ([#22](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/22))
+* `r/cloudstack_loadbalancer_rule`: Support setting a `protocol` ([#22](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/22))
 
 BUG FIXES:
 
-* `cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP ([#18](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/18))
+* `r/cloudstack_ipaddress`: Fix a panic when trying to disassociate public IP ([#18](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/18))
 * Add tags in resources vpc, instance, ipadress, template and vpc ([#16](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/16))
 
 ## 0.1.1 (August 04, 2017)
 
 IMPROVEMENTS:
 
-* `cloudstack_customer_gateway`: Add support for using projects ([#3](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/3))
+* `r/cloudstack_customer_gateway`: Add support for using projects ([#3](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/3))
 
 BUG FIXES:
 
-* `cloudstack_instance`: Prevent a potential crash when deleting an instance ([#7](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/7))
-* `cloudstack_security_group_rule`: Fix a panic when trying to read a deleted security group ([#2](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/2))
+* `r/cloudstack_instance`: Prevent a potential crash when deleting an instance ([#7](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/7))
+* `r/cloudstack_security_group_rule`: Fix a panic when trying to read a deleted security group ([#2](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/2))
 
 ## 0.1.0 (June 20, 2017)
 
