@@ -329,11 +329,11 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
-	// If we found the root disk, then update it's size.
+	// If we found the root disk, then update its size.
 	if len(l.Volumes) != 1 {
 		log.Printf("[DEBUG] Failed to find root disk of instance: %s", vm.Name)
 	} else {
-		d.Set("root_disk_size", l.Volumes[0].Size)
+		d.Set("root_disk_size", l.Volumes[0].Size>>30) // B to GiB
 	}
 
 	if _, ok := d.GetOk("affinity_group_ids"); ok {
