@@ -39,3 +39,4 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The secondary IP address ID.
+* `ip_address` - The IP address that was acquired and associated.

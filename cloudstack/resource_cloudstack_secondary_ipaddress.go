@@ -75,7 +75,7 @@ func resourceCloudStackSecondaryIPAddressCreate(d *schema.ResourceData, meta int
 
 	d.SetId(ip.Id)
 
-	return nil
+	return resourceCloudStackSecondaryIPAddressRead(d, meta)
 }
 
 func resourceCloudStackSecondaryIPAddressRead(d *schema.ResourceData, meta interface{}) error {
