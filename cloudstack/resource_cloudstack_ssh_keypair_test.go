@@ -89,7 +89,7 @@ func testAccCheckCloudStackSSHKeyPairAttributes(
 
 		fpLen := len(keypair.Fingerprint)
 		if fpLen != 47 {
-			return fmt.Errorf("SSH key: Attribute private_key expected length 47, got %d", fpLen)
+			return fmt.Errorf("SSH key: Attribute fingerprint expected length 47, got %d", fpLen)
 		}
 
 		return nil
