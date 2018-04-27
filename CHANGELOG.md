@@ -1,12 +1,12 @@
-## 0.1.5 (Unreleased)
+## 0.1.5 (April 27, 2018)
 
 IMPROVEMENTS:
 
-* `r/cloudstack_secondary_ipaddress`: Read back the secondary IP address details after creation [GH-34]
+* `r/cloudstack_secondary_ipaddress`: Read back the secondary IP address details after creation ([#34](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/34))
 
 BUG FIXES:
 
-* `r/cloudstack_instance`: Root volume size in returned in bytes instead of GiB [GH-32]
+* `r/cloudstack_instance`: Root volume size in returned in bytes instead of GiB ([#32](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/32))
 
 ## 0.1.4 (January 04, 2018)
 
