@@ -166,7 +166,7 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	d.Set("name", v.Name)
-	d.Set("attach", v.Attached != "")           // If attached this contains a timestamp when attached
+	d.Set("attach", v.Virtualmachineid != "")   // If attached this contains a virtual machine ID
 	d.Set("size", int(v.Size/(1024*1024*1024))) // Needed to get GB's again
 
 	tags := make(map[string]interface{})
@@ -179,7 +179,7 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 	setValueOrID(d, "project", v.Project, v.Projectid)
 	setValueOrID(d, "zone", v.Zonename, v.Zoneid)
 
-	if v.Attached != "" {
+	if v.Virtualmachineid != "" {
 		d.Set("device_id", int(v.Deviceid))
 		d.Set("virtual_machine_id", v.Virtualmachineid)
 	}
@@ -382,7 +382,7 @@ func isAttached(d *schema.ResourceData, meta interface{}) (bool, error) {
 		return false, err
 	}
 
-	return v.Attached != "", nil
+	return v.Virtualmachineid != "", nil
 }
 
 func retryableAttachVolumeFunc(
