@@ -62,15 +62,15 @@ func testAccCheckCloudStackPrivateGatewayAttributes(
 	gateway *cloudstack.PrivateGateway) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if gateway.Gateway != CLOUDSTACK_PRIVGW_GATEWAY {
+		if gateway.Gateway != "10.1.1.254" {
 			return fmt.Errorf("Bad Gateway: %s", gateway.Gateway)
 		}
 
-		if gateway.Ipaddress != CLOUDSTACK_PRIVGW_IPADDRESS {
+		if gateway.Ipaddress != "192.168.0.1" {
 			return fmt.Errorf("Bad Gateway: %s", gateway.Ipaddress)
 		}
 
-		if gateway.Netmask != CLOUDSTACK_PRIVGW_NETMASK {
+		if gateway.Netmask != "255.255.255.0" {
 			return fmt.Errorf("Bad Gateway: %s", gateway.Netmask)
 		}
 
@@ -99,25 +99,24 @@ func testAccCheckCloudStackPrivateGatewayDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackPrivateGateway_basic = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
+const testAccCloudStackPrivateGateway_basic = `
+resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network_acl" "foo" {
+  name = "terraform-acl"
+  vpc_id = "${cloudstack_vpc.foo.id}"
 }
 
 resource "cloudstack_private_gateway" "foo" {
-  gateway = "%s"
-  ip_address = "%s"
-  netmask = "%s"
-  vlan = "%s"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PRIVGW_GATEWAY,
-	CLOUDSTACK_PRIVGW_IPADDRESS,
-	CLOUDSTACK_PRIVGW_NETMASK,
-	CLOUDSTACK_PRIVGW_VLAN)
+  gateway = "10.1.1.254"
+  ip_address = "192.168.0.1"
+  netmask = "255.255.255.0"
+  vlan = "1"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  acl_id = "${cloudstack_network_acl.foo.id}"
+}`

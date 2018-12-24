@@ -205,7 +205,7 @@ func testAccCheckCloudStackSecurityGroupRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackSecurityGroupRule_basic = fmt.Sprintf(`
+const testAccCloudStackSecurityGroupRule_basic = `
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group-foo"
   description = "terraform-security-group-text"
@@ -233,9 +233,9 @@ resource "cloudstack_security_group_rule" "foo" {
   }
 
 	depends_on = ["cloudstack_security_group.bar"]
-}`)
+}`
 
-var testAccCloudStackSecurityGroupRule_update = fmt.Sprintf(`
+const testAccCloudStackSecurityGroupRule_update = `
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group-foo"
   description = "terraform-security-group-text"
@@ -271,4 +271,4 @@ resource "cloudstack_security_group_rule" "foo" {
   }
 
 	depends_on = ["cloudstack_security_group.bar"]
-}`)
+}`

@@ -44,9 +44,7 @@ func TestAccCloudStackSSHKeyPair_register(t *testing.T) {
 					testAccCheckCloudStackSSHKeyPairExists("cloudstack_ssh_keypair.foo", &sshkey),
 					testAccCheckCloudStackSSHKeyPairAttributes(&sshkey),
 					resource.TestCheckResourceAttr(
-						"cloudstack_ssh_keypair.foo",
-						"public_key",
-						CLOUDSTACK_SSH_PUBLIC_KEY),
+						"cloudstack_ssh_keypair.foo", "public_key", publicKey),
 				),
 			},
 		},
@@ -157,13 +155,18 @@ func testAccCheckCloudStackSSHKeyPairDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackSSHKeyPair_create = fmt.Sprintf(`
+const testAccCloudStackSSHKeyPair_create = `
 resource "cloudstack_ssh_keypair" "foo" {
   name = "terraform-test-keypair"
-}`)
+}`
 
 var testAccCloudStackSSHKeyPair_register = fmt.Sprintf(`
 resource "cloudstack_ssh_keypair" "foo" {
   name = "terraform-test-keypair"
-  public_key = "%s"
-}`, CLOUDSTACK_SSH_PUBLIC_KEY)
+	public_key = "%s"
+}`, publicKey)
+
+const publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQCqKGV/b2U2GIVR0ZCV" +
+	"SZ72qiJt+JdiF+BXr4+7vZLnyoWTk2SeNkibd19AOsMUNOmKoe9czEuXY03HWpkwIaqWlMql" +
+	"s6sHeRP7WOd1xNRtYrW5eSLDkmZXmbgh64PzghJAL0W0X2sCUvH9Rhgu9Bi+Mry6tfiTRWuN" +
+	"vhJjImrjiw== sander@MacBook-Sander.lan"

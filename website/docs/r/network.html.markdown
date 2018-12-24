@@ -63,10 +63,13 @@ The following arguments are supported:
 * `project` - (Optional) The name or ID of the project to deploy this
     instance to. Changing this forces a new resource to be created.
 
+* `source_nat_ip` - (Optional) If set to `true` a public IP will be associated
+    with the network. This is mainly used when the network supports the source
+    NAT service which claims the first associated IP address. This prevents the
+    ability to manage the IP address as an independent entity.
+
 * `zone` - (Required) The name or ID of the zone where this network will be
     available. Changing this forces a new resource to be created.
-
-* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
@@ -75,3 +78,4 @@ The following attributes are exported:
 * `id` - The ID of the network.
 * `display_text` - The display text of the network.
 * `network_domain` - DNS domain for the network.
+* `source_nat_ip_id` - The ID of the associated source NAT IP.

@@ -109,19 +109,31 @@ func resourceCloudStackNetwork() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"source_nat_ip": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+
+			"source_nat_ip_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
 			"zone": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"tags": tagsSchema(),
+			// "tags": tagsSchema(),
 		},
 	}
 }
 
 func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -203,14 +215,59 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("Error creating network %s: %s", name, err)
 	}
 
+	d.SetPartial("name")
+	d.SetPartial("display_text")
+	d.SetPartial("cidr")
+	d.SetPartial("gateway")
+	d.SetPartial("startip")
+	d.SetPartial("endip")
+	d.SetPartial("network_domain")
+	d.SetPartial("network_offering")
+	d.SetPartial("vlan")
+	d.SetPartial("vpc_id")
+	d.SetPartial("acl_id")
+	d.SetPartial("project")
+	d.SetPartial("zone")
+
 	d.SetId(r.Id)
 
 	// Set tags if necessary
-	err = setTags(cs, d, "network")
-	if err != nil {
-		return fmt.Errorf("Error setting tags: %s", err)
+	// if err = setTags(cs, d, "network"); err != nil {
+	// 	return fmt.Errorf("Error setting tags: %v", err)
+	// }
+	// d.SetPartial("tags")
+
+	if d.Get("source_nat_ip").(bool) {
+		// Create a new parameter struct
+		p := cs.Address.NewAssociateIpAddressParams()
+
+		// Set required options
+		p.SetNetworkid(r.Id)
+		p.SetZoneid(zoneid)
+
+		if vpcid, ok := d.GetOk("vpc_id"); ok {
+			// Set the vpcid
+			p.SetVpcid(vpcid.(string))
+		}
+
+		// If there is a project supplied, we retrieve and set the project id
+		if err := setProjectid(p, cs, d); err != nil {
+			return err
+		}
+
+		// Associate a new IP address
+		ip, err := cs.Address.AssociateIpAddress(p)
+		if err != nil {
+			return fmt.Errorf("Error associating a new IP address: %s", err)
+		}
+		d.Set("source_nat_ip_id", ip.Id)
+
+		// Set the additional partial
+		d.SetPartial("source_nat_ip")
+		d.SetPartial("source_nat_ip_id")
 	}
 
+	d.Partial(false)
 	return resourceCloudStackNetworkRead(d, meta)
 }
 
@@ -245,15 +302,38 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	}
 	d.Set("acl_id", n.Aclid)
 
-	tags := make(map[string]interface{})
-	for _, tag := range n.Tags {
-		tags[tag.Key] = tag.Value
-	}
-	d.Set("tags", tags)
+	// tags := make(map[string]interface{})
+	// for _, tag := range n.Tags {
+	// 	tags[tag.Key] = tag.Value
+	// }
+	// d.Set("tags", tags)
 
 	setValueOrID(d, "network_offering", n.Networkofferingname, n.Networkofferingid)
 	setValueOrID(d, "project", n.Project, n.Projectid)
 	setValueOrID(d, "zone", n.Zonename, n.Zoneid)
+
+	if d.Get("source_nat_ip").(bool) {
+		ip, count, err := cs.Address.GetPublicIpAddressByID(
+			d.Get("source_nat_ip_id").(string),
+			cloudstack.WithProject(d.Get("project").(string)),
+		)
+		if err != nil {
+			if count == 0 {
+				log.Printf(
+					"[DEBUG] Source NAT IP with ID %s is no longer associated", d.Id())
+				d.Set("source_nat_ip", false)
+				d.Set("source_nat_ip_id", "")
+				return nil
+			}
+
+			return err
+		}
+
+		if n.Id != ip.Associatednetworkid {
+			d.Set("source_nat_ip", false)
+			d.Set("source_nat_ip_id", "")
+		}
+	}
 
 	return nil
 }
@@ -317,12 +397,11 @@ func resourceCloudStackNetworkUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// Update tags if they have changed
-	if d.HasChange("tags") {
-		err := updateTags(cs, d, "Network")
-		if err != nil {
-			return fmt.Errorf("Error updating tags on ACL %s: %s", name, err)
-		}
-	}
+	// if d.HasChange("tags") {
+	// 	if err := updateTags(cs, d, "Network"); err != nil {
+	// 		return fmt.Errorf("Error updating tags on ACL %s: %s", name, err)
+	// 	}
+	// }
 
 	return resourceCloudStackNetworkRead(d, meta)
 }

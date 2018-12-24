@@ -21,8 +21,6 @@ func TestAccCloudStackPortForward_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_port_forward.foo", "ip_address_id", CLOUDSTACK_PUBLIC_IPADDRESS),
-					resource.TestCheckResourceAttr(
 						"cloudstack_port_forward.foo", "forward.#", "1"),
 				),
 			},
@@ -41,8 +39,6 @@ func TestAccCloudStackPortForward_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_port_forward.foo", "ip_address_id", CLOUDSTACK_PUBLIC_IPADDRESS),
-					resource.TestCheckResourceAttr(
 						"cloudstack_port_forward.foo", "forward.#", "1"),
 				),
 			},
@@ -51,8 +47,6 @@ func TestAccCloudStackPortForward_update(t *testing.T) {
 				Config: testAccCloudStackPortForward_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_port_forward.foo", "ip_address_id", CLOUDSTACK_PUBLIC_IPADDRESS),
 					resource.TestCheckResourceAttr(
 						"cloudstack_port_forward.foo", "forward.#", "2"),
 				),
@@ -120,18 +114,27 @@ func testAccCheckCloudStackPortForwardDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackPortForward_basic = fmt.Sprintf(`
+const testAccCloudStackPortForward_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+	source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  display_name = "terraform-updated"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_port_forward" "foo" {
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
 
   forward {
     protocol = "tcp"
@@ -139,25 +142,29 @@ resource "cloudstack_port_forward" "foo" {
     public_port = 8443
     virtual_machine_id = "${cloudstack_instance.foobar.id}"
   }
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PUBLIC_IPADDRESS)
+}`
 
-var testAccCloudStackPortForward_update = fmt.Sprintf(`
+const testAccCloudStackPortForward_update = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+	source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  display_name = "terraform-updated"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_port_forward" "foo" {
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
 
   forward {
     protocol = "tcp"
@@ -172,9 +179,4 @@ resource "cloudstack_port_forward" "foo" {
     public_port = 8080
     virtual_machine_id = "${cloudstack_instance.foobar.id}"
   }
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PUBLIC_IPADDRESS)
+}`

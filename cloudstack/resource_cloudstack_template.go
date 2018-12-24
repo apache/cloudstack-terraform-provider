@@ -60,7 +60,7 @@ func resourceCloudStackTemplate() *schema.Resource {
 
 			"zone": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 
@@ -107,7 +107,7 @@ func resourceCloudStackTemplate() *schema.Resource {
 				Default:  300,
 			},
 
-			"tags": tagsSchema(),
+			// "tags": tagsSchema(),
 		},
 	}
 }
@@ -133,12 +133,6 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 		return e.Error()
 	}
 
-	// Retrieve the zone ID
-	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
-	if e != nil {
-		return e.Error()
-	}
-
 	// Create a new parameter struct
 	p := cs.Template.NewRegisterTemplateParams(
 		displaytext,
@@ -147,7 +141,7 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 		name,
 		ostypeid,
 		d.Get("url").(string),
-		zoneid)
+	)
 
 	// Set optional parameters
 	if v, ok := d.GetOk("is_dynamically_scalable"); ok {
@@ -170,6 +164,15 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetPasswordenabled(v.(bool))
 	}
 
+	// Retrieve the zone ID
+	if v, ok := d.GetOk("zone"); ok {
+		zoneid, e := retrieveID(cs, "zone", v.(string))
+		if e != nil {
+			return e.Error()
+		}
+		p.SetZoneid(zoneid)
+	}
+
 	// If there is a project supplied, we retrieve and set the project id
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
@@ -184,10 +187,9 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(r.RegisterTemplate[0].Id)
 
 	// Set tags if necessary
-	err = setTags(cs, d, "Template")
-	if err != nil {
-		return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
-	}
+	// if err = setTags(cs, d, "Template"); err != nil {
+	// 	return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
+	// }
 
 	// Wait until the template is ready to use, or timeout with an error...
 	currentTime := time.Now().Unix()
@@ -243,11 +245,11 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("password_enabled", t.Passwordenabled)
 	d.Set("is_ready", t.Isready)
 
-	tags := make(map[string]interface{})
-	for _, tag := range t.Tags {
-		tags[tag.Key] = tag.Value
-	}
-	d.Set("tags", tags)
+	// tags := make(map[string]interface{})
+	// for _, tag := range t.Tags {
+	// 	tags[tag.Key] = tag.Value
+	// }
+	// d.Set("tags", tags)
 
 	setValueOrID(d, "os_type", t.Ostypename, t.Ostypeid)
 	setValueOrID(d, "project", t.Project, t.Projectid)
@@ -296,12 +298,11 @@ func resourceCloudStackTemplateUpdate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error updating template %s: %s", name, err)
 	}
 
-	if d.HasChange("tags") {
-		err := updateTags(cs, d, "Template")
-		if err != nil {
-			return fmt.Errorf("Error updating tags on template %s: %s", name, err)
-		}
-	}
+	// if d.HasChange("tags") {
+	// 	if err := updateTags(cs, d, "Template"); err != nil {
+	// 		return fmt.Errorf("Error updating tags on template %s: %s", name, err)
+	// 	}
+	// }
 
 	return resourceCloudStackTemplateRead(d, meta)
 }

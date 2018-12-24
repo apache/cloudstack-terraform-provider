@@ -78,18 +78,14 @@ func testAccCheckCloudStackVPNGatewayDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackVPNGateway_basic = fmt.Sprintf(`
+const testAccCloudStackVPNGateway_basic = `
 resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  display_text = "terraform-vpc-text"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_vpn_gateway" "foo" {
   vpc_id = "${cloudstack_vpc.foo.id}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE)
+}`

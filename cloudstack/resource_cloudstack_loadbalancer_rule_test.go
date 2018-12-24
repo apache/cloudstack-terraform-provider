@@ -240,111 +240,130 @@ func testAccCheckCloudStackLoadBalancerRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackLoadBalancerRule_basic = fmt.Sprintf(`
+const testAccCloudStackLoadBalancerRule_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  network_id = "${cloudstack_network.foo.id}"
+}
+
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb"
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_ipaddress.foo.id}"
   algorithm = "roundrobin"
   public_port = 80
   private_port = 80
   member_ids = ["${cloudstack_instance.foobar1.id}"]
-}
-`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PUBLIC_IPADDRESS)
+}`
 
-var testAccCloudStackLoadBalancerRule_update = fmt.Sprintf(`
+const testAccCloudStackLoadBalancerRule_update = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  network_id = "${cloudstack_network.foo.id}"
+}
+
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb-update"
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_ipaddress.foo.id}"
   algorithm = "leastconn"
   public_port = 80
   private_port = 80
   member_ids = ["${cloudstack_instance.foobar1.id}"]
-}
-`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PUBLIC_IPADDRESS)
+}`
 
-var testAccCloudStackLoadBalancerRule_forcenew = fmt.Sprintf(`
+const testAccCloudStackLoadBalancerRule_forcenew = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  network_id = "${cloudstack_network.foo.id}"
+}
+
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb-update"
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_ipaddress.foo.id}"
   algorithm = "leastconn"
   public_port = 443
   private_port = 443
-  protocol = "tcp-proxy"
+	protocol = "tcp-proxy"
   member_ids = ["${cloudstack_instance.foobar1.id}"]
-}
-`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PUBLIC_IPADDRESS)
+}`
 
-var testAccCloudStackLoadBalancerRule_vpc = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
-	name = "terraform-vpc"
-	cidr = "%s"
-	vpc_offering = "%s"
-	zone = "%s"
+const testAccCloudStackLoadBalancerRule_vpc = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-  cidr = "%s"
-  network_offering = "%s"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
-  zone = "${cloudstack_vpc.foobar.zone}"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foobar.id}"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
-  service_offering= "%s"
+  service_offering= "Small Instance"
   network_id = "${cloudstack_network.foo.id}"
-  template = "%s"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
@@ -357,41 +376,35 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   public_port = 80
   private_port = 80
   member_ids = ["${cloudstack_instance.foobar1.id}"]
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_VPC_NETWORK_CIDR,
-	CLOUDSTACK_VPC_NETWORK_OFFERING,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_TEMPLATE)
+}`
 
-var testAccCloudStackLoadBalancerRule_vpc_update = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
+const testAccCloudStackLoadBalancerRule_vpc_update = `
+resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-  cidr = "%s"
-  network_offering = "%s"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
-  zone = "${cloudstack_vpc.foobar.zone}"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foobar.id}"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
-  service_offering= "%s"
+  service_offering= "Small Instance"
   network_id = "${cloudstack_network.foo.id}"
-  template = "%s"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
@@ -399,9 +412,9 @@ resource "cloudstack_instance" "foobar1" {
 resource "cloudstack_instance" "foobar2" {
   name = "terraform-server2"
   display_name = "terraform"
-  service_offering= "%s"
+  service_offering= "Small Instance"
   network_id = "${cloudstack_network.foo.id}"
-  template = "%s"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
@@ -414,13 +427,4 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   public_port = 443
   private_port = 443
   member_ids = ["${cloudstack_instance.foobar1.id}", "${cloudstack_instance.foobar2.id}"]
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_VPC_NETWORK_CIDR,
-	CLOUDSTACK_VPC_NETWORK_OFFERING,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_TEMPLATE)
+}`

@@ -21,8 +21,6 @@ func TestAccCloudStackFirewall_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackFirewallRulesExist("cloudstack_firewall.foo"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_firewall.foo", "ip_address_id", CLOUDSTACK_PUBLIC_IPADDRESS),
-					resource.TestCheckResourceAttr(
 						"cloudstack_firewall.foo", "rule.#", "2"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_firewall.foo", "rule.2263505090.cidr_list.3482919157", "10.0.0.0/24"),
@@ -55,8 +53,6 @@ func TestAccCloudStackFirewall_update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackFirewallRulesExist("cloudstack_firewall.foo"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_firewall.foo", "ip_address_id", CLOUDSTACK_PUBLIC_IPADDRESS),
-					resource.TestCheckResourceAttr(
 						"cloudstack_firewall.foo", "rule.#", "2"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_firewall.foo", "rule.2263505090.cidr_list.3482919157", "10.0.0.0/24"),
@@ -79,8 +75,6 @@ func TestAccCloudStackFirewall_update(t *testing.T) {
 				Config: testAccCloudStackFirewall_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackFirewallRulesExist("cloudstack_firewall.foo"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_firewall.foo", "ip_address_id", CLOUDSTACK_PUBLIC_IPADDRESS),
 					resource.TestCheckResourceAttr(
 						"cloudstack_firewall.foo", "rule.#", "3"),
 					resource.TestCheckResourceAttr(
@@ -172,9 +166,17 @@ func testAccCheckCloudStackFirewallDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackFirewall_basic = fmt.Sprintf(`
+const testAccCloudStackFirewall_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+	source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_firewall" "foo" {
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
 
   rule {
     cidr_list = ["10.0.0.0/24"]
@@ -187,11 +189,19 @@ resource "cloudstack_firewall" "foo" {
     protocol = "tcp"
     ports = ["80", "1000-2000"]
   }
-}`, CLOUDSTACK_PUBLIC_IPADDRESS)
+}`
 
-var testAccCloudStackFirewall_update = fmt.Sprintf(`
+const testAccCloudStackFirewall_update = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+	source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_firewall" "foo" {
-  ip_address_id = "%s"
+  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
 
   rule {
     cidr_list = ["10.0.0.0/24", "10.0.1.0/24"]
@@ -210,4 +220,4 @@ resource "cloudstack_firewall" "foo" {
     protocol = "tcp"
     ports = ["80", "443"]
   }
-}`, CLOUDSTACK_PUBLIC_IPADDRESS)
+}`

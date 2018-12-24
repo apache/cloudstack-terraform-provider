@@ -25,7 +25,7 @@ func TestAccCloudStackInstance_basic(t *testing.T) {
 					testAccCheckCloudStackInstanceAttributes(&instance),
 					resource.TestCheckResourceAttr(
 						"cloudstack_instance.foobar", "user_data", "0cf3dcdc356ec8369494cb3991985ecd5296cdd5"),
-					testAccCheckResourceTags(&instance),
+					// testAccCheckResourceTags(&instance),
 				),
 			},
 		},
@@ -62,7 +62,7 @@ func TestAccCloudStackInstance_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_instance.foobar", "display_name", "terraform-updated"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_instance.foobar", "service_offering", CLOUDSTACK_SERVICE_OFFERING_2),
+						"cloudstack_instance.foobar", "service_offering", "Medium Instance"),
 				),
 			},
 		},
@@ -83,7 +83,7 @@ func TestAccCloudStackInstance_fixedIP(t *testing.T) {
 					testAccCheckCloudStackInstanceExists(
 						"cloudstack_instance.foobar", &instance),
 					resource.TestCheckResourceAttr(
-						"cloudstack_instance.foobar", "ip_address", CLOUDSTACK_NETWORK_1_IPADDRESS1),
+						"cloudstack_instance.foobar", "ip_address", "10.1.1.123"),
 				),
 			},
 		},
@@ -125,7 +125,7 @@ func TestAccCloudStackInstance_project(t *testing.T) {
 					testAccCheckCloudStackInstanceExists(
 						"cloudstack_instance.foobar", &instance),
 					resource.TestCheckResourceAttr(
-						"cloudstack_instance.foobar", "project", CLOUDSTACK_PROJECT_NAME),
+						"cloudstack_instance.foobar", "project", "terraform"),
 				),
 			},
 		},
@@ -173,16 +173,12 @@ func testAccCheckCloudStackInstanceAttributes(
 			return fmt.Errorf("Bad display name: %s", instance.Displayname)
 		}
 
-		if instance.Serviceofferingname != CLOUDSTACK_SERVICE_OFFERING_1 {
+		if instance.Serviceofferingname != "Small Instance" {
 			return fmt.Errorf("Bad service offering: %s", instance.Serviceofferingname)
 		}
 
-		if instance.Templatename != CLOUDSTACK_TEMPLATE {
+		if instance.Templatename != "CentOS 5.6 (64-bit) no GUI (Simulator)" {
 			return fmt.Errorf("Bad template: %s", instance.Templatename)
-		}
-
-		if instance.Nic[0].Networkid != CLOUDSTACK_NETWORK_1 {
-			return fmt.Errorf("Bad network ID: %s", instance.Nic[0].Networkid)
 		}
 
 		return nil
@@ -201,7 +197,7 @@ func testAccCheckCloudStackInstanceRenamedAndResized(
 			return fmt.Errorf("Bad display name: %s", instance.Displayname)
 		}
 
-		if instance.Serviceofferingname != CLOUDSTACK_SERVICE_OFFERING_2 {
+		if instance.Serviceofferingname != "Medium Instance" {
 			return fmt.Errorf("Bad service offering: %s", instance.Serviceofferingname)
 		}
 
@@ -230,59 +226,74 @@ func testAccCheckCloudStackInstanceDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackInstance_basic = fmt.Sprintf(`
+const testAccCloudStackInstance_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   user_data = "foobar\nfoo\nbar"
   expunge = true
-  tags = {
-	terraform-tag = "true"
-  }
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE)
+	#tags = {
+	#  terraform-tag = "true"
+	#}
+}`
 
-var testAccCloudStackInstance_renameAndResize = fmt.Sprintf(`
+const testAccCloudStackInstance_renameAndResize = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-updated"
   display_name = "terraform-updated"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   user_data = "foobar\nfoo\nbar"
   expunge = true
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_2,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE)
+}`
 
-var testAccCloudStackInstance_fixedIP = fmt.Sprintf(`
+const testAccCloudStackInstance_fixedIP = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  ip_address = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  ip_address = "10.1.1.123"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_NETWORK_1_IPADDRESS1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE)
+}`
 
-var testAccCloudStackInstance_keyPair = fmt.Sprintf(`
+const testAccCloudStackInstance_keyPair = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_ssh_keypair" "foo" {
   name = "terraform-test-keypair"
 }
@@ -290,33 +301,30 @@ resource "cloudstack_ssh_keypair" "foo" {
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  ip_address = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
 	keypair = "${cloudstack_ssh_keypair.foo.name}"
   expunge = true
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_NETWORK_1_IPADDRESS1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE)
+}`
 
-var testAccCloudStackInstance_project = fmt.Sprintf(`
+const testAccCloudStackInstance_project = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
-  service_offering= "%s"
-	network_id = "%s"
-  template = "%s"
-	project = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  project = "terraform"
+  zone = "${cloudstack_network.foo.zone}"
   expunge = true
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_PROJECT_NETWORK,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_PROJECT_NAME,
-	CLOUDSTACK_ZONE)
+}`

@@ -53,7 +53,7 @@ func TestAccCloudStackNIC_update(t *testing.T) {
 						"cloudstack_instance.foobar", "cloudstack_nic.foo", &nic),
 					testAccCheckCloudStackNICIPAddress(&nic),
 					resource.TestCheckResourceAttr(
-						"cloudstack_nic.foo", "ip_address", CLOUDSTACK_2ND_NIC_IPADDRESS),
+						"cloudstack_nic.foo", "ip_address", "10.1.2.123"),
 				),
 			},
 		},
@@ -103,8 +103,8 @@ func testAccCheckCloudStackNICAttributes(
 	nic *cloudstack.Nic) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if nic.Networkid != CLOUDSTACK_2ND_NIC_NETWORK {
-			return fmt.Errorf("Bad network ID: %s", nic.Networkid)
+		if nic.Networkname != "terraform-network" {
+			return fmt.Errorf("Bad network name: %s", nic.Networkname)
 		}
 
 		return nil
@@ -115,11 +115,11 @@ func testAccCheckCloudStackNICIPAddress(
 	nic *cloudstack.Nic) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if nic.Networkid != CLOUDSTACK_2ND_NIC_NETWORK {
-			return fmt.Errorf("Bad network ID: %s", nic.Networkname)
+		if nic.Networkname != "terraform-network" {
+			return fmt.Errorf("Bad network name: %s", nic.Networkname)
 		}
 
-		if nic.Ipaddress != CLOUDSTACK_2ND_NIC_IPADDRESS {
+		if nic.Ipaddress != "10.1.2.123" {
 			return fmt.Errorf("Bad IP address: %s", nic.Ipaddress)
 		}
 
@@ -149,46 +149,63 @@ func testAccCheckCloudStackNICDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackNIC_basic = fmt.Sprintf(`
+const testAccCloudStackNIC_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "bar" {
+  name = "terraform-network"
+  cidr = "10.1.2.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_nic" "foo" {
-  network_id = "%s"
+  network_id = "${cloudstack_network.bar.id}"
   virtual_machine_id = "${cloudstack_instance.foobar.id}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_2ND_NIC_NETWORK)
+}`
 
-var testAccCloudStackNIC_ipaddress = fmt.Sprintf(`
+const testAccCloudStackNIC_ipaddress = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "bar" {
+  name = "terraform-network"
+  cidr = "10.1.2.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_nic" "foo" {
-  network_id = "%s"
-  ip_address = "%s"
+  network_id = "${cloudstack_network.bar.id}"
   virtual_machine_id = "${cloudstack_instance.foobar.id}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_2ND_NIC_NETWORK,
-	CLOUDSTACK_2ND_NIC_IPADDRESS)
+  ip_address = "10.1.2.123"
+}`

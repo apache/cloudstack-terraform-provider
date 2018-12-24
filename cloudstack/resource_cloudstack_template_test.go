@@ -10,6 +10,10 @@ import (
 )
 
 func TestAccCloudStackTemplate_basic(t *testing.T) {
+	if CLOUDSTACK_TEMPLATE_URL == "" {
+		t.Skip("This test requires an upload URL")
+	}
+
 	var template cloudstack.Template
 
 	resource.Test(t, resource.TestCase{
@@ -32,6 +36,10 @@ func TestAccCloudStackTemplate_basic(t *testing.T) {
 }
 
 func TestAccCloudStackTemplate_update(t *testing.T) {
+	if CLOUDSTACK_TEMPLATE_URL == "" {
+		t.Skip("This test requires an upload URL")
+	}
+
 	var template cloudstack.Template
 
 	resource.Test(t, resource.TestCase{
@@ -98,19 +106,19 @@ func testAccCheckCloudStackTemplateBasicAttributes(
 			return fmt.Errorf("Bad name: %s", template.Name)
 		}
 
-		if template.Format != CLOUDSTACK_TEMPLATE_FORMAT {
+		if template.Format != "QCOW2" {
 			return fmt.Errorf("Bad format: %s", template.Format)
 		}
 
-		if template.Hypervisor != CLOUDSTACK_HYPERVISOR {
+		if template.Hypervisor != "Simulator" {
 			return fmt.Errorf("Bad hypervisor: %s", template.Hypervisor)
 		}
 
-		if template.Ostypename != CLOUDSTACK_TEMPLATE_OS_TYPE {
+		if template.Ostypename != "Centos 5.6 (64-bit)" {
 			return fmt.Errorf("Bad os type: %s", template.Ostypename)
 		}
 
-		if template.Zonename != CLOUDSTACK_ZONE {
+		if template.Zonename != "Sandbox-simulator" {
 			return fmt.Errorf("Bad zone: %s", template.Zonename)
 		}
 
@@ -162,37 +170,25 @@ func testAccCheckCloudStackTemplateDestroy(s *terraform.State) error {
 var testAccCloudStackTemplate_basic = fmt.Sprintf(`
 resource "cloudstack_template" "foo" {
   name = "terraform-test"
-	format = "%s"
-  hypervisor = "%s"
-	os_type = "%s"
-	url = "%s"
-  zone = "%s"
-  tags = {
-	terraform-tag = "true"
-  }
-}
-`,
-	CLOUDSTACK_TEMPLATE_FORMAT,
-	CLOUDSTACK_HYPERVISOR,
-	CLOUDSTACK_TEMPLATE_OS_TYPE,
-	CLOUDSTACK_TEMPLATE_URL,
-	CLOUDSTACK_ZONE)
+  format = "QCOW2"
+  hypervisor = "Simulator"
+  os_type = "Centos 5.6 (64-bit)"
+  url = "%s"
+  zone = "Sandbox-simulator"
+  #tags = {
+  #  terraform-tag = "true"
+  #}
+}`, CLOUDSTACK_TEMPLATE_URL)
 
 var testAccCloudStackTemplate_update = fmt.Sprintf(`
 resource "cloudstack_template" "foo" {
-	name = "terraform-test"
+  name = "terraform-test"
   display_text = "terraform-updated"
-	format = "%s"
-  hypervisor = "%s"
-  os_type = "%s"
-	url = "%s"
-  zone = "%s"
+  format = "QCOW2"
+  hypervisor = "Simulator"
+  os_type = "Centos 5.6 (64-bit)"
+  url = "%s"
   is_dynamically_scalable = true
-	password_enabled = true
-}
-`,
-	CLOUDSTACK_TEMPLATE_FORMAT,
-	CLOUDSTACK_HYPERVISOR,
-	CLOUDSTACK_TEMPLATE_OS_TYPE,
-	CLOUDSTACK_TEMPLATE_URL,
-	CLOUDSTACK_ZONE)
+  password_enabled = true
+  zone = "Sandbox-simulator"
+}`, CLOUDSTACK_TEMPLATE_URL)

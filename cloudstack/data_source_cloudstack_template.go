@@ -63,7 +63,7 @@ func dataSourceCloudstackTemplate() *schema.Resource {
 				Computed: true,
 			},
 
-			"tags": tagsSchema(),
+			// "tags": tagsSchema(),
 		},
 	}
 }
@@ -118,11 +118,11 @@ func templateDescriptionAttributes(d *schema.ResourceData, template *cloudstack.
 	d.Set("name", template.Name)
 	d.Set("size", template.Size)
 
-	tags := make(map[string]interface{})
-	for _, tag := range template.Tags {
-		tags[tag.Key] = tag.Value
-	}
-	d.Set("tags", tags)
+	// tags := make(map[string]interface{})
+	// for _, tag := range template.Tags {
+	// 	tags[tag.Key] = tag.Value
+	// }
+	// d.Set("tags", tags)
 
 	return nil
 }

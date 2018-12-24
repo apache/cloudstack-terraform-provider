@@ -23,29 +23,7 @@ func TestAccCloudStackDisk_basic(t *testing.T) {
 					testAccCheckCloudStackDiskExists(
 						"cloudstack_disk.foo", &disk),
 					testAccCheckCloudStackDiskAttributes(&disk),
-					testAccCheckResourceTags(&disk),
-				),
-			},
-		},
-	})
-}
-
-func TestAccCloudStackDisk_deviceID(t *testing.T) {
-	var disk cloudstack.Volume
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCloudStackDiskDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccCloudStackDisk_deviceID,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackDiskExists(
-						"cloudstack_disk.foo", &disk),
-					testAccCheckCloudStackDiskAttributes(&disk),
-					resource.TestCheckResourceAttr(
-						"cloudstack_disk.foo", "device_id", "4"),
+					// testAccCheckResourceTags(&disk),
 				),
 			},
 		},
@@ -76,7 +54,29 @@ func TestAccCloudStackDisk_update(t *testing.T) {
 						"cloudstack_disk.foo", &disk),
 					testAccCheckCloudStackDiskResized(&disk),
 					resource.TestCheckResourceAttr(
-						"cloudstack_disk.foo", "disk_offering", CLOUDSTACK_DISK_OFFERING_2),
+						"cloudstack_disk.foo", "disk_offering", "Medium"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackDisk_deviceID(t *testing.T) {
+	var disk cloudstack.Volume
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackDiskDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackDisk_deviceID,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackDiskExists(
+						"cloudstack_disk.foo", &disk),
+					testAccCheckCloudStackDiskAttributes(&disk),
+					resource.TestCheckResourceAttr(
+						"cloudstack_disk.foo", "device_id", "4"),
 				),
 			},
 		},
@@ -120,7 +120,7 @@ func testAccCheckCloudStackDiskAttributes(
 			return fmt.Errorf("Bad name: %s", disk.Name)
 		}
 
-		if disk.Diskofferingname != CLOUDSTACK_DISK_OFFERING_1 {
+		if disk.Diskofferingname != "Small" {
 			return fmt.Errorf("Bad disk offering: %s", disk.Diskofferingname)
 		}
 
@@ -132,7 +132,7 @@ func testAccCheckCloudStackDiskResized(
 	disk *cloudstack.Volume) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if disk.Diskofferingname != CLOUDSTACK_DISK_OFFERING_2 {
+		if disk.Diskofferingname != "Medium" {
 			return fmt.Errorf("Bad disk offering: %s", disk.Diskofferingname)
 		}
 
@@ -161,27 +161,46 @@ func testAccCheckCloudStackDiskDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackDisk_basic = fmt.Sprintf(`
+const testAccCloudStackDisk_basic = `
 resource "cloudstack_disk" "foo" {
   name = "terraform-disk"
   attach = false
-  disk_offering = "%s"
-  zone = "%s"
-  tags = {
-	terraform-tag = "true"
-  }
-}`,
-	CLOUDSTACK_DISK_OFFERING_1,
-	CLOUDSTACK_ZONE)
+  disk_offering = "Small"
+  zone = "Sandbox-simulator"
+	#tags = {
+	#  terraform-tag = "true"
+	#}
+}`
 
-var testAccCloudStackDisk_deviceID = fmt.Sprintf(`
+const testAccCloudStackDisk_update = `
+resource "cloudstack_disk" "foo" {
+  name = "terraform-disk"
+  disk_offering = "Small"
+  zone = "Sandbox-simulator"
+}`
+
+const testAccCloudStackDisk_resize = `
+resource "cloudstack_disk" "foo" {
+  name = "terraform-disk"
+  disk_offering = "Medium"
+  zone = "Sandbox-simulator"
+}`
+
+const testAccCloudStackDisk_deviceID = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
 
@@ -189,60 +208,7 @@ resource "cloudstack_disk" "foo" {
   name = "terraform-disk"
   attach = true
   device_id = 4
-  disk_offering = "%s"
+  disk_offering = "Small"
   virtual_machine_id = "${cloudstack_instance.foobar.id}"
   zone = "${cloudstack_instance.foobar.zone}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_DISK_OFFERING_1)
-
-var testAccCloudStackDisk_update = fmt.Sprintf(`
-resource "cloudstack_instance" "foobar" {
-  name = "terraform-test"
-  display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
-  expunge = true
-}
-
-resource "cloudstack_disk" "foo" {
-  name = "terraform-disk"
-  attach = true
-  disk_offering = "%s"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
-  zone = "${cloudstack_instance.foobar.zone}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_DISK_OFFERING_1)
-
-var testAccCloudStackDisk_resize = fmt.Sprintf(`
-resource "cloudstack_instance" "foobar" {
-  name = "terraform-test"
-  display_name = "terraform"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
-  expunge = true
-}
-
-resource "cloudstack_disk" "foo" {
-  name = "terraform-disk"
-  attach = true
-  disk_offering = "%s"
-	virtual_machine_id = "${cloudstack_instance.foobar.id}"
-  zone = "${cloudstack_instance.foobar.zone}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_DISK_OFFERING_2)
+}`
