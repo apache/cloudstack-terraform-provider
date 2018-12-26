@@ -30,10 +30,6 @@ $ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-cloudstack
 $ make build
 ```
 
-Using the provider
-----------------------
-## Fill in for each provider
-
 Developing the Provider
 ---------------------------
 
@@ -47,6 +43,9 @@ $ make bin
 $ $GOPATH/bin/terraform-provider-cloudstack
 ...
 ```
+
+Testing the Provider
+--------------------
 
 In order to test the provider, you can simply run `make test`.
 
