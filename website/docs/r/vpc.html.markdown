@@ -53,3 +53,12 @@ The following attributes are exported:
 * `id` - The ID of the VPC.
 * `display_text` - The display text of the VPC.
 * `source_nat_ip` - The source NAT IP assigned to the VPC.
+
+## Import
+
+VPCs can be imported; use `<VPC ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_vpc.default 84b23264-917a-4712-b8bf-cd7604db43b0
+```

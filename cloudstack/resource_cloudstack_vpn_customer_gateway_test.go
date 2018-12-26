@@ -82,6 +82,25 @@ func TestAccCloudStackVPNCustomerGateway_update(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackVPNCustomerGateway_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackVPNCustomerGatewayDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackVPNCustomerGateway_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:      "cloudstack_vpn_customer_gateway.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackVPNCustomerGatewayExists(
 	n string, vpnCustomerGateway *cloudstack.VpnCustomerGateway) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

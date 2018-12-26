@@ -40,3 +40,12 @@ The following attributes are exported:
 
 * `id` - The id of the affinity group.
 * `description` - The description of the affinity group.
+
+## Import
+
+Affinity groups can be imported; use `<AFFINITY GROUP ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_affinity_group.default 6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```

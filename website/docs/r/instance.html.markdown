@@ -82,3 +82,12 @@ The following attributes are exported:
 
 * `id` - The instance ID.
 * `display_name` - The display name of the instance.
+
+## Import
+
+Instances can be imported; use `<INSTANCE ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_instance.default 5cf69677-7e4b-4bf4-b868-f0b02bb72ee0
+```

@@ -15,6 +15,9 @@ func resourceCloudStackPrivateGateway() *schema.Resource {
 		Read:   resourceCloudStackPrivateGatewayRead,
 		Update: resourceCloudStackPrivateGatewayUpdate,
 		Delete: resourceCloudStackPrivateGatewayDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"gateway": &schema.Schema{

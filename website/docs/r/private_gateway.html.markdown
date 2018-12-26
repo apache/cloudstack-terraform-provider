@@ -55,3 +55,12 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the private gateway.
+
+## Import
+
+Private gateways can be imported; use `<PRIVATE GATEWAY ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_private_gateway.default e42a24d2-46cb-4b18-9d41-382582fad309
+```

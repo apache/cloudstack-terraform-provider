@@ -79,3 +79,12 @@ The following attributes are exported:
 * `display_text` - The display text of the network.
 * `network_domain` - DNS domain for the network.
 * `source_nat_ip_id` - The ID of the associated source NAT IP.
+
+## Import
+
+Networks can be imported; use `<NETWORK ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_network.default 36619b20-5584-43bf-9a84-e242bacd5582
+```

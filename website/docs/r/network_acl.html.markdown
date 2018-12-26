@@ -40,3 +40,12 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the Network ACL
+
+## Import
+
+Network ACLs can be imported; use `<NETWORK ACL ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_network_acl.default e8b5982a-1b50-4ea9-9920-6ea2290c7359
+```

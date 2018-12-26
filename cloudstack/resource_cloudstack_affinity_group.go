@@ -14,6 +14,9 @@ func resourceCloudStackAffinityGroup() *schema.Resource {
 		Create: resourceCloudStackAffinityGroupCreate,
 		Read:   resourceCloudStackAffinityGroupRead,
 		Delete: resourceCloudStackAffinityGroupDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{

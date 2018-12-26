@@ -14,6 +14,9 @@ func resourceCloudStackVPNGateway() *schema.Resource {
 		Create: resourceCloudStackVPNGatewayCreate,
 		Read:   resourceCloudStackVPNGatewayRead,
 		Delete: resourceCloudStackVPNGatewayDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"vpc_id": &schema.Schema{

@@ -179,11 +179,12 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 		return err
 	}
 
+	d.Set("name", lb.Name)
+	d.Set("ip_address_id", lb.Publicipid)
 	d.Set("algorithm", lb.Algorithm)
 	d.Set("public_port", lb.Publicport)
 	d.Set("private_port", lb.Privateport)
 	d.Set("protocol", lb.Protocol)
-	d.Set("ip_address_id", lb.Publicipid)
 
 	// Only set network if user specified it to avoid spurious diffs
 	if _, ok := d.GetOk("network_id"); ok {

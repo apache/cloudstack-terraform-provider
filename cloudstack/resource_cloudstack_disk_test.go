@@ -83,6 +83,26 @@ func TestAccCloudStackDisk_deviceID(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackDisk_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackDiskDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackDisk_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:            "cloudstack_disk.foo",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"shrink_ok"},
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackDiskExists(
 	n string, disk *cloudstack.Volume) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

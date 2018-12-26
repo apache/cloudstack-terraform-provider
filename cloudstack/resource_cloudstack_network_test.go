@@ -79,6 +79,25 @@ func TestAccCloudStackNetwork_updateACL(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNetwork_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackNetwork_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:      "cloudstack_network.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackNetworkExists(
 	n string, network *cloudstack.Network) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

@@ -32,6 +32,25 @@ func TestAccCloudStackVPC_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackVPC_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackVPCDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackVPC_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:      "cloudstack_vpc.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackVPCExists(
 	n string, vpc *cloudstack.VPC) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
