@@ -1,4 +1,10 @@
-## 0.1.6 (Unreleased)
+## 0.2.0 (Unreleased)
+
+IMPROVEMENTS:
+
+* Make the tests work with the CloudStack Simulator [GH-46]
+* Add basic support for importing resources [GH-47]
+
 ## 0.1.5 (April 27, 2018)
 
 IMPROVEMENTS:
