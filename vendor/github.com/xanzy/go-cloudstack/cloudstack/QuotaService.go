@@ -1,5 +1,5 @@
 //
-// Copyright 2016, Sander van Harmelen
+// Copyright 2018, Sander van Harmelen
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,5 +57,5 @@ func (s *QuotaService) QuotaIsEnabled(p *QuotaIsEnabledParams) (*QuotaIsEnabledR
 }
 
 type QuotaIsEnabledResponse struct {
-	Isenabled bool `json:"isenabled,omitempty"`
+	Isenabled bool `json:"isenabled"`
 }

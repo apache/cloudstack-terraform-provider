@@ -98,8 +98,8 @@ func testAccCheckCloudStackAffinityGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackAffinityGroup = fmt.Sprintf(`
+const testAccCloudStackAffinityGroup = `
 resource "cloudstack_affinity_group" "foo" {
-	name = "terraform-affinity-group"
-	type = "host anti-affinity"
-}`)
+  name = "terraform-affinity-group"
+  type = "host anti-affinity"
+}`

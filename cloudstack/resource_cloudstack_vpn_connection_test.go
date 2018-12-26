@@ -80,19 +80,19 @@ func testAccCheckCloudStackVPNConnectionDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackVPNConnection_basic = fmt.Sprintf(`
+const testAccCloudStackVPNConnection_basic = `
 resource "cloudstack_vpc" "foo" {
-  name = "terraform-vpc-foo"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  name = "terraform-vpc"
+  cidr = "10.1.0.0/16"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_vpc" "bar" {
-  name = "terraform-vpc-bar"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  name = "terraform-vpc"
+  cidr = "10.2.0.0/16"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_vpn_gateway" "foo" {
@@ -108,7 +108,7 @@ resource "cloudstack_vpn_customer_gateway" "foo" {
   cidr = "${cloudstack_vpc.foo.cidr}"
   esp_policy = "aes256-sha1"
   gateway = "${cloudstack_vpn_gateway.foo.public_ip}"
-  ike_policy = "aes256-sha1"
+  ike_policy = "aes256-sha1;modp1536"
   ipsec_psk = "terraform"
 }
 
@@ -117,7 +117,7 @@ resource "cloudstack_vpn_customer_gateway" "bar" {
   cidr = "${cloudstack_vpc.bar.cidr}"
   esp_policy = "aes256-sha1"
   gateway = "${cloudstack_vpn_gateway.bar.public_ip}"
-  ike_policy = "aes256-sha1"
+  ike_policy = "aes256-sha1;modp1536"
   ipsec_psk = "terraform"
 }
 
@@ -129,10 +129,4 @@ resource "cloudstack_vpn_connection" "foo-bar" {
 resource "cloudstack_vpn_connection" "bar-foo" {
   customer_gateway_id = "${cloudstack_vpn_customer_gateway.bar.id}"
   vpn_gateway_id = "${cloudstack_vpn_gateway.foo.id}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_VPC_CIDR_2,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE)
+}`

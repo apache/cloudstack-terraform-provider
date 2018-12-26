@@ -23,7 +23,7 @@ func TestAccCloudStackNetwork_basic(t *testing.T) {
 					testAccCheckCloudStackNetworkExists(
 						"cloudstack_network.foo", &network),
 					testAccCheckCloudStackNetworkBasicAttributes(&network),
-					testAccCheckResourceTags(&network),
+					// testAccCheckResourceTags(&network),
 				),
 			},
 		},
@@ -120,11 +120,11 @@ func testAccCheckCloudStackNetworkBasicAttributes(
 			return fmt.Errorf("Bad display name: %s", network.Displaytext)
 		}
 
-		if network.Cidr != CLOUDSTACK_NETWORK_2_CIDR {
+		if network.Cidr != "10.1.1.0/24" {
 			return fmt.Errorf("Bad CIDR: %s", network.Cidr)
 		}
 
-		if network.Networkofferingname != CLOUDSTACK_NETWORK_2_OFFERING {
+		if network.Networkofferingname != "DefaultIsolatedNetworkOfferingWithSourceNatService" {
 			return fmt.Errorf("Bad network offering: %s", network.Networkofferingname)
 		}
 
@@ -144,11 +144,11 @@ func testAccCheckCloudStackNetworkVPCAttributes(
 			return fmt.Errorf("Bad display name: %s", network.Displaytext)
 		}
 
-		if network.Cidr != CLOUDSTACK_VPC_NETWORK_CIDR {
+		if network.Cidr != "10.1.1.0/24" {
 			return fmt.Errorf("Bad CIDR: %s", network.Cidr)
 		}
 
-		if network.Networkofferingname != CLOUDSTACK_VPC_NETWORK_OFFERING {
+		if network.Networkofferingname != "DefaultIsolatedNetworkOfferingForVpcNetworks" {
 			return fmt.Errorf("Bad network offering: %s", network.Networkofferingname)
 		}
 
@@ -177,91 +177,73 @@ func testAccCheckCloudStackNetworkDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackNetwork_basic = fmt.Sprintf(`
+const testAccCloudStackNetwork_basic = `
 resource "cloudstack_network" "foo" {
-	name = "terraform-network"
-	cidr = "%s"
-	network_offering = "%s"
-	zone = "%s"
-	tags = {
-		terraform-tag = "true"
-	}
-}`,
-	CLOUDSTACK_NETWORK_2_CIDR,
-	CLOUDSTACK_NETWORK_2_OFFERING,
-	CLOUDSTACK_ZONE)
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+  #tags = {
+  #  terraform-tag = "true"
+  #}
+}`
 
-var testAccCloudStackNetwork_vpc = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
-	name = "terraform-vpc"
-	cidr = "%s"
-	vpc_offering = "%s"
-	zone = "%s"
+const testAccCloudStackNetwork_vpc = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network" "foo" {
-	name = "terraform-network"
-	cidr = "%s"
-	network_offering = "%s"
-	vpc_id = "${cloudstack_vpc.foobar.id}"
-	zone = "${cloudstack_vpc.foobar.zone}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_VPC_NETWORK_CIDR,
-	CLOUDSTACK_VPC_NETWORK_OFFERING)
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
+}`
 
-var testAccCloudStackNetwork_acl = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
-	name = "terraform-vpc"
-	cidr = "%s"
-	vpc_offering = "%s"
-	zone = "%s"
+const testAccCloudStackNetwork_acl = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network_acl" "foo" {
-	name = "foo"
-	vpc_id = "${cloudstack_vpc.foobar.id}"
+  name = "foo"
+  vpc_id = "${cloudstack_vpc.foo.id}"
 }
 
 resource "cloudstack_network" "foo" {
-	name = "terraform-network"
-	cidr = "%s"
-	network_offering = "%s"
-	vpc_id = "${cloudstack_vpc.foobar.id}"
-	acl_id = "${cloudstack_network_acl.foo.id}"
-	zone = "${cloudstack_vpc.foobar.zone}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_VPC_NETWORK_CIDR,
-	CLOUDSTACK_VPC_NETWORK_OFFERING)
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  acl_id = "${cloudstack_network_acl.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
+}`
 
-var testAccCloudStackNetwork_updateACL = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
-	name = "terraform-vpc"
-	cidr = "%s"
-	vpc_offering = "%s"
-	zone = "%s"
+const testAccCloudStackNetwork_updateACL = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network_acl" "bar" {
-	name = "bar"
-	vpc_id = "${cloudstack_vpc.foobar.id}"
+  name = "bar"
+  vpc_id = "${cloudstack_vpc.foo.id}"
 }
 
 resource "cloudstack_network" "foo" {
-	name = "terraform-network"
-	cidr = "%s"
-	network_offering = "%s"
-	vpc_id = "${cloudstack_vpc.foobar.id}"
-	acl_id = "${cloudstack_network_acl.bar.id}"
-	zone = "${cloudstack_vpc.foobar.zone}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_VPC_NETWORK_CIDR,
-	CLOUDSTACK_VPC_NETWORK_OFFERING)
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  acl_id = "${cloudstack_network_acl.bar.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
+}`

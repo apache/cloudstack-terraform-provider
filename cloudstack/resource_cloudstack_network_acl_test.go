@@ -93,19 +93,16 @@ func testAccCheckCloudStackNetworkACLDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackNetworkACL_basic = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
+const testAccCloudStackNetworkACL_basic = `
+resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
   description = "terraform-acl-text"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE)
+  vpc_id = "${cloudstack_vpc.foo.id}"
+}`

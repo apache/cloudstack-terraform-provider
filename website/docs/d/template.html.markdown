@@ -46,4 +46,3 @@ The following attributes are exported:
 * `hypervisor` - The hypervisor on which the templates runs.
 * `name` - The template name.
 * `size` - The size of the template.
-* `tags` - The tags associated with this template.

@@ -43,7 +43,7 @@ func TestAccCloudStackSecondaryIPAddress_fixedIP(t *testing.T) {
 						"cloudstack_secondary_ipaddress.foo", &ip),
 					testAccCheckCloudStackSecondaryIPAddressAttributes(&ip),
 					resource.TestCheckResourceAttr(
-						"cloudstack_secondary_ipaddress.foo", "ip_address", CLOUDSTACK_NETWORK_1_IPADDRESS1),
+						"cloudstack_secondary_ipaddress.foo", "ip_address", "10.1.1.123"),
 				),
 			},
 		},
@@ -124,7 +124,7 @@ func testAccCheckCloudStackSecondaryIPAddressAttributes(
 	ip *cloudstack.AddIpToNicResponse) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if ip.Ipaddress != CLOUDSTACK_NETWORK_1_IPADDRESS1 {
+		if ip.Ipaddress != "10.1.1.123" {
 			return fmt.Errorf("Bad IP address: %s", ip.Ipaddress)
 		}
 		return nil
@@ -199,41 +199,45 @@ func testAccCheckCloudStackSecondaryIPAddressDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackSecondaryIPAddress_basic = fmt.Sprintf(`
+const testAccCloudStackSecondaryIPAddress_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_secondary_ipaddress" "foo" {
 	virtual_machine_id = "${cloudstack_instance.foobar.id}"
-}
-`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE)
+} `
 
-var testAccCloudStackSecondaryIPAddress_fixedIP = fmt.Sprintf(`
+const testAccCloudStackSecondaryIPAddress_fixedIP = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
+  service_offering= "Medium Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_secondary_ipaddress" "foo" {
-	ip_address = "%s"
+	ip_address = "10.1.1.123"
 	virtual_machine_id = "${cloudstack_instance.foobar.id}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_NETWORK_1_IPADDRESS1)
+}`

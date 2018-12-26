@@ -46,7 +46,7 @@ The following arguments are supported:
 * `project` - (Optional) The name or ID of the project to create this template for.
     Changing this forces a new resource to be created.
 
-* `zone` - (Required) The name or ID of the zone where this template will be created.
+* `zone` - (Optional) The name or ID of the zone where this template will be created.
     Changing this forces a new resource to be created.
 
 * `is_dynamically_scalable` - (Optional) Set to indicate if the template contains

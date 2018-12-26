@@ -62,8 +62,8 @@ func testAccCheckCloudStackStaticRouteAttributes(
 	staticroute *cloudstack.StaticRoute) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if staticroute.Cidr != CLOUDSTACK_STATIC_ROUTE_CIDR {
-			return fmt.Errorf("Bad Cidr: %s", staticroute.Cidr)
+		if staticroute.Cidr != "172.16.0.0/16" {
+			return fmt.Errorf("Bad CIDR: %s", staticroute.Cidr)
 		}
 
 		return nil
@@ -91,31 +91,29 @@ func testAccCheckCloudStackStaticRouteDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackStaticRoute_basic = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
+const testAccCloudStackStaticRoute_basic = `
+resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network_acl" "foo" {
+  name = "terraform-acl"
+  vpc_id = "${cloudstack_vpc.foo.id}"
 }
 
 resource "cloudstack_private_gateway" "foo" {
-  gateway = "%s"
-  ip_address = "%s"
-  netmask = "%s"
-  vlan = "%s"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
+  gateway = "10.1.1.254"
+  ip_address = "192.168.0.1"
+  netmask = "255.255.255.0"
+  vlan = "1"
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  acl_id = "${cloudstack_network_acl.foo.id}"
 }
 
 resource "cloudstack_static_route" "bar" {
-  cidr = "%s"
+  cidr = "172.16.0.0/16"
   gateway_id = "${cloudstack_private_gateway.foo.id}"
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE,
-	CLOUDSTACK_PRIVGW_GATEWAY,
-	CLOUDSTACK_PRIVGW_IPADDRESS,
-	CLOUDSTACK_PRIVGW_NETMASK,
-	CLOUDSTACK_PRIVGW_VLAN,
-	CLOUDSTACK_STATIC_ROUTE_CIDR)
+}`

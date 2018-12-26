@@ -208,18 +208,18 @@ func testAccCheckCloudStackNetworkACLRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackNetworkACLRule_basic = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
+const testAccCloudStackNetworkACLRule_basic = `
+resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
   description = "terraform-acl-text"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
+  vpc_id = "${cloudstack_vpc.foo.id}"
 }
 
 resource "cloudstack_network_acl_rule" "foo" {
@@ -247,23 +247,20 @@ resource "cloudstack_network_acl_rule" "foo" {
     ports = ["80", "443"]
     traffic_type = "ingress"
   }
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE)
+}`
 
-var testAccCloudStackNetworkACLRule_update = fmt.Sprintf(`
-resource "cloudstack_vpc" "foobar" {
+const testAccCloudStackNetworkACLRule_update = `
+resource "cloudstack_vpc" "foo" {
   name = "terraform-vpc"
-  cidr = "%s"
-  vpc_offering = "%s"
-  zone = "%s"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
   description = "terraform-acl-text"
-  vpc_id = "${cloudstack_vpc.foobar.id}"
+  vpc_id = "${cloudstack_vpc.foo.id}"
 }
 
 resource "cloudstack_network_acl_rule" "foo" {
@@ -300,7 +297,4 @@ resource "cloudstack_network_acl_rule" "foo" {
     ports = ["80", "1000-2000"]
     traffic_type = "egress"
   }
-}`,
-	CLOUDSTACK_VPC_CIDR_1,
-	CLOUDSTACK_VPC_OFFERING,
-	CLOUDSTACK_ZONE)
+}`

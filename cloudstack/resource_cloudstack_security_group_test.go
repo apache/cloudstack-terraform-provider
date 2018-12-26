@@ -93,8 +93,8 @@ func testAccCheckCloudStackSecurityGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackSecurityGroup_basic = fmt.Sprintf(`
+const testAccCloudStackSecurityGroup_basic = `
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group"
 	description = "terraform-security-group-text"
-}`)
+}`

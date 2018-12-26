@@ -66,8 +66,8 @@ func testAccCheckCloudStackStaticNATAttributes(
 	ipaddr *cloudstack.PublicIpAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if ipaddr.Associatednetworkid != CLOUDSTACK_NETWORK_1 {
-			return fmt.Errorf("Bad network ID: %s", ipaddr.Associatednetworkid)
+		if ipaddr.Associatednetworkname != "terraform-network" {
+			return fmt.Errorf("Bad network name: %s", ipaddr.Associatednetworkname)
 		}
 
 		return nil
@@ -95,28 +95,30 @@ func testAccCheckCloudStackStaticNATDestroy(s *terraform.State) error {
 	return nil
 }
 
-var testAccCloudStackStaticNAT_basic = fmt.Sprintf(`
+const testAccCloudStackStaticNAT_basic = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+	source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
-  display_name = "terraform-test"
-  service_offering= "%s"
-  network_id = "%s"
-  template = "%s"
-  zone = "%s"
-  user_data = "foobar\nfoo\nbar"
+  display_name = "terraform"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "${cloudstack_network.foo.zone}"
   expunge = true
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_instance.foobar.network_id}"
+  network_id = "${cloudstack_network.foo.id}"
 }
 
 resource "cloudstack_static_nat" "foo" {
 	ip_address_id = "${cloudstack_ipaddress.foo.id}"
   virtual_machine_id = "${cloudstack_instance.foobar.id}"
-}`,
-	CLOUDSTACK_SERVICE_OFFERING_1,
-	CLOUDSTACK_NETWORK_1,
-	CLOUDSTACK_TEMPLATE,
-	CLOUDSTACK_ZONE,
-)
+}`
