@@ -37,3 +37,12 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the security group.
+
+## Import
+
+Security groups can be imported; use `<SECURITY GROUP ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_security_group.default e54970f1-f563-46dd-a365-2b2e9b78c54b
+```

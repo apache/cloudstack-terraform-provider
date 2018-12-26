@@ -33,3 +33,12 @@ The following attributes are exported:
 
 * `id` - The ID of the VPN Gateway.
 * `public_ip` - The public IP address associated with the VPN Gateway.
+
+## Import
+
+VPC gateways can be imported; use `<VPN GATEWAY ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_vpn_gateway.default 49cf1821-3b9f-4627-be19-8a15ffec508d
+```

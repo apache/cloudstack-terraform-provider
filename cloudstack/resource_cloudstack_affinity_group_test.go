@@ -28,6 +28,25 @@ func TestAccCloudStackAffinityGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackAffinityGroup_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackAffinityGroupDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackAffinityGroup,
+			},
+
+			resource.TestStep{
+				ResourceName:      "cloudstack_affinity_group.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackAffinityGroupExists(
 	n string, affinityGroup *cloudstack.AffinityGroup) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

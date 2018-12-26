@@ -60,3 +60,12 @@ The following attributes are exported:
 * `dpd` - Enable or disable DPD is enabled for the related VPN connection.
 * `esp_lifetime` - The ESP lifetime of phase 2 VPN connection to this VPN Customer Gateway.
 * `ike_lifetime` - The IKE lifetime of phase 2 VPN connection to this VPN Customer Gateway.
+
+## Import
+
+VPN customer gateways can be imported; use `<VPN CUSTOMER GATEWAY ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_vpn_customer_gateway.default 741a7fca-1d05-4bb6-9290-1008300f0e5a
+```

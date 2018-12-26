@@ -28,6 +28,25 @@ func TestAccCloudStackSecurityGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackSecurityGroup_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackSecurityGroupDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackSecurityGroup_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:      "cloudstack_security_group.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackSecurityGroupExists(
 	n string, sg *cloudstack.SecurityGroup) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

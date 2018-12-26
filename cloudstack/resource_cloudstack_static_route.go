@@ -55,7 +55,7 @@ func resourceCloudStackStaticRouteRead(d *schema.ResourceData, meta interface{})
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the virtual machine details
-	staticroute, count, err := cs.VPC.GetStaticRouteByID(d.Id())
+	r, count, err := cs.VPC.GetStaticRouteByID(d.Id())
 	if err != nil {
 		if count == 0 {
 			log.Printf("[DEBUG] Static route %s does no longer exist", d.Id())
@@ -66,7 +66,7 @@ func resourceCloudStackStaticRouteRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	d.Set("cidr", staticroute.Cidr)
+	d.Set("cidr", r.Cidr)
 
 	return nil
 }

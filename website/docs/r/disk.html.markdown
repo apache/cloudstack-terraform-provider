@@ -59,3 +59,12 @@ The following attributes are exported:
 
 * `id` - The ID of the disk volume.
 * `device_id` - The device ID the disk volume is mapped to within the guest OS.
+
+## Import
+
+Disks can be imported; use `<DISK ID>` as the import ID. For
+example:
+
+```shell
+terraform import cloudstack_disk.default 6f3ee798-d417-4e7a-92bc-95ad41cf1244
+```

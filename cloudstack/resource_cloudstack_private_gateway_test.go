@@ -29,6 +29,25 @@ func TestAccCloudStackPrivateGateway_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackPrivateGateway_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackPrivateGatewayDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackPrivateGateway_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:      "cloudstack_private_gateway.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackPrivateGatewayExists(
 	n string, gateway *cloudstack.PrivateGateway) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

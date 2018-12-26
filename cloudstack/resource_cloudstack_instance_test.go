@@ -132,6 +132,26 @@ func TestAccCloudStackInstance_project(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackInstance_basic,
+			},
+
+			resource.TestStep{
+				ResourceName:            "cloudstack_instance.foobar",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"expunge", "user_data"},
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackInstanceExists(
 	n string, instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

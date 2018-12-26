@@ -37,6 +37,9 @@ func resourceCloudStackNetwork() *schema.Resource {
 		Read:   resourceCloudStackNetworkRead,
 		Update: resourceCloudStackNetworkUpdate,
 		Delete: resourceCloudStackNetworkDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{

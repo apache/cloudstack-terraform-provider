@@ -21,7 +21,7 @@ func TestAccCloudStackStaticRoute_basic(t *testing.T) {
 				Config: testAccCloudStackStaticRoute_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackStaticRouteExists(
-						"cloudstack_static_route.bar", &staticroute),
+						"cloudstack_static_route.foo", &staticroute),
 					testAccCheckCloudStackStaticRouteAttributes(&staticroute),
 				),
 			},
@@ -113,7 +113,7 @@ resource "cloudstack_private_gateway" "foo" {
   acl_id = "${cloudstack_network_acl.foo.id}"
 }
 
-resource "cloudstack_static_route" "bar" {
+resource "cloudstack_static_route" "foo" {
   cidr = "172.16.0.0/16"
   gateway_id = "${cloudstack_private_gateway.foo.id}"
 }`
