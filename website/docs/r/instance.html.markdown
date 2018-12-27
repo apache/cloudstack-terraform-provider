@@ -68,7 +68,7 @@ The following arguments are supported:
     created. Changing this forces a new resource to be created.
 
 * `user_data` - (Optional) The user data to provide when launching the
-    instance.
+    instance. This can be either plain text or base64 encoded text.
 
 * `keypair` - (Optional) The name of the SSH key pair that will be used to
     access this instance.

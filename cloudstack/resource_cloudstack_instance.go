@@ -612,7 +612,10 @@ func resourceCloudStackInstanceDelete(d *schema.ResourceData, meta interface{}) 
 
 // getUserData returns the user data as a base64 encoded string
 func getUserData(userData string, httpGetOnly bool) (string, error) {
-	ud := base64.StdEncoding.EncodeToString([]byte(userData))
+	ud := userData
+	if _, err := base64.StdEncoding.DecodeString(ud); err != nil {
+		ud = base64.StdEncoding.EncodeToString([]byte(userData))
+	}
 
 	// deployVirtualMachine uses POST by default, so max userdata is 32K
 	maxUD := 32768
