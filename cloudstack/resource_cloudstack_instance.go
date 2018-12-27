@@ -19,7 +19,7 @@ func resourceCloudStackInstance() *schema.Resource {
 		Update: resourceCloudStackInstanceUpdate,
 		Delete: resourceCloudStackInstanceDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: resourceCloudStackInstanceImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -615,6 +615,12 @@ func resourceCloudStackInstanceDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	return nil
+}
+func resourceCloudStackInstanceImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	// We set start_vm to true as that matches the default and we assume that
+	// when you need to import an instance it means it is already running.
+	d.Set("start_vm", true)
+	return []*schema.ResourceData{d}, nil
 }
 
 // getUserData returns the user data as a base64 encoded string

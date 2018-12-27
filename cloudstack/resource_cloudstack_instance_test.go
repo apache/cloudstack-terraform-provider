@@ -283,9 +283,9 @@ resource "cloudstack_instance" "foobar" {
   zone = "Sandbox-simulator"
   user_data = "foobar\nfoo\nbar"
   expunge = true
-	#tags = {
-	#  terraform-tag = "true"
-	#}
+  #tags = {
+  #  terraform-tag = "true"
+  #}
 }`
 
 const testAccCloudStackInstance_stopped = `
@@ -303,7 +303,7 @@ resource "cloudstack_instance" "foobar" {
   network_id = "${cloudstack_network.foo.id}"
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
-	start_vm = false
+  start_vm = false
   expunge = true
 }`
 
