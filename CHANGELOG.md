@@ -6,6 +6,7 @@ IMPROVEMENTS:
 * Add basic support for importing resources [GH-47]
 * `r/clouddstack_instance`: Allow user-data to be plain text or base64 encoded text [GH-48]
 * `r/cloudstack_loadbalancer_rule`: Add support for SSL offloading [GH-49]
+* `r/cloudstack_instance`: Support deploying a stopped VM [GH-50]
 
 ## 0.1.5 (April 27, 2018)
 
