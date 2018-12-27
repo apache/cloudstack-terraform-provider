@@ -45,6 +45,11 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 				Required: true,
 			},
 
+			"certificate_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"private_port": &schema.Schema{
 				Type:     schema.TypeInt,
 				Required: true,
@@ -140,17 +145,26 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 	d.SetPartial("public_port")
 	d.SetPartial("protocol")
 
+	if certificateID, ok := d.GetOk("certificate_id"); ok {
+		// Create a new parameter struct
+		cp := cs.LoadBalancer.NewAssignCertToLoadBalancerParams(certificateID.(string), r.Id)
+		if _, err := cs.LoadBalancer.AssignCertToLoadBalancer(cp); err != nil {
+			return err
+		}
+	}
+	d.SetPartial("certificate_id")
+
 	// Create a new parameter struct
-	ap := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(r.Id)
+	mp := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(r.Id)
 
 	var mbs []string
 	for _, id := range d.Get("member_ids").(*schema.Set).List() {
 		mbs = append(mbs, id.(string))
 	}
 
-	ap.SetVirtualmachineids(mbs)
+	mp.SetVirtualmachineids(mbs)
 
-	_, err = cs.LoadBalancer.AssignToLoadBalancerRule(ap)
+	_, err = cs.LoadBalancer.AssignToLoadBalancerRule(mp)
 	if err != nil {
 		return err
 	}
@@ -252,6 +266,19 @@ func resourceCloudStackLoadBalancerRuleUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return fmt.Errorf(
 				"Error updating load balancer rule %s", name)
+		}
+	}
+
+	if d.HasChange("certificate_id") {
+		p := cs.LoadBalancer.NewRemoveCertFromLoadBalancerParams(d.Id())
+		if _, err := cs.LoadBalancer.RemoveCertFromLoadBalancer(p); err != nil {
+			return err
+		}
+
+		_, certificateID := d.GetChange("certificate_id")
+		cp := cs.LoadBalancer.NewAssignCertToLoadBalancerParams(certificateID.(string), d.Id())
+		if _, err := cs.LoadBalancer.AssignCertToLoadBalancer(cp); err != nil {
+			return err
 		}
 	}
 
