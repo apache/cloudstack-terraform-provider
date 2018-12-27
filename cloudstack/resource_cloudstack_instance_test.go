@@ -32,6 +32,26 @@ func TestAccCloudStackInstance_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_stopped(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccCloudStackInstance_stopped,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists(
+						"cloudstack_instance.foobar", &instance),
+					testAccCheckCloudStackInstanceAttributes(&instance),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackInstance_update(t *testing.T) {
 	var instance cloudstack.VirtualMachine
 
@@ -266,6 +286,25 @@ resource "cloudstack_instance" "foobar" {
 	#tags = {
 	#  terraform-tag = "true"
 	#}
+}`
+
+const testAccCloudStackInstance_stopped = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+	start_vm = false
+  expunge = true
 }`
 
 const testAccCloudStackInstance_renameAndResize = `
