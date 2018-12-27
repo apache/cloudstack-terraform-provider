@@ -69,6 +69,7 @@ The following arguments are supported:
 
 * `start_vm` - (Optional) This determines if the instances is started after it
     is created (defaults true)
+
 * `user_data` - (Optional) The user data to provide when launching the
     instance. This can be either plain text or base64 encoded text.
 
