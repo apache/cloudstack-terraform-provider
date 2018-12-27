@@ -125,6 +125,13 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"start_vm": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+			},
+
 			"user_data": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -179,6 +186,7 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	// Create a new parameter struct
 	p := cs.VirtualMachine.NewDeployVirtualMachineParams(serviceofferingid, templateid, zone.Id)
+	p.SetStartvm(d.Get("start_vm").(bool))
 
 	// Set the name
 	name, hasName := d.GetOk("name")
@@ -264,7 +272,6 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return err
 		}
-
 		p.SetUserdata(ud)
 	}
 
