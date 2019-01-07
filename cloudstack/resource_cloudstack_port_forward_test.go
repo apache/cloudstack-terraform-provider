@@ -16,7 +16,7 @@ func TestAccCloudStackPortForward_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackPortForwardDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackPortForward_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
@@ -34,7 +34,7 @@ func TestAccCloudStackPortForward_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackPortForwardDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackPortForward_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
@@ -43,7 +43,7 @@ func TestAccCloudStackPortForward_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCloudStackPortForward_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),

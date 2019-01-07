@@ -17,7 +17,7 @@ func TestAccCloudStackVPNGateway_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPNGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPNGateway_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackVPNGatewayExists(
@@ -34,11 +34,11 @@ func TestAccCloudStackVPNGateway_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPNGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPNGateway_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      "cloudstack_vpn_gateway.foo",
 				ImportState:       true,
 				ImportStateVerify: true,

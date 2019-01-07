@@ -17,7 +17,7 @@ func TestAccCloudStackPrivateGateway_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackPrivateGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackPrivateGateway_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPrivateGatewayExists(
@@ -35,11 +35,11 @@ func TestAccCloudStackPrivateGateway_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackPrivateGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackPrivateGateway_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      "cloudstack_private_gateway.foo",
 				ImportState:       true,
 				ImportStateVerify: true,

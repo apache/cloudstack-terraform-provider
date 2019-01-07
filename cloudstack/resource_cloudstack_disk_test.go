@@ -17,7 +17,7 @@ func TestAccCloudStackDisk_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackDisk_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackDiskExists(
@@ -38,7 +38,7 @@ func TestAccCloudStackDisk_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackDisk_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackDiskExists(
@@ -47,7 +47,7 @@ func TestAccCloudStackDisk_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCloudStackDisk_resize,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackDiskExists(
@@ -69,7 +69,7 @@ func TestAccCloudStackDisk_deviceID(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackDisk_deviceID,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackDiskExists(
@@ -89,11 +89,11 @@ func TestAccCloudStackDisk_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackDiskDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackDisk_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            "cloudstack_disk.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,

@@ -17,59 +17,59 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 		Delete: resourceCloudStackLoadBalancerRuleDelete,
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"description": &schema.Schema{
+			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
 
-			"ip_address_id": &schema.Schema{
+			"ip_address_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"network_id": &schema.Schema{
+			"network_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
 
-			"algorithm": &schema.Schema{
+			"algorithm": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
 
-			"certificate_id": &schema.Schema{
+			"certificate_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 
-			"private_port": &schema.Schema{
+			"private_port": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"public_port": &schema.Schema{
+			"public_port": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
 
-			"protocol": &schema.Schema{
+			"protocol": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
 			},
 
-			"member_ids": &schema.Schema{
+			"member_ids": {
 				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: false,
@@ -77,7 +77,7 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 				Set:      schema.HashString,
 			},
 
-			"project": &schema.Schema{
+			"project": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
