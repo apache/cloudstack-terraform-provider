@@ -17,7 +17,7 @@ func TestAccCloudStackVPNCustomerGateway_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPNCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPNCustomerGateway_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackVPNCustomerGatewayExists(
@@ -45,7 +45,7 @@ func TestAccCloudStackVPNCustomerGateway_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPNCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPNCustomerGateway_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackVPNCustomerGatewayExists(
@@ -62,7 +62,7 @@ func TestAccCloudStackVPNCustomerGateway_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPNCustomerGateway_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackVPNCustomerGatewayExists(
@@ -88,11 +88,11 @@ func TestAccCloudStackVPNCustomerGateway_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPNCustomerGatewayDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPNCustomerGateway_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      "cloudstack_vpn_customer_gateway.foo",
 				ImportState:       true,
 				ImportStateVerify: true,

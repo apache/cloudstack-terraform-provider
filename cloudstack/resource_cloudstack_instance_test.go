@@ -17,7 +17,7 @@ func TestAccCloudStackInstance_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -40,7 +40,7 @@ func TestAccCloudStackInstance_stopped(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_stopped,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -60,7 +60,7 @@ func TestAccCloudStackInstance_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -71,7 +71,7 @@ func TestAccCloudStackInstance_update(t *testing.T) {
 				),
 			},
 
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_renameAndResize,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -97,7 +97,7 @@ func TestAccCloudStackInstance_fixedIP(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_fixedIP,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -118,7 +118,7 @@ func TestAccCloudStackInstance_keyPair(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_keyPair,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -139,7 +139,7 @@ func TestAccCloudStackInstance_project(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_project,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackInstanceExists(
@@ -158,11 +158,11 @@ func TestAccCloudStackInstance_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackInstance_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:            "cloudstack_instance.foobar",
 				ImportState:             true,
 				ImportStateVerify:       true,

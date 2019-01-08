@@ -17,7 +17,7 @@ func TestAccCloudStackVPC_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPCDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPC_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackVPCExists(
@@ -38,11 +38,11 @@ func TestAccCloudStackVPC_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackVPCDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackVPC_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      "cloudstack_vpc.foo",
 				ImportState:       true,
 				ImportStateVerify: true,

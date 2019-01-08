@@ -16,7 +16,7 @@ func TestAccCloudStackSecurityGroup_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackSecurityGroup_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackSecurityGroupExists(
@@ -34,11 +34,11 @@ func TestAccCloudStackSecurityGroup_import(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackSecurityGroupDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccCloudStackSecurityGroup_basic,
 			},
 
-			resource.TestStep{
+			{
 				ResourceName:      "cloudstack_security_group.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
