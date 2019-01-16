@@ -1,4 +1,9 @@
-## 0.2.1 (Unreleased)
+## 0.3.0 (Unreleased)
+
+IMPROVEMENTS:
+
+* Add support to import resources when using projects [GH-56]
+
 ## 0.2.0 (January 03, 2019)
 
 IMPROVEMENTS:
