@@ -49,3 +49,10 @@ example:
 ```shell
 terraform import cloudstack_affinity_group.default 6226ea4d-9cbe-4cc9-b30c-b9532146da5b
 ```
+
+When importing into a project you need to prefix the import ID with the project name:
+
+```shell
+terraform import cloudstack_affinity_group.default my-project/6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+

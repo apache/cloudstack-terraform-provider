@@ -620,7 +620,7 @@ func resourceCloudStackInstanceImport(d *schema.ResourceData, meta interface{}) 
 	// We set start_vm to true as that matches the default and we assume that
 	// when you need to import an instance it means it is already running.
 	d.Set("start_vm", true)
-	return []*schema.ResourceData{d}, nil
+	return importStatePassthrough(d, meta)
 }
 
 // getUserData returns the user data as a base64 encoded string

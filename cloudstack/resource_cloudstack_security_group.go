@@ -15,7 +15,7 @@ func resourceCloudStackSecurityGroup() *schema.Resource {
 		Read:   resourceCloudStackSecurityGroupRead,
 		Delete: resourceCloudStackSecurityGroupDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: importStatePassthrough,
 		},
 
 		Schema: map[string]*schema.Schema{

@@ -172,6 +172,27 @@ func TestAccCloudStackInstance_import(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_importProject(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackInstance_project,
+			},
+
+			{
+				ResourceName:            "cloudstack_instance.foobar",
+				ImportState:             true,
+				ImportStateIdPrefix:     "terraform/",
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"expunge", "user_data"},
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackInstanceExists(
 	n string, instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -185,7 +206,10 @@ func testAccCheckCloudStackInstanceExists(
 		}
 
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
-		vm, _, err := cs.VirtualMachine.GetVirtualMachineByID(rs.Primary.ID)
+		vm, _, err := cs.VirtualMachine.GetVirtualMachineByID(
+			rs.Primary.ID,
+			cloudstack.WithProject(rs.Primary.Attributes["project"]),
+		)
 
 		if err != nil {
 			return err

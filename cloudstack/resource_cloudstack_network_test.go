@@ -30,6 +30,27 @@ func TestAccCloudStackNetwork_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNetwork_project(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_project,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network.foo", "project", "terraform"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackNetwork_vpc(t *testing.T) {
 	var network cloudstack.Network
 
@@ -98,6 +119,26 @@ func TestAccCloudStackNetwork_import(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNetwork_importProject(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_project,
+			},
+
+			{
+				ResourceName:        "cloudstack_network.foo",
+				ImportState:         true,
+				ImportStateIdPrefix: "terraform/",
+				ImportStateVerify:   true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackNetworkExists(
 	n string, network *cloudstack.Network) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -111,8 +152,10 @@ func testAccCheckCloudStackNetworkExists(
 		}
 
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
-		ntwrk, _, err := cs.Network.GetNetworkByID(rs.Primary.ID)
-
+		ntwrk, _, err := cs.Network.GetNetworkByID(
+			rs.Primary.ID,
+			cloudstack.WithProject(rs.Primary.Attributes["project"]),
+		)
 		if err != nil {
 			return err
 		}
@@ -205,6 +248,15 @@ resource "cloudstack_network" "foo" {
   #tags = {
   #  terraform-tag = "true"
   #}
+}`
+
+const testAccCloudStackNetwork_project = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project = "terraform"
+  zone = "Sandbox-simulator"
 }`
 
 const testAccCloudStackNetwork_vpc = `
