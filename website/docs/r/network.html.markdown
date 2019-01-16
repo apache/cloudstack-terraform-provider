@@ -88,3 +88,9 @@ example:
 ```shell
 terraform import cloudstack_network.default 36619b20-5584-43bf-9a84-e242bacd5582
 ```
+
+When importing into a project you need to prefix the import ID with the project name:
+
+```shell
+terraform import cloudstack_network.default my-project/36619b20-5584-43bf-9a84-e242bacd5582
+```

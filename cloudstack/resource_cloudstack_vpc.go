@@ -16,7 +16,7 @@ func resourceCloudStackVPC() *schema.Resource {
 		Update: resourceCloudStackVPCUpdate,
 		Delete: resourceCloudStackVPCDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: importStatePassthrough,
 		},
 
 		Schema: map[string]*schema.Schema{
