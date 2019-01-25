@@ -9,6 +9,7 @@ IMPROVEMENTS:
 IMPROVEMENTS:
 
 * Make the tests work with the CloudStack Simulator ([#46](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/46))
+* Remove support for managing resource tags as CloudStack >= 4.9.3 does [not support tags](https://github.com/apache/cloudstack/issues/3002) properly ([#46](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/46))
 * Add basic support for importing resources ([#47](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/47))
 * `r/clouddstack_instance`: Allow user-data to be plain text or base64 encoded text ([#48](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/48))
 * `r/cloudstack_loadbalancer_rule`: Add support for SSL offloading ([#49](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/49))
