@@ -30,9 +30,9 @@ The following arguments are supported:
 
 * `public_key` - (Optional) The public key to register with CloudStack. If
     this is omitted, CloudStack will generate a new key pair. The key can
-    be loaded from a file on disk using the [`file()` interpolation
-    function](/docs/configuration/interpolation.html#file_path_). Changing
-    this forces a new resource to be created.
+    be loaded from a file on disk using the
+    [`file()` function](https://www.terraform.io/docs/configuration/functions/file.html).
+    Changing this forces a new resource to be created.
 
 * `project` - (Optional) The name or ID of the project to register this
     key to. Changing this forces a new resource to be created.
