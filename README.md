@@ -71,7 +71,7 @@ $ docker exec -ti cloudstack python /root/tools/marvin/marvin/deployDataCenter.p
 If you refresh the client or login again, you will now get passed the initial welcome screen and be able to go to your account details and retrieve the API key and secret. Export those together with the URL:
 
 ```sh
-$ export CLOUDSTACK_URL=http://localhost:8080/client/api
+$ export CLOUDSTACK_API_URL=http://localhost:8080/client/api
 $ export CLOUDSTACK_API_KEY=r_gszj7e0ttr_C6CP5QU_1IV82EIOtK4o_K9i_AltVztfO68wpXihKs2Tms6tCMDY4HDmbqHc-DtTamG5x112w
 $ export CLOUDSTACK_SECRET_KEY=tsfMDShFe94f4JkJfEh6_tZZ--w5jqEW7vGL2tkZGQgcdbnxNoq9fRmwAtU5MEGGXOrDlNA6tfvGK14fk_MB6w
 ```
