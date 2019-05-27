@@ -1,8 +1,16 @@
 ## 0.3.0 (Unreleased)
 
+NOTES:
+
+* While most resources of this provider should now work with CloudStack 4.12.0.0, there are a
+  few resources (mainly the network related resources) that will not work properly yet. See this
+  related CloudStack issue for more details: https://github.com/apache/cloudstack/issues/3321
+
 IMPROVEMENTS:
 
 * Add support to import resources when using projects [GH-56]
+* Updated the provider to work with CloudStack 4.12.0.0 [GH-64]
+* Add Terraform 0.12 support [GH-64]
 
 ## 0.2.0 (January 03, 2019)
 
