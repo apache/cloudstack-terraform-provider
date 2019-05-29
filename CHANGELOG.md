@@ -1,4 +1,4 @@
-## 0.3.0 (Unreleased)
+## 0.3.0 (May 29, 2019)
 
 NOTES:
 
@@ -8,9 +8,9 @@ NOTES:
 
 IMPROVEMENTS:
 
-* Add support to import resources when using projects [GH-56]
-* Updated the provider to work with CloudStack 4.12.0.0 [GH-64]
-* Add Terraform 0.12 support [GH-64]
+* Add support to import resources when using projects ([#56](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/56))
+* Updated the provider to work with CloudStack 4.12.0.0 ([#64](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/64))
+* Add Terraform 0.12 support ([#64](https://github.com/terraform-providers/terraform-provider-cloudstack/issues/64))
 
 ## 0.2.0 (January 03, 2019)
 
