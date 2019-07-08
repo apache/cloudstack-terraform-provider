@@ -56,8 +56,8 @@ $ make test
 In order to run the full suite of Acceptance tests you will need to run the CloudStack Simulator. Please follow these steps to prepare an environment for running the Acceptance tests:
 
 ```sh
-$ docker pull svanharmelen/simulator:4.11.2.0
-$ docker run -d -p 8080:8080 --name cloudstack svanharmelen/simulator:4.11.2.0
+$ docker pull svanharmelen/simulator:4.12.0.0
+$ docker run -d -p 8080:8080 --name cloudstack svanharmelen/simulator:4.12.0.0
 ```
 
 When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.

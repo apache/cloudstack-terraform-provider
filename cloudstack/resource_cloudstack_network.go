@@ -129,7 +129,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 				ForceNew: true,
 			},
 
-			// "tags": tagsSchema(),
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -235,10 +235,10 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 	d.SetId(r.Id)
 
 	// Set tags if necessary
-	// if err = setTags(cs, d, "network"); err != nil {
-	// 	return fmt.Errorf("Error setting tags: %v", err)
-	// }
-	// d.SetPartial("tags")
+	if err = setTags(cs, d, "network"); err != nil {
+		return fmt.Errorf("Error setting tags: %v", err)
+	}
+	d.SetPartial("tags")
 
 	if d.Get("source_nat_ip").(bool) {
 		// Create a new parameter struct
@@ -305,11 +305,11 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	}
 	d.Set("acl_id", n.Aclid)
 
-	// tags := make(map[string]interface{})
-	// for _, tag := range n.Tags {
-	// 	tags[tag.Key] = tag.Value
-	// }
-	// d.Set("tags", tags)
+	tags := make(map[string]interface{})
+	for _, tag := range n.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	setValueOrID(d, "network_offering", n.Networkofferingname, n.Networkofferingid)
 	setValueOrID(d, "project", n.Project, n.Projectid)
@@ -400,11 +400,11 @@ func resourceCloudStackNetworkUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// Update tags if they have changed
-	// if d.HasChange("tags") {
-	// 	if err := updateTags(cs, d, "Network"); err != nil {
-	// 		return fmt.Errorf("Error updating tags on ACL %s: %s", name, err)
-	// 	}
-	// }
+	if d.HasChange("tags") {
+		if err := updateTags(cs, d, "Network"); err != nil {
+			return fmt.Errorf("Error updating tags on ACL %s: %s", name, err)
+		}
+	}
 
 	return resourceCloudStackNetworkRead(d, meta)
 }

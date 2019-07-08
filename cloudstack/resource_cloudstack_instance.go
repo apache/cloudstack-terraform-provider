@@ -152,7 +152,7 @@ func resourceCloudStackInstance() *schema.Resource {
 				Default:  false,
 			},
 
-			// "tags": tagsSchema(),
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -284,9 +284,9 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(r.Id)
 
 	// Set tags if necessary
-	// if err = setTags(cs, d, "userVm"); err != nil {
-	// 	return fmt.Errorf("Error setting tags on the new instance %s: %s", name, err)
-	// }
+	if err = setTags(cs, d, "userVm"); err != nil {
+		return fmt.Errorf("Error setting tags on the new instance %s: %s", name, err)
+	}
 
 	// Set the connection info for any configured provisioners
 	d.SetConnInfo(map[string]string{
@@ -377,11 +377,11 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("security_group_names", groups)
 	}
 
-	// tags := make(map[string]interface{})
-	// for _, tag := range vm.Tags {
-	// 	tags[tag.Key] = tag.Value
-	// }
-	// d.Set("tags", tags)
+	tags := make(map[string]interface{})
+	for _, tag := range vm.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	setValueOrID(d, "service_offering", vm.Serviceofferingname, vm.Serviceofferingid)
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
@@ -580,12 +580,12 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// Check is the tags have changed and if so, update the tags
-	// if d.HasChange("tags") {
-	// 	if err := updateTags(cs, d, "UserVm"); err != nil {
-	// 		return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
-	// 	}
-	// 	d.SetPartial("tags")
-	// }
+	if d.HasChange("tags") {
+		if err := updateTags(cs, d, "UserVm"); err != nil {
+			return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
+		}
+		d.SetPartial("tags")
+	}
 
 	d.Partial(false)
 

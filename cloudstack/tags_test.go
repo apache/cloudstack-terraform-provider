@@ -3,10 +3,11 @@ package cloudstack
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 	"reflect"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestDiffTags(t *testing.T) {
@@ -61,15 +62,15 @@ func TestDiffTags(t *testing.T) {
 // testAccCheckResourceTags is an helper to test tags creation on any resource.
 func testAccCheckResourceTags(
 	n interface{}) resource.TestCheckFunc {
-	b, _ := json.Marshal(n)
 	res := struct {
 		Tags []struct {
 			Key   string `json:"key,omitempty"`
 			Value string `json:"value,omitempty"`
 		} `json:"tags,omitempty"`
 	}{}
-	json.Unmarshal(b, &res)
 	return func(s *terraform.State) error {
+		b, _ := json.Marshal(n)
+		json.Unmarshal(b, &res)
 		tags := make(map[string]string)
 		for _, tag := range res.Tags {
 			tags[tag.Key] = tag.Value
