@@ -72,7 +72,7 @@ func resourceCloudStackDisk() *schema.Resource {
 				ForceNew: true,
 			},
 
-			// "tags": tagsSchema(),
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -131,11 +131,11 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 	d.SetId(r.Id)
 
 	// Set tags if necessary
-	// err = setTags(cs, d, "Volume")
-	// if err != nil {
-	// 	return fmt.Errorf("Error setting tags on the new disk %s: %s", name, err)
-	// }
-	// d.SetPartial("tags")
+	err = setTags(cs, d, "Volume")
+	if err != nil {
+		return fmt.Errorf("Error setting tags on the new disk %s: %s", name, err)
+	}
+	d.SetPartial("tags")
 
 	if d.Get("attach").(bool) {
 		if err := resourceCloudStackDiskAttach(d, meta); err != nil {
@@ -171,11 +171,11 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("attach", v.Virtualmachineid != "")   // If attached this contains a virtual machine ID
 	d.Set("size", int(v.Size/(1024*1024*1024))) // Needed to get GB's again
 
-	// tags := make(map[string]interface{})
-	// for _, tag := range v.Tags {
-	// 	tags[tag.Key] = tag.Value
-	// }
-	// d.Set("tags", tags)
+	tags := make(map[string]interface{})
+	for _, tag := range v.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	setValueOrID(d, "disk_offering", v.Diskofferingname, v.Diskofferingid)
 	setValueOrID(d, "project", v.Project, v.Projectid)
@@ -261,13 +261,13 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	// Check is the tags have changed and if so, update the tags
-	// if d.HasChange("tags") {
-	// 	err := updateTags(cs, d, "Volume")
-	// 	if err != nil {
-	// 		return fmt.Errorf("Error updating tags on disk %s: %s", name, err)
-	// 	}
-	// 	d.SetPartial("tags")
-	// }
+	if d.HasChange("tags") {
+		err := updateTags(cs, d, "Volume")
+		if err != nil {
+			return fmt.Errorf("Error updating tags on disk %s: %s", name, err)
+		}
+		d.SetPartial("tags")
+	}
 
 	d.Partial(false)
 

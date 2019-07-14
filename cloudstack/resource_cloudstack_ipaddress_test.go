@@ -22,7 +22,7 @@ func TestAccCloudStackIPAddress_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackIPAddressExists(
 						"cloudstack_ipaddress.foo", &ipaddr),
-					// testAccCheckResourceTags(&ipaddr),
+					testAccCheckResourceTags(&ipaddr),
 				),
 			},
 		},
@@ -109,9 +109,9 @@ resource "cloudstack_network" "foo" {
 
 resource "cloudstack_ipaddress" "foo" {
   network_id = "${cloudstack_network.foo.id}"
-  #tags = {
-  #  terraform-tag = "true"
-  #}
+  tags = {
+    terraform-tag = "true"
+  }
 }`
 
 const testAccCloudStackIPAddress_vpc = `

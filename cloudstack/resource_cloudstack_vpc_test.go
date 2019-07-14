@@ -25,7 +25,7 @@ func TestAccCloudStackVPC_basic(t *testing.T) {
 					testAccCheckCloudStackVPCAttributes(&vpc),
 					resource.TestCheckResourceAttr(
 						"cloudstack_vpc.foo", "vpc_offering", "Default VPC offering"),
-					// testAccCheckResourceTags(&vpc),
+					testAccCheckResourceTags(&vpc),
 				),
 			},
 		},

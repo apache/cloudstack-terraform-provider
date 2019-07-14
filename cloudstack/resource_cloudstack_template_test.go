@@ -175,9 +175,9 @@ resource "cloudstack_template" "foo" {
   os_type = "Centos 5.6 (64-bit)"
   url = "%s"
   zone = "Sandbox-simulator"
-  #tags = {
-  #  terraform-tag = "true"
-  #}
+  tags = {
+    terraform-tag = "true"
+  }
 }`, CLOUDSTACK_TEMPLATE_URL)
 
 var testAccCloudStackTemplate_update = fmt.Sprintf(`

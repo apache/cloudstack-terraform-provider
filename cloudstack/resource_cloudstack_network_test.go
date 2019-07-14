@@ -23,7 +23,7 @@ func TestAccCloudStackNetwork_basic(t *testing.T) {
 					testAccCheckCloudStackNetworkExists(
 						"cloudstack_network.foo", &network),
 					testAccCheckCloudStackNetworkBasicAttributes(&network),
-					// testAccCheckResourceTags(&network),
+					testAccCheckResourceTags(&network),
 				),
 			},
 		},
@@ -245,9 +245,9 @@ resource "cloudstack_network" "foo" {
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
-  #tags = {
-  #  terraform-tag = "true"
-  #}
+  tags = {
+    terraform-tag = "true"
+  }
 }`
 
 const testAccCloudStackNetwork_project = `

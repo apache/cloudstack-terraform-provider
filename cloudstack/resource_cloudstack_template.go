@@ -107,7 +107,7 @@ func resourceCloudStackTemplate() *schema.Resource {
 				Default:  300,
 			},
 
-			// "tags": tagsSchema(),
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -187,9 +187,9 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(r.RegisterTemplate[0].Id)
 
 	// Set tags if necessary
-	// if err = setTags(cs, d, "Template"); err != nil {
-	// 	return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
-	// }
+	if err = setTags(cs, d, "Template"); err != nil {
+		return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
+	}
 
 	// Wait until the template is ready to use, or timeout with an error...
 	currentTime := time.Now().Unix()
@@ -245,11 +245,11 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("password_enabled", t.Passwordenabled)
 	d.Set("is_ready", t.Isready)
 
-	// tags := make(map[string]interface{})
-	// for _, tag := range t.Tags {
-	// 	tags[tag.Key] = tag.Value
-	// }
-	// d.Set("tags", tags)
+	tags := make(map[string]interface{})
+	for _, tag := range t.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
 
 	setValueOrID(d, "os_type", t.Ostypename, t.Ostypeid)
 	setValueOrID(d, "project", t.Project, t.Projectid)
@@ -298,11 +298,11 @@ func resourceCloudStackTemplateUpdate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error updating template %s: %s", name, err)
 	}
 
-	// if d.HasChange("tags") {
-	// 	if err := updateTags(cs, d, "Template"); err != nil {
-	// 		return fmt.Errorf("Error updating tags on template %s: %s", name, err)
-	// 	}
-	// }
+	if d.HasChange("tags") {
+		if err := updateTags(cs, d, "Template"); err != nil {
+			return fmt.Errorf("Error updating tags on template %s: %s", name, err)
+		}
+	}
 
 	return resourceCloudStackTemplateRead(d, meta)
 }

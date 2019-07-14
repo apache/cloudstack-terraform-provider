@@ -23,7 +23,7 @@ func TestAccCloudStackDisk_basic(t *testing.T) {
 					testAccCheckCloudStackDiskExists(
 						"cloudstack_disk.foo", &disk),
 					testAccCheckCloudStackDiskAttributes(&disk),
-					// testAccCheckResourceTags(&disk),
+					testAccCheckResourceTags(&disk),
 				),
 			},
 		},
@@ -187,9 +187,9 @@ resource "cloudstack_disk" "foo" {
   attach = false
   disk_offering = "Small"
   zone = "Sandbox-simulator"
-	#tags = {
-	#  terraform-tag = "true"
-	#}
+  tags = {
+    terraform-tag = "true"
+  }
 }`
 
 const testAccCloudStackDisk_update = `
