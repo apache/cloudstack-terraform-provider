@@ -1109,7 +1109,8 @@ func (p *UpdateZoneParams) toURLValues() url.Values {
 	if v, found := p.p["details"]; found {
 		i := 0
 		for k, vv := range v.(map[string]string) {
-			u.Set(fmt.Sprintf("details[%d].%s", i, k), vv)
+			u.Set(fmt.Sprintf("details[%d].key", i), k)
+			u.Set(fmt.Sprintf("details[%d].value", i), vv)
 			i++
 		}
 	}
