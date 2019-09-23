@@ -110,14 +110,14 @@ func testAccCheckCloudStackAutoscaleVMProfileExists(
 func testAccCheckCloudStackAutoscaleVMProfileBasicAttributes(
 	vmProfile *cloudstack.AutoScaleVmProfile) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
-		zoneid, e := retrieveID(cs, "zone", "Sandbox-simulator")
+
+		serviceofferingid, e := retrieveID(cs, "service_offering", "Small Instance")
 		if e != nil {
 			return e.Error()
 		}
 
-		serviceofferingid, e := retrieveID(cs, "service_offering", "Small Instance")
+		zoneid, e := retrieveID(cs, "zone", "Sandbox-simulator")
 		if e != nil {
 			return e.Error()
 		}
@@ -127,16 +127,16 @@ func testAccCheckCloudStackAutoscaleVMProfileBasicAttributes(
 			return e.Error()
 		}
 
-		if vmProfile.Zoneid != zoneid {
-			return fmt.Errorf("Bad zone: %s", vmProfile.Zoneid)
-		}
-
 		if vmProfile.Serviceofferingid != serviceofferingid {
 			return fmt.Errorf("Bad offering: %s", vmProfile.Serviceofferingid)
 		}
 
 		if vmProfile.Templateid != templateid {
 			return fmt.Errorf("Bad template: %s", vmProfile.Templateid)
+		}
+
+		if vmProfile.Zoneid != zoneid {
+			return fmt.Errorf("Bad zone: %s", vmProfile.Zoneid)
 		}
 
 		if vmProfile.Otherdeployparams != "displayname=display1&networkids=net1" {
@@ -182,13 +182,15 @@ func testAccCheckCloudStackAutoscaleVMProfileDestroy(s *terraform.State) error {
 
 var testAccCloudStackAutoscaleVMProfile_basic = `
 resource "cloudstack_autoscale_vm_profile" "foo" {
-  zone = "Sandbox-simulator"
   service_offering = "Small Instance"
-  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  template         = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone             = "Sandbox-simulator"
+
   other_deploy_params = {
-    networkids = "net1"
+    networkids  = "net1"
     displayname = "display1"
   }
+
   metadata = {
     terraform-meta = "true"
   }
@@ -196,12 +198,13 @@ resource "cloudstack_autoscale_vm_profile" "foo" {
 
 var testAccCloudStackAutoscaleVMProfile_update = `
 resource "cloudstack_autoscale_vm_profile" "foo" {
-  zone = "Sandbox-simulator"
-  service_offering = "Small Instance"
-  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  service_offering        = "Small Instance"
+  template                = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone                    = "Sandbox-simulator"
   destroy_vm_grace_period = "10s"
+
   other_deploy_params = {
-    networkids = "net1"
+    networkids  = "net1"
     displayname = "display1"
   }
 }`

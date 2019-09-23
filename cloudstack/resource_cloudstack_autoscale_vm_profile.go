@@ -19,12 +19,6 @@ func resourceCloudStackAutoScaleVMProfile() *schema.Resource {
 		Delete: resourceCloudStackAutoScaleVMProfileDelete,
 
 		Schema: map[string]*schema.Schema{
-			"zone": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
 			"service_offering": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -36,10 +30,9 @@ func resourceCloudStackAutoScaleVMProfile() *schema.Resource {
 				Required: true,
 			},
 
-			"other_deploy_params": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				Computed: true,
+			"zone": {
+				Type:     schema.TypeString,
+				Required: true,
 				ForceNew: true,
 			},
 
@@ -47,6 +40,13 @@ func resourceCloudStackAutoScaleVMProfile() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+
+			"other_deploy_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 
 			"metadata": metadataSchema(),
@@ -77,6 +77,14 @@ func resourceCloudStackAutoScaleVMProfileCreate(d *schema.ResourceData, meta int
 
 	p := cs.AutoScale.NewCreateAutoScaleVmProfileParams(serviceofferingid, templateid, zoneid)
 
+	if v, ok := d.GetOk("destroy_vm_grace_period"); ok {
+		duration, err := time.ParseDuration(v.(string))
+		if err != nil {
+			return err
+		}
+		p.SetDestroyvmgraceperiod(int(duration.Seconds()))
+	}
+
 	if v, ok := d.GetOk("other_deploy_params"); ok {
 		otherMap := v.(map[string]interface{})
 		result := url.Values{}
@@ -84,14 +92,6 @@ func resourceCloudStackAutoScaleVMProfileCreate(d *schema.ResourceData, meta int
 			result.Set(k, fmt.Sprint(v))
 		}
 		p.SetOtherdeployparams(result.Encode())
-	}
-
-	if v, ok := d.GetOk("destroy_vm_grace_period"); ok {
-		duration, err := time.ParseDuration(v.(string))
-		if err != nil {
-			return err
-		}
-		p.SetDestroyvmgraceperiod(int(duration.Seconds()))
 	}
 
 	// Create the new vm profile
@@ -141,9 +141,11 @@ func resourceCloudStackAutoScaleVMProfileRead(d *schema.ResourceData, meta inter
 		return err
 	}
 
-	setValueOrID(d, "zone", zone.Name, p.Zoneid)
 	setValueOrID(d, "service_offering", offering.Name, p.Serviceofferingid)
 	setValueOrID(d, "template", template.Name, p.Templateid)
+	setValueOrID(d, "zone", zone.Name, p.Zoneid)
+
+	d.Set("destroy_vm_grace_period", (time.Duration(p.Destroyvmgraceperiod) * time.Second).String())
 
 	if p.Otherdeployparams != "" {
 		var values url.Values
@@ -157,8 +159,6 @@ func resourceCloudStackAutoScaleVMProfileRead(d *schema.ResourceData, meta inter
 		}
 		d.Set("other_deploy_params", otherParams)
 	}
-
-	d.Set("destroy_vm_grace_period", (time.Duration(p.Destroyvmgraceperiod) * time.Second).String())
 
 	metadata, err := getMetadata(cs, d, "AutoScaleVmProfile")
 	if err != nil {
