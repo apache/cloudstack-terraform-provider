@@ -525,6 +525,34 @@ func WithVPCID(id string) OptionFunc {
 	}
 }
 
+// ZoneIDSetter is an interface that every type that can set a zone ID must implement
+type ZoneIDSetter interface {
+	SetZoneid(string)
+}
+
+// WithZone takes either a zone name or ID and sets the `zoneid` parameter
+func WithZone(zone string) OptionFunc {
+	return func(cs *CloudStackClient, p interface{}) error {
+		zs, ok := p.(ZoneIDSetter)
+
+		if !ok || zone == "" {
+			return nil
+		}
+
+		if !IsID(zone) {
+			id, _, err := cs.Zone.GetZoneID(zone)
+			if err != nil {
+				return err
+			}
+			zone = id
+		}
+
+		zs.SetZoneid(zone)
+
+		return nil
+	}
+}
+
 type APIDiscoveryService struct {
 	cs *CloudStackClient
 }
