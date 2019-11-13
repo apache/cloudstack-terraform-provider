@@ -136,7 +136,7 @@ func resourceCloudStackAutoScaleVMProfileRead(d *schema.ResourceData, meta inter
 		return err
 	}
 
-	template, _, err := cs.Template.GetTemplateByID(p.Templateid, "executable")
+	template, _, err := cs.Template.GetTemplateByID(p.Templateid, "executable", cloudstack.WithZone(p.Zoneid))
 	if err != nil {
 		return err
 	}

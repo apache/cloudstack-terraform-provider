@@ -553,6 +553,10 @@ func (s *UserService) GetVirtualMachineUserData(p *GetVirtualMachineUserDataPara
 		return nil, err
 	}
 
+	if resp, err = getRawValue(resp); err != nil {
+		return nil, err
+	}
+
 	var r GetVirtualMachineUserDataResponse
 	if err := json.Unmarshal(resp, &r); err != nil {
 		return nil, err
