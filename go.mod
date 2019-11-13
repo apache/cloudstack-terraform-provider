@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/terraform v0.12.0
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c // indirect
-	github.com/xanzy/go-cloudstack v1.2.1-0.20191112180448-23b392287df6
+	github.com/xanzy/go-cloudstack/v2 v2.8.0
 	gopkg.in/ini.v1 v1.40.0 // indirect
 )
 
