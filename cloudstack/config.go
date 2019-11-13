@@ -1,6 +1,6 @@
 package cloudstack
 
-import "github.com/xanzy/go-cloudstack/cloudstack"
+import "github.com/xanzy/go-cloudstack/v2/cloudstack"
 
 // Config is the configuration structure used to instantiate a
 // new CloudStack client.
