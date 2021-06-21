@@ -3,6 +3,7 @@
 IMPROVEMENTS:
 
 * Restore support for managing resource tags as CloudStack 4.11.3+ and 4.12+ support tags again [GH-65]
+* Update license to Apache License, Version 2.0
 
 ## 0.3.0 (May 29, 2019)
 

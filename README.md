@@ -1,11 +1,5 @@
-<!-- archived-provider -->
-Please note: This Terraform provider is archived, per our [provider archiving process](https://terraform.io/docs/internals/archiving.html). What does this mean?
-1. The code repository and all commit history will still be available.
-1. Existing released binaries will remain available on the releases site.
-1. Issues and pull requests are not being monitored.
-1. New releases will not be published.
-
-If anyone from the community or an interested third party is willing to maintain it, they can fork the repository and [publish it](https://www.terraform.io/docs/registry/providers/publishing.html) to the Terraform Registry. If you are interested in maintaining this provider, please reach out to the [Terraform Provider Development Program](https://www.terraform.io/guides/terraform-provider-development-program.html) at *terraform-provider-dev@hashicorp.com*.
+<!-- archived-repository -->
+This repository is archived as it's development has been moved to the Apache Foundation. Please find the new home for this provider here: https://github.com/apache/cloudstack-terraform-provider
 
 Terraform Provider
 ==================
@@ -25,17 +19,17 @@ Requirements
 Building The Provider
 ---------------------
 
-Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-cloudstack`
+Clone repository to: `$GOPATH/src/github.com/xanzy/terraform-provider-cloudstack`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/terraform-providers; cd $GOPATH/src/github.com/terraform-providers
-$ git clone git@github.com:terraform-providers/terraform-provider-cloudstack
+$ mkdir -p $GOPATH/src/github.com/xanzy; cd $GOPATH/src/github.com/xanzy
+$ git clone git@github.com:xanzy/terraform-provider-cloudstack
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/terraform-providers/terraform-provider-cloudstack
+$ cd $GOPATH/src/github.com/xanzy/terraform-provider-cloudstack
 $ make build
 ```
 
