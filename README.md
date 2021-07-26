@@ -1,14 +1,5 @@
-<!-- archived-repository -->
-This repository is archived as it's development has been moved to the Apache Foundation. Please find the new home for this provider here: https://github.com/apache/cloudstack-terraform-provider
-
-Terraform Provider
-==================
-
-- Website: https://www.terraform.io
-- [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
-- Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
-
-<img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="600px">
+CloudStack Terraform Provider
+=============================
 
 Requirements
 ------------
@@ -19,17 +10,17 @@ Requirements
 Building The Provider
 ---------------------
 
-Clone repository to: `$GOPATH/src/github.com/xanzy/terraform-provider-cloudstack`
+Clone repository to: `$GOPATH/src/github.com/apache/cloudstack-terraform-provider`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/xanzy; cd $GOPATH/src/github.com/xanzy
-$ git clone git@github.com:xanzy/terraform-provider-cloudstack
+$ mkdir -p $GOPATH/src/github.com/apache; cd $GOPATH/src/github.com/apache
+$ git clone git@github.com:apache/cloudstack-terraform-provider
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/xanzy/terraform-provider-cloudstack
+$ cd $GOPATH/src/github.com/apache/cloudstack-terraform-provider
 $ make build
 ```
 
@@ -43,7 +34,7 @@ To compile the provider, run `make build`. This will build the provider and put 
 ```sh
 $ make bin
 ...
-$ $GOPATH/bin/terraform-provider-cloudstack
+$ $GOPATH/bin/cloudstack-terraform-provider
 ...
 ```
 
@@ -84,3 +75,16 @@ In order for all the tests to pass, you will need to create a new (empty) projec
 ```sh
 $ make testacc
 ```
+
+## History
+
+This codebase relicensed under APLv2 and donated to the Apache CloudStack
+project under an [IP
+clearance](https://github.com/apache/cloudstack/issues/5159) process and
+imported on 26th July 2021.
+
+## License
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at <http://www.apache.org/licenses/LICENSE-2.0>
