@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/xanzy/go-cloudstack/v2/cloudstack"
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 )
 
 func resourceCloudStackTemplate() *schema.Resource {
@@ -146,21 +146,20 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 		displaytext = name
 	}
 
-	// Retrieve the os_type ID
-	ostypeid, e := retrieveID(cs, "os_type", d.Get("os_type").(string))
-	if e != nil {
-		return e.Error()
-	}
-
 	// Create a new parameter struct
 	p := cs.Template.NewRegisterTemplateParams(
 		displaytext,
 		d.Get("format").(string),
 		d.Get("hypervisor").(string),
 		name,
-		ostypeid,
 		d.Get("url").(string),
 	)
+
+	// Retrieve the os_type ID
+	ostypeid, e := retrieveID(cs, "os_type", d.Get("os_type").(string))
+	if e == nil {
+		p.SetOstypeid(ostypeid)
+	}
 
 	// Set optional parameters
 	if v, ok := d.GetOk("is_dynamically_scalable"); ok {
