@@ -1,0 +1,11 @@
+github:
+  description: "CloudStack Terraform Provider"
+  homepage: https://cloudstack.apache.org/
+  labels:
+    - terraform
+    - cloudstack
+    - go
+  features:
+    wiki: true
+    issues: true
+    projects: true
