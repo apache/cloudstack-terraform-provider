@@ -27,9 +27,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/apache/cloudstack-go/v2/cloudstack"
 )
 
 func resourceCloudStackPortForward() *schema.Resource {
