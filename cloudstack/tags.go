@@ -22,8 +22,8 @@ package cloudstack
 import (
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // tagsSchema returns the schema to use for tags

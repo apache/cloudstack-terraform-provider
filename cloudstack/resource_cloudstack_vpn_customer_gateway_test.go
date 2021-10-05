@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/apache/cloudstack-go/v2/cloudstack"
 )
 
 func TestAccCloudStackVPNCustomerGateway_basic(t *testing.T) {

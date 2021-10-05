@@ -24,9 +24,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/apache/cloudstack-go/v2/cloudstack"
 )
 
 func TestAccCloudStackFirewall_basic(t *testing.T) {

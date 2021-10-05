@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func resourceCloudStackDisk() *schema.Resource {
