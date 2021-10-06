@@ -29,10 +29,10 @@ fmt:
 	gofmt -w $(GOFMT_FILES)
 
 fmtcheck:
-	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
+	@bash -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
 
 errcheck:
-	@sh -c "'$(CURDIR)/scripts/errcheck.sh'"
+	@bash -c "'$(CURDIR)/scripts/errcheck.sh'"
 
 test-compile:
 	@if [ "$(TEST)" = "./..." ]; then \
