@@ -165,6 +165,11 @@ func resourceCloudStackInstance() *schema.Resource {
 				},
 			},
 
+			"details": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+
 			"expunge": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -206,7 +211,13 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	// Create a new parameter struct
 	p := cs.VirtualMachine.NewDeployVirtualMachineParams(serviceofferingid, templateid, zone.Id)
 	p.SetStartvm(d.Get("start_vm").(bool))
-
+	vmDetails := make(map[string]string)
+	if details, ok := d.GetOk("details"); ok {
+		for k, v := range details.(map[string]interface{}) {
+			vmDetails[k] = v.(string)
+		}
+		p.SetDetails(vmDetails)
+	}
 	// Set the name
 	name, hasName := d.GetOk("name")
 	if hasName {
