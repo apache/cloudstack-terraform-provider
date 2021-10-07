@@ -168,7 +168,10 @@ func latestTemplate(templates []*cloudstack.Template) (*cloudstack.Template, err
 func applyFilters(template *cloudstack.Template, filters *schema.Set) (bool, error) {
 	var templateJSON map[string]interface{}
 	t, _ := json.Marshal(template)
-	json.Unmarshal(t, &templateJSON)
+	err := json.Unmarshal(t, &templateJSON)
+	if err != nil {
+		return false, err
+	}
 
 	for _, f := range filters.List() {
 		m := f.(map[string]interface{})
