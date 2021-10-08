@@ -58,7 +58,7 @@ func resourceCloudStackEgressFirewall() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"cidr_list": {
 							Type:     schema.TypeSet,
-							Required: true,
+							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Set:      schema.HashString,
 						},
@@ -180,10 +180,12 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 
 	// Set the CIDR list
 	var cidrList []string
-	for _, cidr := range rule["cidr_list"].(*schema.Set).List() {
-		cidrList = append(cidrList, cidr.(string))
+	if rs := rule["cidr_list"].(*schema.Set); rs.Len() > 0 {
+		for _, cidr := range rule["cidr_list"].(*schema.Set).List() {
+			cidrList = append(cidrList, cidr.(string))
+		}
+		p.SetCidrlist(cidrList)
 	}
-	p.SetCidrlist(cidrList)
 
 	// If the protocol is ICMP set the needed ICMP parameters
 	if rule["protocol"].(string) == "icmp" {
@@ -198,8 +200,8 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 		rule["uuids"] = uuids
 	}
 
-	// If protocol is not ICMP, loop through all ports
-	if rule["protocol"].(string) != "icmp" {
+	// If protocol is not ICMP and not ALL, loop through all ports
+	if rule["protocol"].(string) != "icmp" && strings.ToLower(rule["protocol"].(string)) != "all" {
 		if ps := rule["ports"].(*schema.Set); ps.Len() > 0 {
 
 			// Create an empty schema.Set to hold all processed ports
@@ -244,6 +246,14 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 		}
 	}
 
+	if strings.ToLower(rule["protocol"].(string)) == "all" {
+		r, err := cs.Firewall.CreateEgressFirewallRule(p)
+		if err != nil {
+			return err
+		}
+		uuids["all"] = r.Id
+		rule["uuids"] = uuids
+	}
 	return nil
 }
 
@@ -306,7 +316,7 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 			}
 
 			// If protocol is not ICMP, loop through all ports
-			if rule["protocol"].(string) != "icmp" {
+			if rule["protocol"].(string) != "icmp" && strings.ToLower(rule["protocol"].(string)) != "all" {
 				if ps := rule["ports"].(*schema.Set); ps.Len() > 0 {
 
 					// Create an empty schema.Set to hold all ports
@@ -347,6 +357,35 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 						rules.Add(rule)
 					}
 				}
+			}
+			if strings.ToLower(rule["protocol"].(string)) == "all" {
+				id, ok := uuids["all"]
+				if !ok {
+					continue
+				}
+
+				// Get the rule
+				r, ok := ruleMap[id.(string)]
+				if !ok {
+					delete(uuids, "all")
+					continue
+				}
+
+				// Delete the known rule so only unknown rules remain in the ruleMap
+				delete(ruleMap, id.(string))
+
+				// Create a set with all CIDR's
+				if _, ok := rule["cidr_list"]; ok {
+					cidrs := &schema.Set{F: schema.HashString}
+					for _, cidr := range strings.Split(r.Cidrlist, ",") {
+						cidrs.Add(cidr)
+					}
+					rule["cidr_list"] = cidrs
+				}
+
+				// Update the values
+				rule["protocol"] = r.Protocol
+				rules.Add(rule)
 			}
 		}
 	}
@@ -532,9 +571,9 @@ func verifyEgressFirewallParams(d *schema.ResourceData) error {
 
 func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
 	protocol := rule["protocol"].(string)
-	if protocol != "tcp" && protocol != "udp" && protocol != "icmp" {
+	if strings.ToLower(protocol) != "all" && protocol != "tcp" && protocol != "udp" && protocol != "icmp" {
 		return fmt.Errorf(
-			"%q is not a valid protocol. Valid options are 'tcp', 'udp' and 'icmp'", protocol)
+			"%q is not a valid protocol. Valid options are 'ALL', 'tcp', 'udp' and 'icmp'", protocol)
 	}
 
 	if protocol == "icmp" {
@@ -546,7 +585,7 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 			return fmt.Errorf(
 				"Parameter icmp_code is a required parameter when using protocol 'icmp'")
 		}
-	} else {
+	} else if strings.ToLower(protocol) != "all" {
 		if ports, ok := rule["ports"].(*schema.Set); ok {
 			for _, port := range ports.List() {
 				m := splitPorts.FindStringSubmatch(port.(string))
@@ -558,6 +597,11 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 		} else {
 			return fmt.Errorf(
 				"Parameter ports is a required parameter when *not* using protocol 'icmp'")
+		}
+	} else if strings.ToLower(protocol) == "all" {
+		if ports, _ := rule["ports"].(*schema.Set); ports.Len() > 0 {
+			return fmt.Errorf(
+				"Parameter ports is not required when using protocol 'ALL'")
 		}
 	}
 
