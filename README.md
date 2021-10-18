@@ -4,11 +4,32 @@ CloudStack Terraform Provider
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.10.x
--	[Go](https://golang.org/doc/install) 1.8 (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) 1.0.x
+-	[Go](https://golang.org/doc/install) 1.16+ (to build the provider plugin)
 
-Building The Provider
----------------------
+Using the Provider from Terrafrom registry
+------------------------------------------
+To install the CloudStack provider, copy and paste the below code into your Terraform configuration. Then, run terraform init.
+```sh
+terraform {
+  required_providers {
+    cloudstack = {
+      source = "cloudstack/cloudstack"
+      version = "0.4.0"
+    }
+  }
+}
+
+provider "cloudstack" {
+  # Configuration options
+}
+```
+For more details on how to install and use the provider, visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
+
+Developing the Provider
+---------------------------
+
+If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.16+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 Clone repository to: `$GOPATH/src/github.com/apache/cloudstack-terraform-provider`
 
@@ -17,25 +38,19 @@ $ mkdir -p $GOPATH/src/github.com/apache; cd $GOPATH/src/github.com/apache
 $ git clone git@github.com:apache/cloudstack-terraform-provider
 ```
 
+To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+
 Enter the provider directory and build the provider
 
 ```sh
 $ cd $GOPATH/src/github.com/apache/cloudstack-terraform-provider
 $ make build
+$ ls $GOPATH/bin/terraform-provider-cloudstack
 ```
-
-Developing the Provider
----------------------------
-
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.8+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
-
-To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
-
+Once the build is ready, you have to copy the binary into Terraform locally (version appended).
+On Linux this path is at ~/.terraform.d/plugins, and on Windows at %APPDATA%\terraform.d\plugins.
 ```sh
-$ make bin
-...
-$ $GOPATH/bin/cloudstack-terraform-provider
-...
+$ ls ~/.terraform.d/plugins/registry.terraform.io/cloudstack/cloudstack/0.4.0/linux_amd64/terraform-provider-cloudstack_v0.4.0
 ```
 
 Testing the Provider
@@ -50,8 +65,8 @@ $ make test
 In order to run the full suite of Acceptance tests you will need to run the CloudStack Simulator. Please follow these steps to prepare an environment for running the Acceptance tests:
 
 ```sh
-$ docker pull svanharmelen/simulator:4.12.0.0
-$ docker run -d -p 8080:8080 --name cloudstack svanharmelen/simulator:4.12.0.0
+$ docker pull cloudstack/simulator
+$ docker run --name simulator -p 8080:5050 -d cloudstack/simulator
 ```
 
 When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
@@ -76,6 +91,36 @@ In order for all the tests to pass, you will need to create a new (empty) projec
 $ make testacc
 ```
 
+Sample Terraform configuration
+------------------------------
+Below is an example configuration to initialize provider and create a Virtual Machine instance
+
+```sh
+$ cat provider.tf
+terraform {
+  required_providers {
+    cloudstack = {
+      source = "cloudstack/cloudstack"
+      version = "0.4.0"
+    }
+  }
+}
+
+provider "cloudstack" {
+  # Configuration options
+  api_url    = "${var.cloudstack_api_url}"
+  api_key    = "${var.cloudstack_api_key}"
+  secret_key = "${var.cloudstack_secret_key}"
+}
+
+resource "cloudstack_instance" "web" {
+  name             = "server-1"
+  service_offering = "Small Instance"
+  network_id       = "df5fc279-86d5-4f5d-b7e9-b27f003ca3fc"
+  template         = "616fe117-0c1c-11ec-aec4-1e00610002a9"
+  zone             = "2b61ed5d-e8bd-431d-bf52-d127655dffab"
+}
+```
 ## History
 
 This codebase relicensed under APLv2 and donated to the Apache CloudStack
