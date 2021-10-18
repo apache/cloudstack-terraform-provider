@@ -15,7 +15,7 @@ terraform {
   required_providers {
     cloudstack = {
       source = "cloudstack/cloudstack"
-      version = "0.4.0-pre"
+      version = "0.4.0"
     }
   }
 }
@@ -50,7 +50,7 @@ $ ls $GOPATH/bin/terraform-provider-cloudstack
 Once the build is ready, you have to copy the binary into Terraform locally (version appended).
 On Linux this path is at ~/.terraform.d/plugins, and on Windows at %APPDATA%\terraform.d\plugins.
 ```sh
-$ ls ~/.terraform.d/plugins/registry.terraform.io/cloudstack/cloudstack/0.4.0-pre/linux_amd64/terraform-provider-cloudstack_v0.4.0-pre
+$ ls ~/.terraform.d/plugins/registry.terraform.io/cloudstack/cloudstack/0.4.0/linux_amd64/terraform-provider-cloudstack_v0.4.0
 ```
 
 Testing the Provider
@@ -101,7 +101,7 @@ terraform {
   required_providers {
     cloudstack = {
       source = "cloudstack/cloudstack"
-      version = "0.4.0-pre"
+      version = "0.4.0"
     }
   }
 }
