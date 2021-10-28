@@ -572,6 +572,10 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 			p := cs.SSH.NewResetSSHKeyForVirtualMachineParams(d.Id(), d.Get("keypair").(string))
 
+			// If there is a project supplied, we retrieve and set the project id
+			if err := setProjectid(p, cs, d); err != nil {
+				return err
+			}
 			// Change the ssh keypair
 			_, err = cs.SSH.ResetSSHKeyForVirtualMachine(p)
 			if err != nil {
