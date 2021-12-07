@@ -109,13 +109,12 @@ func resourceCloudStackPortForwardCreate(d *schema.ResourceData, meta interface{
 		forwards := resourceCloudStackPortForward().Schema["forward"].ZeroValue().(*schema.Set)
 
 		err := createPortForwards(d, meta, forwards, nrs)
-
-		// We need to update this first to preserve the correct state
-		d.Set("forward", forwards)
-
 		if err != nil {
 			return err
 		}
+
+		// We need to update this first to preserve the correct state
+		d.Set("forward", forwards)
 	}
 
 	return resourceCloudStackPortForwardRead(d, meta)
