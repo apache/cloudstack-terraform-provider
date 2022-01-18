@@ -72,6 +72,11 @@ func resourceCloudStackIPAddress() *schema.Resource {
 				Computed: true,
 			},
 
+			"is_source_nat": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -154,6 +159,7 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.Set("is_portable", ip.Isportable)
+	d.Set("is_source_nat", ip.Issourcenat)
 
 	// Updated the IP address
 	d.Set("ip_address", ip.Ipaddress)
@@ -182,21 +188,23 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceCloudStackIPAddressDelete(d *schema.ResourceData, meta interface{}) error {
-	cs := meta.(*cloudstack.CloudStackClient)
+	if !d.Get("is_source_nat").(bool) {
+		cs := meta.(*cloudstack.CloudStackClient)
 
-	// Create a new parameter struct
-	p := cs.Address.NewDisassociateIpAddressParams(d.Id())
+		// Create a new parameter struct
+		p := cs.Address.NewDisassociateIpAddressParams(d.Id())
 
-	// Disassociate the IP address
-	if _, err := cs.Address.DisassociateIpAddress(p); err != nil {
-		// This is a very poor way to be told the ID does no longer exist :(
-		if strings.Contains(err.Error(), fmt.Sprintf(
-			"Invalid parameter id value=%s due to incorrect long value format, "+
-				"or entity does not exist", d.Id())) {
-			return nil
+		// Disassociate the IP address
+		if _, err := cs.Address.DisassociateIpAddress(p); err != nil {
+			// This is a very poor way to be told the ID does no longer exist :(
+			if strings.Contains(err.Error(), fmt.Sprintf(
+				"Invalid parameter id value=%s due to incorrect long value format, "+
+					"or entity does not exist", d.Id())) {
+				return nil
+			}
+
+			return fmt.Errorf("Error disassociating IP address %s: %s", d.Id(), err)
 		}
-
-		return fmt.Errorf("Error disassociating IP address %s: %s", d.Id(), err)
 	}
 
 	return nil
