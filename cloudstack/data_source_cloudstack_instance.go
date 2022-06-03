@@ -41,10 +41,7 @@ func dataSourceCloudstackInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"name": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+
 			"display_name": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -87,7 +84,7 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 	for _, instance := range csInstances.VirtualMachines {
 		log.Printf("Instance ===============> %v", instance)
 		if instance.Id == instance_id {
-
+			d.SetId(instance.Id)
 			d.Set("instance_id", instance.Id)
 			d.Set("account", instance.Account)
 			d.Set("created", instance.Created)
