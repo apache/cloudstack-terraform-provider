@@ -52,23 +52,43 @@ func dataSourceCloudstackInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"state": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"host_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"zone_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"created": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
 			"tags": tagsSchema(),
+
+			"nic": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"ip_address": {
+							Type:     schema.TypeString,
+							Computed: true,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -78,23 +98,34 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.VirtualMachine.NewListVirtualMachinesParams()
-
 	csInstances, err := cs.VirtualMachine.ListVirtualMachines(p)
+
 	if err != nil {
 		return fmt.Errorf("Failed to list instances: %s", err)
 	}
 
 	filters := d.Get("filter")
+	nic := d.Get("nic").([]interface{})
 	var instances []*cloudstack.VirtualMachine
 
-	for _, i := range csInstances.VirtualMachines {
-		match, err := applyInstanceFilters(i, filters.(*schema.Set))
-		if err != nil {
-			return err
+	if len(nic) != 0 {
+		ip_address := nic[0].(map[string]interface{})["ip_address"]
+		for _, i := range csInstances.VirtualMachines {
+			if ip_address == i.Nic[0].Ipaddress {
+				instances = append(instances, i)
+			}
 		}
 
-		if match {
-			instances = append(instances, i)
+	} else {
+		for _, i := range csInstances.VirtualMachines {
+			match, err := applyInstanceFilters(i, filters.(*schema.Set))
+			if err != nil {
+				return err
+			}
+
+			if match {
+				instances = append(instances, i)
+			}
 		}
 	}
 
@@ -120,6 +151,7 @@ func instanceDescriptionAttributes(d *schema.ResourceData, instance *cloudstack.
 	d.Set("state", instance.State)
 	d.Set("host_id", instance.Hostid)
 	d.Set("zone_id", instance.Zoneid)
+	d.Set("nic", []interface{}{map[string]string{"ip_address": instance.Nic[0].Ipaddress}})
 
 	tags := make(map[string]interface{})
 	for _, tag := range instance.Tags {
@@ -156,6 +188,7 @@ func applyInstanceFilters(instance *cloudstack.VirtualMachine, filters *schema.S
 	if err != nil {
 		return false, err
 	}
+
 	for _, f := range filters.List() {
 		m := f.(map[string]interface{})
 		r, err := regexp.Compile(m["value"].(string))
