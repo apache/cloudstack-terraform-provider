@@ -1,7 +1,7 @@
 module github.com/terraform-providers/terraform-provider-cloudstack
 
 require (
-	github.com/apache/cloudstack-go/v2 v2.11.0
+	github.com/apache/cloudstack-go/v2 v2.13.1
 	github.com/go-ini/ini v1.40.0
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/hashicorp/go-multierror v1.0.0
