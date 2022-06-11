@@ -22,45 +22,43 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccDataSourceCloudStackInstance_basic(t *testing.T) {
-	var instance cloudstack.VirtualMachine
+func TestAccInstanceDataSource_basic(t *testing.T) {
+	resourceName := "cloudstack_instance.my_instance"
+	datasourceName := "data.cloudstack_instance.my_instance_test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceCloudStackInstance_basic,
+				Config: testAccInstanceDataSourceConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccDataSourceCheckCloudStackInstanceExists(
-						"cloudstack_instance.foobar", &instance),
-					testAccDataSourceCheckCloudStackInstanceAttributes(&instance),
-					resource.TestCheckResourceAttr(
-						"cloudstack_instance.foobar", "user_data", "0cf3dcdc356ec8369494cb3991985ecd5296cdd5"),
+					resource.TestCheckResourceAttrPair(datasourceName, "display_name", resourceName, "display_name"),
 				),
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
 }
 
-const testAccDataSourceCloudStackInstance_basic = ``
-
-func testAccDataSourceCheckCloudStackInstanceExists(
-	n string, instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		return nil
+const testAccInstanceDataSourceConfig_basic = `
+	resource "cloudstack_instance" "my_instance" {
+		name             = "server-a"
+		service_offering = "Small Instance"
+		network_id       = "b9c953a0-8686-4240-b8a4-43849f7079ff"
+		template         = "CentOS 5.5(64-bit) no GUI (KVM)"
+		zone             = "DC"
+	  }
+	  data "cloudstack_instance" "my_instance_test" {
+		filter {
+		name = "display_name" 
+		value = "server-a"
+	  }
+		depends_on = [
+		cloudstack_instance.my_instance
+	  ]
 	}
-}
-
-func testAccDataSourceCheckCloudStackInstanceAttributes(
-	instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		return nil
-	}
-}
+`
