@@ -25,6 +25,8 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
+//basic acceptance to check if the display_name attribute has same value in
+//the created instance and its data source respectively.
 func TestAccInstanceDataSource_basic(t *testing.T) {
 	resourceName := "cloudstack_instance.my_instance"
 	datasourceName := "data.cloudstack_instance.my_instance_test"

@@ -108,6 +108,8 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 	nic := d.Get("nic").([]interface{})
 	var instances []*cloudstack.VirtualMachine
 
+	//the if-else block to check whether to filter the data source by an IP address
+	// or by any other exported attributes
 	if len(nic) != 0 {
 		ip_address := nic[0].(map[string]interface{})["ip_address"]
 		for _, i := range csInstances.VirtualMachines {
@@ -115,7 +117,6 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 				instances = append(instances, i)
 			}
 		}
-
 	} else {
 		for _, i := range csInstances.VirtualMachines {
 			match, err := applyInstanceFilters(i, filters.(*schema.Set))
@@ -132,7 +133,8 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 	if len(instances) == 0 {
 		return fmt.Errorf("No instance is matching with the specified regex")
 	}
-
+	//return the latest instance from the list of filtered instances according
+	//to its creation date
 	instance, err := latestInstance(instances)
 	if err != nil {
 		return err
