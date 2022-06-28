@@ -19,9 +19,14 @@
 
 package cloudstack
 
-import "github.com/hashicorp/terraform/helper/schema"
+import (
+	"log"
 
-func resourceCloudstackDiskOffering() *schema.Resource {
+	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform/helper/schema"
+)
+
+func resourceCloudStackDiskOffering() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceCloudStackDiskOfferingCreate,
 		Read:   resourceCloudStackDiskOfferingRead,
@@ -37,14 +42,35 @@ func resourceCloudstackDiskOffering() *schema.Resource {
 				Required: true,
 			},
 			"disk_size": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Required: true,
 			},
 		},
 	}
 }
 
-func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface{}) error { return nil }
+func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+	name := d.Get("name").(string)
+	display_text := d.Get("display_text").(string)
+	disk_size := d.Get("disk_size").(int)
+
+	// Create a new parameter struct
+	p := cs.DiskOffering.NewCreateDiskOfferingParams(name, display_text)
+	p.SetDisksize(int64(disk_size))
+
+	log.Printf("[DEBUG] Creating Disk Offering %s", name)
+	diskOff, err := cs.DiskOffering.CreateDiskOffering(p)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("[DEBUG] Disk Offering %s successfully created", name)
+	d.SetId(diskOff.Id)
+
+	return resourceCloudStackDiskOfferingRead(d, meta)
+}
 
 func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}) error { return nil }
 
