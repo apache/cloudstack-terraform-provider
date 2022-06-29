@@ -113,6 +113,7 @@ func Provider() terraform.ResourceProvider {
 			"cloudstack_network_offering":     resourceCloudStackNetworkOffering(),
 			"cloudstack_disk_offering":        resourceCloudStackDiskOffering(),
 			"cloudstack_volume":               resourceCloudStackVolume(),
+			"cloudstack_zone":                 resourceCloudStackZone(),
 		},
 
 		ConfigureFunc: providerConfigure,
