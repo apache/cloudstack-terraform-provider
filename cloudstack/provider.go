@@ -82,6 +82,7 @@ func Provider() terraform.ResourceProvider {
 			"cloudstack_ssh_keypair":      dataSourceCloudstackSSHKeyPair(),
 			"cloudstack_instance":         dataSourceCloudstackInstance(),
 			"cloudstack_network_offering": dataSourceCloudstackNetworkOffering(),
+			"cloudstack_zone":             dataSourceCloudStackZone(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
