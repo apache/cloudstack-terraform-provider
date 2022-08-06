@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -180,8 +181,8 @@ func applyFilters(template *cloudstack.Template, filters *schema.Set) (bool, err
 		if err != nil {
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
-
-		templateField := templateJSON[m["name"].(string)].(string)
+		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
+		templateField := templateJSON[updatedName].(string)
 		if !r.MatchString(templateField) {
 			return false, nil
 		}
