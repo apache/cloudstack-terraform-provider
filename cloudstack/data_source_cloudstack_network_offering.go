@@ -83,7 +83,7 @@ func datasourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interf
 	if len(networkOfferings) == 0 {
 		return fmt.Errorf("No network offering is matching with the specified regex")
 	}
-	//return the latest instance from the list of filtered instances according
+	//return the latest network offering from the list of filtered network offerings according
 	//to its creation date
 	networkOffering, err := latestNetworkOffering(networkOfferings)
 	if err != nil {
@@ -111,7 +111,7 @@ func latestNetworkOffering(networkOfferings []*cloudstack.NetworkOffering) (*clo
 	for _, n := range networkOfferings {
 		created, err := time.Parse("2006-01-02T15:04:05-0700", n.Created)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse creation date of an instance: %s", err)
+			return nil, fmt.Errorf("Failed to parse creation date of a network offering: %s", err)
 		}
 
 		if created.After(latest) {
