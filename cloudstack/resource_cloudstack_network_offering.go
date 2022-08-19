@@ -181,7 +181,7 @@ func resourceCloudStackNetworkOfferingDelete(d *schema.ResourceData, meta interf
 	_, err := cs.NetworkOffering.DeleteNetworkOffering(p)
 
 	if err != nil {
-		return fmt.Errorf("Error deleting Kubernetes Cluster: %s", err)
+		return fmt.Errorf("Error deleting Network Offering: %s", err)
 	}
 
 	return nil
