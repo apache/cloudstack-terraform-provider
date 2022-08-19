@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -61,6 +62,10 @@ func resourceCloudStackAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"account": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -74,21 +79,27 @@ func resourceCloudStackAccountCreate(d *schema.ResourceData, meta interface{}) e
 	password := d.Get("password").(string)
 	role_id := d.Get("role_id").(string)
 	account_type := d.Get("account_type").(int)
+	account := d.Get("account").(string)
 
 	// Create a new parameter struct
 	p := cs.Account.NewCreateAccountParams(email, first_name, last_name, password, username)
 	p.SetAccounttype(int(account_type))
 	p.SetRoleid(role_id)
+	if account != "" {
+		p.SetAccount(account)
+	} else {
+		p.SetAccount(username)
+	}
 
-	log.Printf("[DEBUG] Creating Account %s", username)
-	account, err := cs.Account.CreateAccount(p)
+	log.Printf("[DEBUG] Creating Account %s", account)
+	a, err := cs.Account.CreateAccount(p)
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[DEBUG] Account %s successfully created", username)
-	d.SetId(account.Id)
+	log.Printf("[DEBUG] Account %s successfully created", account)
+	d.SetId(a.Id)
 
 	return resourceCloudStackAccountRead(d, meta)
 }
@@ -97,4 +108,16 @@ func resourceCloudStackAccountRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceCloudStackAccountUpdate(d *schema.ResourceData, meta interface{}) error { return nil }
 
-func resourceCloudStackAccountDelete(d *schema.ResourceData, meta interface{}) error { return nil }
+func resourceCloudStackAccountDelete(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Create a new parameter struct
+	p := cs.Account.NewDeleteAccountParams(d.Id())
+	_, err := cs.Account.DeleteAccount(p)
+
+	if err != nil {
+		return fmt.Errorf("Error deleting Account: %s", err)
+	}
+
+	return nil
+}
