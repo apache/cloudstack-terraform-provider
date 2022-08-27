@@ -86,6 +86,7 @@ func Provider() terraform.ResourceProvider {
 			"cloudstack_service_offering": dataSourceCloudstackServiceOffering(),
 			"cloudstack_volume":           dataSourceCloudstackVolume(),
 			"cloudstack_vpc":              dataSourceCloudstackVPC(),
+			"cloudstack_ipaddress":        dataSourceCloudstackIPAddress(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
