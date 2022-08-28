@@ -138,8 +138,8 @@ func applyNetworkOfferingFilters(networkOffering *cloudstack.NetworkOffering, fi
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		sshKeyPairField := networkOfferingJSON[updatedName].(string)
-		if !r.MatchString(sshKeyPairField) {
+		networkOfferingField := networkOfferingJSON[updatedName].(string)
+		if !r.MatchString(networkOfferingField) {
 			return false, nil
 		}
 
