@@ -88,7 +88,7 @@ func resourceCloudStackUserCreate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceCloudStackUserUpdate(d *schema.ResourceData, meta interface{}) error {
-	return resourceCloudStackInstanceRead(d, meta)
+	return resourceCloudStackUserRead(d, meta)
 }
 
 func resourceCloudStackUserDelete(d *schema.ResourceData, meta interface{}) error {
