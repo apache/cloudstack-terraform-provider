@@ -3,12 +3,12 @@ layout: "cloudstack"
 page_title: "Cloudstack: cloudstack_instance"
 sidebar_current: "docs-cloudstack-datasource-instance"
 description: |-
-  Get informations on a cloudstack instance.
+  Gets informations about cloudstack instance.
 ---
 
 # cloudstack_instance
 
-Use this datasource to get the ID of an instance for use in other resources.
+Use this datasource to get information about an instance for use in other resources.
 
 ### Example Usage
 

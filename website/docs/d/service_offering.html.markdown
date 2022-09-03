@@ -6,7 +6,7 @@ description: |-
   Gets information about cloudstack service offering.
 ---
 
-# cloudstack_network_offering
+# cloudstack_service_offering
 
 Use this datasource to get information about a service offering for use in other resources.
 

@@ -3,7 +3,7 @@ layout: "cloudstack"
 page_title: "Cloudstack: cloudstack_ipaddress"
 sidebar_current: "docs-cloudstack-cloudstack_ipaddress"
 description: |-
-  Get informations on a cloudstack ipaddress.
+  Gets information about cloudstack ipaddress.
 ---
 
 # cloudstack_ipaddress
