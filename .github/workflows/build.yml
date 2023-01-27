@@ -21,7 +21,7 @@ jobs:
     - name: Set up tools     
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
-        chmod 777 $GOPATH/src
+        chmod 777 $GOPATH/bin
         mkdir -p $GOPATH/src/github.com/apache;
         cd $GOPATH/src/github.com/apache
         git clone git@github.com:apache/cloudstack-terraform-provider
