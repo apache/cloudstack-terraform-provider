@@ -137,6 +137,11 @@ func resourceCloudStackNetwork() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"source_nat_ip_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
 			"source_nat_ip_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -282,10 +287,12 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return fmt.Errorf("Error associating a new IP address: %s", err)
 		}
+		d.Set("source_nat_ip_address", ip.Ipaddress)
 		d.Set("source_nat_ip_id", ip.Id)
 
 		// Set the additional partial
 		d.SetPartial("source_nat_ip")
+		d.SetPartial("source_nat_ip_address")
 		d.SetPartial("source_nat_ip_id")
 	}
 
