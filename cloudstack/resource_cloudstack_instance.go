@@ -144,6 +144,11 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"hostid": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"start_vm": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -295,6 +300,12 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	// If a keypair is supplied, add it to the parameter struct
 	if keypair, ok := d.GetOk("keypair"); ok {
 		p.SetKeypair(keypair.(string))
+	}
+
+	// If a hostid is supplied, add it to the parameter struct
+
+	if hostid, ok := d.GetOk("hostid"); ok {
+		p.SetHostid(hostid.(string))
 	}
 
 	if userData, ok := d.GetOk("user_data"); ok {
