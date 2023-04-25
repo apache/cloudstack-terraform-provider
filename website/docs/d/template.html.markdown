@@ -3,7 +3,7 @@ layout: "cloudstack"
 page_title: "Cloudstack: cloudstack_template"
 sidebar_current: "docs-cloudstack-datasource-template"
 description: |-
-  Get informations on a Cloudstack template.
+  Gets information about Cloudstack template.
 ---
 
 # cloudstack_template
