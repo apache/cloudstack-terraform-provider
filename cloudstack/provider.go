@@ -78,7 +78,17 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
-			"cloudstack_template": dataSourceCloudstackTemplate(),
+			"cloudstack_template":         dataSourceCloudstackTemplate(),
+			"cloudstack_ssh_keypair":      dataSourceCloudstackSSHKeyPair(),
+			"cloudstack_instance":         dataSourceCloudstackInstance(),
+			"cloudstack_network_offering": dataSourceCloudstackNetworkOffering(),
+			"cloudstack_zone":             dataSourceCloudStackZone(),
+			"cloudstack_service_offering": dataSourceCloudstackServiceOffering(),
+			"cloudstack_volume":           dataSourceCloudstackVolume(),
+			"cloudstack_vpc":              dataSourceCloudstackVPC(),
+			"cloudstack_ipaddress":        dataSourceCloudstackIPAddress(),
+			"cloudstack_user":             dataSourceCloudstackUser(),
+			"cloudstack_vpn_connection":   dataSourceCloudstackVPNConnection(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -109,6 +119,14 @@ func Provider() terraform.ResourceProvider {
 			"cloudstack_vpn_connection":       resourceCloudStackVPNConnection(),
 			"cloudstack_vpn_customer_gateway": resourceCloudStackVPNCustomerGateway(),
 			"cloudstack_vpn_gateway":          resourceCloudStackVPNGateway(),
+			"cloudstack_network_offering":     resourceCloudStackNetworkOffering(),
+			"cloudstack_disk_offering":        resourceCloudStackDiskOffering(),
+			"cloudstack_volume":               resourceCloudStackVolume(),
+			"cloudstack_zone":                 resourceCloudStackZone(),
+			"cloudstack_service_offering":     resourceCloudStackServiceOffering(),
+			"cloudstack_account":              resourceCloudStackAccount(),
+			"cloudstack_user":                 resourceCloudStackUser(),
+			"cloudstack_domain":               resourceCloudStackDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
