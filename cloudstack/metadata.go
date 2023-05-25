@@ -59,7 +59,7 @@ func getMetadata(cs *cloudstack.CloudStackClient, d *schema.ResourceData, resour
 	if err != nil {
 		return nil, err
 	}
-	// Only return metadata values that were explicitely set
+	// Only return metadata values that were explicitly set
 	var existingFilter map[string]interface{}
 	if metadata, ok := d.GetOk("metadata"); ok {
 		existingFilter = metadata.(map[string]interface{})

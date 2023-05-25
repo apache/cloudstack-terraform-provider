@@ -7,7 +7,7 @@ Requirements
 -	[Terraform](https://www.terraform.io/downloads.html) 1.0.x
 -	[Go](https://golang.org/doc/install) 1.16+ (to build the provider plugin)
 
-Using the Provider from Terrafrom registry
+Using the Provider from Terraform registry
 ------------------------------------------
 To install the CloudStack provider, copy and paste the below code into your Terraform configuration. Then, run terraform init.
 ```sh
@@ -85,7 +85,7 @@ $ export CLOUDSTACK_API_KEY=r_gszj7e0ttr_C6CP5QU_1IV82EIOtK4o_K9i_AltVztfO68wpXi
 $ export CLOUDSTACK_SECRET_KEY=tsfMDShFe94f4JkJfEh6_tZZ--w5jqEW7vGL2tkZGQgcdbnxNoq9fRmwAtU5MEGGXOrDlNA6tfvGK14fk_MB6w
 ```
 
-In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`. When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply runnning:
+In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`. When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply running:
 
 ```sh
 $ make testacc

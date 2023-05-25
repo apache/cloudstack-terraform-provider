@@ -135,10 +135,10 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 		// Create a new parameter struct
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
-		// Set the new uest ip type
+		// Set the new guest ip type
 		p.SetName(d.Get("guest_ip_type").(string))
 
-		// Update the uest ip type
+		// Update the guest ip type
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
 		if err != nil {
 			return fmt.Errorf(

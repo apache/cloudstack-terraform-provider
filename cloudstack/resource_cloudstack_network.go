@@ -224,7 +224,7 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		// Set the vpc id
 		p.SetVpcid(vpcid.(string))
 
-		// Since we're in a VPC, check if we want to assiciate an ACL list
+		// Since we're in a VPC, check if we want to associate an ACL list
 		if aclid, ok := d.GetOk("acl_id"); ok && aclid.(string) != none {
 			// Set the acl ID
 			p.SetAclid(aclid.(string))

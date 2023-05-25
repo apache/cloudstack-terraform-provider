@@ -3,7 +3,7 @@ layout: "cloudstack"
 page_title: "Cloudstack: cloudstack_instance"
 sidebar_current: "docs-cloudstack-datasource-instance"
 description: |-
-  Gets informations about cloudstack instance.
+  Gets information about cloudstack instance.
 ---
 
 # cloudstack_instance
@@ -37,6 +37,6 @@ The following attributes are exported:
 * `display_name` - The user generated name. The name of the virtual machine is returned if no displayname exists.
 * `state` - The state of the virtual machine.
 * `host_id` - The ID of the host for the virtual machine.
-* `zone_id` - The ID of the availablility zone for the virtual machine.
+* `zone_id` - The ID of the availability zone for the virtual machine.
 * `created` - The date when this virtual machine was created.
 * `nic` - The list of nics associated with vm.
