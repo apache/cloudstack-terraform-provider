@@ -62,7 +62,7 @@ func resourceCloudStackNetworkOfferingCreate(d *schema.ResourceData, meta interf
 	traffic_type := d.Get("traffic_type").(string)
 
 	// Create a new parameter struct
-	p := cs.NetworkOffering.NewCreateNetworkOfferingParams(display_text, guest_ip_type, name, []string{}, traffic_type)
+	p := cs.NetworkOffering.NewCreateNetworkOfferingParams(display_text, guest_ip_type, name, traffic_type)
 
 	if guest_ip_type == "Shared" {
 		p.SetSpecifyvlan(true)
