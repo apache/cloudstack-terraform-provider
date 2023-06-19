@@ -170,6 +170,16 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"properties": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+
+			"nicnetworklist": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+
 			"expunge": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -218,6 +228,27 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		p.SetDetails(vmDetails)
 	}
+
+	// Set VM Properties
+	vmProperties := make(map[string]string)
+	if properties, ok := d.GetOk("properties"); ok {
+		for k, v := range properties.(map[string]interface{}) {
+			vmProperties[k] = v.(string)
+		}
+		p.SetProperties(vmProperties)
+	}
+
+	// SetNicNetworkList
+	if nicnetworklist, ok := d.GetOk("nicnetworklist"); ok {
+		nicNetworkDetails := []map[string]string{
+			{
+				"nic":     nicnetworklist.(map[string]interface{})["nic"].(string),
+				"network": nicnetworklist.(map[string]interface{})["network"].(string),
+			},
+		}
+		p.SetNicnetworklist(nicNetworkDetails)
+	}
+
 	// Set the name
 	name, hasName := d.GetOk("name")
 	if hasName {
