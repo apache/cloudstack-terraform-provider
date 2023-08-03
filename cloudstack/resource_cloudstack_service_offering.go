@@ -42,6 +42,61 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"cpu_number": {
+				Description: "Number of CPU cores",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"cpu_speed": {
+				Description: "Speed of CPU in Mhz",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"host_tags": {
+				Description: "The host tag for this service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"limit_cpu_use": {
+				Description: "Restrict the CPU usage to committed service offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     false,
+			},
+			"memory": {
+				Description: "The total memory of the service offering in MB",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"offer_ha": {
+				Description: "The HA for the service offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     false,
+			},
+			"storage_type": {
+				Description: "The storage type of the service offering. Values are local and shared",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     "local",
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+
+					if v == "local" || v == "shared" {
+						return
+					}
+
+					errs = append(errs, fmt.Errorf("storage type should be either local or shared, got %s", v))
+
+					return
+				},
+			},
 		},
 	}
 }
@@ -53,6 +108,33 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 
 	// Create a new parameter struct
 	p := cs.ServiceOffering.NewCreateServiceOfferingParams(display_text, name)
+	if v, ok := d.GetOk("cpu_number"); ok {
+		p.SetCpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("cpu_speed"); ok {
+		p.SetCpuspeed(v.(int))
+	}
+
+	if v, ok := d.GetOk("host_tags"); ok {
+		p.SetHosttags(v.(string))
+	}
+
+	if v, ok := d.GetOk("limit_cpu_use"); ok {
+		p.SetLimitcpuuse(v.(bool))
+	}
+
+	if v, ok := d.GetOk("memory"); ok {
+		p.SetMemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("offer_ha"); ok {
+		p.SetOfferha(v.(bool))
+	}
+
+	if v, ok := d.GetOk("storage_type"); ok {
+		p.SetStoragetype(v.(string))
+	}
 
 	log.Printf("[DEBUG] Creating Service Offering %s", name)
 	s, err := cs.ServiceOffering.CreateServiceOffering(p)
@@ -84,8 +166,22 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.SetId(s.Id)
-	d.Set("name", s.Name)
-	d.Set("display_text", s.Displaytext)
+
+	fields := map[string]interface{}{
+		"name":          s.Name,
+		"display_text":  s.Displaytext,
+		"cpu_number":    s.Cpunumber,
+		"cpu_speed":     s.Cpuspeed,
+		"host_tags":     s.Hosttags,
+		"limit_cpu_use": s.Limitcpuuse,
+		"memory":        s.Memory,
+		"offer_ha":      s.Offerha,
+		"storage_type":  s.Storagetype,
+	}
+
+	for k, v := range fields {
+		d.Set(k, v)
+	}
 
 	return nil
 }
@@ -134,6 +230,25 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 		}
 
 		d.SetPartial("display_text")
+	}
+
+	if d.HasChange("host_tags") {
+		log.Printf("[DEBUG] Host tags changed for %s, starting update", name)
+
+		// Create a new parameter struct
+		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
+
+		// Set the new host tags
+		p.SetHosttags(d.Get("host_tags").(string))
+
+		// Update the host tags
+		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the host tags for service offering %s: %s", name, err)
+		}
+
+		d.SetPartial("host_tags")
 	}
 
 	d.Partial(false)
