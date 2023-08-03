@@ -65,8 +65,8 @@ $ make test
 In order to run the full suite of Acceptance tests you will need to run the CloudStack Simulator. Please follow these steps to prepare an environment for running the Acceptance tests:
 
 ```sh
-$ docker pull cloudstack/simulator
-$ docker run --name simulator -p 8080:5050 -d cloudstack/simulator
+$ docker pull apache/cloudstack-simulator
+$ docker run --name cloudstack-simulator -p 8080:5050 -d apache/cloudstack-simulator
 ```
 
 When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
@@ -74,7 +74,7 @@ When Docker started the container you can go to http://localhost:8080/client and
 Once the login page is shown and you can login, you need to provision a simulated data-center:
 
 ```sh
-$ docker exec -ti cloudstack python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
+docker exec -it cloudstack-simulator python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
 ```
 
 If you refresh the client or login again, you will now get passed the initial welcome screen and be able to go to your account details and retrieve the API key and secret. Export those together with the URL:
