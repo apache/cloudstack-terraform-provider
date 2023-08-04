@@ -33,6 +33,9 @@ func resourceCloudStackZone() *schema.Resource {
 		Read:   resourceCloudStackZoneRead,
 		Update: resourceCloudStackZoneUpdate,
 		Delete: resourceCloudStackZoneDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"allocationstate": {
 				Type:     schema.TypeString,

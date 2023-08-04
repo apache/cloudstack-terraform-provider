@@ -45,14 +45,13 @@ func TestAccCloudStackZone_basic(t *testing.T) {
 
 const testAccCloudStackZone_basic = `
 resource "cloudstack_zone" "test" {
-    name          = "acctest"
-    dns1          = "8.8.8.8"
-    dns2          = "8.8.8.8"
-    internal_dns1 = "8.8.4.4"
-    internal_dns2 = "8.8.4.4"
-    network_type  = "Advanced"
-    domain        = "foo.cloudstack.com"
-	
+	name          = "acctest"
+	dns1          = "8.8.8.8"
+	dns2          = "8.8.8.8"
+	internal_dns1 = "8.8.4.4"
+	internal_dns2 = "8.8.4.4"
+	network_type  = "Advanced"
+	domain        = "cloudstack.apache.org"
 }
 `
 
@@ -60,13 +59,13 @@ resource "cloudstack_zone" "test" {
 
 const testAccCloudStackZone_update = `
 resource "cloudstack_zone" "test" {
-    name             = "acctestupdated"
-    dns1             = "8.8.4.4"
-    dns2             = "8.8.4.4"
-    internal_dns1    = "8.8.8.8"
-    internal_dns2    = "8.8.8.8"
-    network_type     = "Advanced"
-    domain           = "foo.cloudstack.com"
+	name             = "acctestupdated"
+	dns1             = "8.8.4.4"
+	dns2             = "8.8.4.4"
+	internal_dns1    = "8.8.8.8"
+	internal_dns2    = "8.8.8.8"
+	network_type     = "Advanced"
+	domain           = "cloudstack.apache.org"
 	guestcidraddress = "172.29.2.0/20"
 }
 `
