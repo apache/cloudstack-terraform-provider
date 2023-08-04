@@ -1,0 +1,63 @@
+name: Acceptance Test
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-testacc
+  cancel-in-progress: true
+  
+jobs:
+  testacc:
+    name: Acceptance Test
+    runs-on: ubuntu-22.04
+    env:
+      CLOUDSTACK_API_URL: http://localhost:8080/client/api
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.x
+      - name: Wait Cloudstack to be ready
+        run: |
+          echo "Starting Cloudstack health check"
+          T=0
+          until [ $T -gt 20 ]  || curl -sfL http://localhost:8080 --output /dev/null
+          do
+            echo "Waiting for Cloudstack to be ready..."
+            ((T+=1))
+            sleep 30
+          done
+      - name: Setting up Cloudstack
+        run: |
+          docker exec $(docker container ls --format=json -l | jq -r .ID) python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
+          curl -sf --location "${CLOUDSTACK_API_URL}" \
+            --header 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'command=login' \
+            --data-urlencode 'username=admin' \
+            --data-urlencode 'password=password' \
+            --data-urlencode 'response=json' \
+            --data-urlencode 'domain=/' -j -c cookies.txt --output /dev/null
+          CLOUDSTACK_USER_ID=$(curl -fs "${CLOUDSTACK_API_URL}?command=listUsers&response=json" -b cookies.txt | jq -r '.listusersresponse.user[0].id')
+          CLOUDSTACK_API_KEY=$(curl -s "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.apikey')
+          CLOUDSTACK_SECRET_KEY=$(curl -fs "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.secretkey')
+          
+          echo "::add-mask::$CLOUDSTACK_API_KEY"
+          echo "::add-mask::$CLOUDSTACK_SECRET_KEY"
+
+          echo "CLOUDSTACK_API_KEY=$CLOUDSTACK_API_KEY" >> $GITHUB_ENV
+          echo "CLOUDSTACK_SECRET_KEY=$CLOUDSTACK_SECRET_KEY" >> $GITHUB_ENV
+      - name: Run acceptance test
+        run: |
+          make testacc
+    services:
+      cloudstack-simulator:
+        image: apache/cloudstack-simulator:${{ matrix.cloudstack_version }}
+        ports:
+          - 8080:5050
+    strategy:
+      matrix:
+        cloudstack_version:
+          - 4.17.2.0
+          - 4.18.0.0
+  
