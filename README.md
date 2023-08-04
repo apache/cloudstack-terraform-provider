@@ -55,7 +55,7 @@ On Windows at %APPDATA%\terraform.d\plugins,
 ```sh
 $  cd ~
 $  mkdir -p ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
-$  cp $GOPATH/bin/terraform-provider-cloudstack .terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
+$  cp $GOPATH/bin/terraform-provider-cloudstack ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
 ```
 
 Testing the Provider
