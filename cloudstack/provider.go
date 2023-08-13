@@ -89,6 +89,7 @@ func Provider() terraform.ResourceProvider {
 			"cloudstack_ipaddress":        dataSourceCloudstackIPAddress(),
 			"cloudstack_user":             dataSourceCloudstackUser(),
 			"cloudstack_vpn_connection":   dataSourceCloudstackVPNConnection(),
+			"cloudstack_pod":              dataSourceCloudstackPod(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
