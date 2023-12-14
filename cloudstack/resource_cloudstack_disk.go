@@ -47,7 +47,7 @@ func resourceCloudStackDisk() *schema.Resource {
 			"attach": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 
 			"device_id": {
@@ -76,6 +76,7 @@ func resourceCloudStackDisk() *schema.Resource {
 			"virtual_machine_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"project": {
