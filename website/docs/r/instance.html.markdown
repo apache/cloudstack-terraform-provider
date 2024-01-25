@@ -34,6 +34,12 @@ The following arguments are supported:
 * `service_offering` - (Required) The name or ID of the service offering used
     for this instance.
 
+* `host_id` -  (Optional)  destination Host ID to deploy the VM to - parameter available 
+   for root admin only
+
+* `cluster_id` - (Optional) destination Cluster ID to deploy the VM to - parameter available
+   for root admin only
+
 * `network_id` - (Optional) The ID of the network to connect this instance
     to. Changing this forces a new resource to be created.
 
