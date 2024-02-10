@@ -87,7 +87,7 @@ func dataSourceCloudstackZoneRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func zoneDescriptionAttributes(d *schema.ResourceData, zone *cloudstack.Zone) error {
-	d.SetId(zone.Name)
+	d.SetId(zone.Id)
 	d.Set("name", zone.Name)
 	d.Set("dns1", zone.Dns1)
 	d.Set("internal_dns1", zone.Internaldns1)
