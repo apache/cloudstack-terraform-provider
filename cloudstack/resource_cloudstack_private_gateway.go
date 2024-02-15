@@ -100,7 +100,6 @@ func resourceCloudStackPrivateGatewayCreate(d *schema.ResourceData, meta interfa
 		d.Get("gateway").(string),
 		ipaddress,
 		d.Get("netmask").(string),
-		d.Get("vlan").(string),
 		d.Get("vpc_id").(string),
 	)
 
