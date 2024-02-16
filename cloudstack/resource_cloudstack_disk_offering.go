@@ -45,6 +45,16 @@ func resourceCloudStackDiskOffering() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"encrypt": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"tags": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -58,6 +68,14 @@ func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface
 	// Create a new parameter struct
 	p := cs.DiskOffering.NewCreateDiskOfferingParams(name, display_text)
 	p.SetDisksize(int64(disk_size))
+
+	p.SetDisksize(int64(disk_size))
+	if encrypt, ok := d.GetOk("encrypt"); ok {
+		p.SetEncrypt(encrypt.(bool))
+	}
+	if tags, ok := d.GetOk("tags"); ok {
+		p.SetTags(tags.(string))
+	}
 
 	log.Printf("[DEBUG] Creating Disk Offering %s", name)
 	diskOff, err := cs.DiskOffering.CreateDiskOffering(p)
@@ -76,4 +94,16 @@ func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}
 
 func resourceCloudStackDiskOfferingUpdate(d *schema.ResourceData, meta interface{}) error { return nil }
 
-func resourceCloudStackDiskOfferingDelete(d *schema.ResourceData, meta interface{}) error { return nil }
+func resourceCloudStackDiskOfferingDelete(d *schema.ResourceData, meta interface{}) error { 
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	p := cs.DiskOffering.NewDeleteDiskOfferingParams(d.Id())
+	_, err := cs.DiskOffering.DeleteDiskOffering(p)
+	if err != nil {
+		return fmt.Errorf("Error deleting disk offering: %s", err)
+	}
+	
+	
+	return nil
+
+}
