@@ -28,6 +28,8 @@ The following arguments are supported:
 * `name` - (Required) The name of the disk offering.
 * `display_text` - (Required) The display text of the disk offering.
 * `disk_size` - (Required) The size of the disk offering in GB.
+* `encrypt` - (Optional)  Volumes using this offering should be encrypted
+* `tags` - (Optional)  tags for the disk offering
 
 ## Attributes Reference
 
