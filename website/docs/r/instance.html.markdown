@@ -85,6 +85,8 @@ The following arguments are supported:
 * `expunge` - (Optional) This determines if the instance is expunged when it is
     destroyed (defaults false)
 
+* `uefi` - (Optional) When set, will boot the instance in UEFI/Legacy mode (defaults false)
+
 ## Attributes Reference
 
 The following attributes are exported:

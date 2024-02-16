@@ -154,6 +154,12 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"uefi": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"start_vm": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -275,6 +281,11 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	// If there is a root_disk_size supplied, add it to the parameter struct
 	if rootdisksize, ok := d.GetOk("root_disk_size"); ok {
 		p.SetRootdisksize(int64(rootdisksize.(int)))
+	}
+
+	if d.Get("uefi").(bool) {
+		p.SetBoottype("UEFI")
+		p.SetBootmode("Legacy")
 	}
 
 	if zone.Networktype == "Advanced" {
