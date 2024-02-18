@@ -67,7 +67,7 @@ func testSetIDOnResourceData(t *testing.T) {
 	setValueOrID(&d, "id", "name", "54711781-274e-41b2-83c0-17194d0108f7")
 
 	if d.Get("id").(string) != "54711781-274e-41b2-83c0-17194d0108f7" {
-		t.Fatal("err: 'id' doest not match '54711781-274e-41b2-83c0-17194d0108f7'")
+		t.Fatal("err: 'id' does not match '54711781-274e-41b2-83c0-17194d0108f7'")
 	}
 }
 

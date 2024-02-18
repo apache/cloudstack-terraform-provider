@@ -1,27 +1,24 @@
 ---
-layout: "cloudstack"
-page_title: "CloudStack: cloudstack_service_offering"
-sidebar_current: "docs-cloudstack-resource-service-offering"
+layout: default
+title: "CloudStack: cloudstack_service_offering"
+sidebar_current: "docs-cloudstack-resource-service_offering"
 description: |-
-  Creates a service offering.
+    Creates a Service Offering
 ---
 
-# cloudstack_service_offering
+# CloudStack: cloudstack_service_offering
 
-Creates a service offering.
+A `cloudstack_service_offering` resource manages a service offering within CloudStack.
 
 ## Example Usage
 
-Basic usage:
-
 ```hcl
-resource "cloudstack_service_offering" "default" {
-    name       = "Small"
-    cpu_number = 2
-    cpu_speed  = 1000
-    memory     = 4096
+resource "cloudstack_service_offering" "example" {
+    name = "example-service-offering"
+    display_text = "Example Service Offering"
 }
 ```
+
 
 ## Argument Reference
 
@@ -51,10 +48,17 @@ The following arguments are supported:
 
 * `storage_type` - (Optional) The storage type of the service offering. Values are `local` and `shared`.
     Changing this forces a new resource to be created.
-    
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the service offering.
+
+## Import
+
+Service offerings can be imported; use `<SERVICEOFFERINGID>` as the import ID. For example:
+
+```shell
+$ terraform import cloudstack_service_offering.example <SERVICEOFFERINGID>
+```
