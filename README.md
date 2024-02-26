@@ -24,7 +24,7 @@ provider "cloudstack" {
   # Configuration options
 }
 ```
-For more details on how to install and use the provider, visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
+For more details on how to install and use the provider, click [here](website/) or visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
 
 Developing the Provider
 ---------------------------
@@ -78,7 +78,7 @@ docker pull apache/cloudstack-simulator:4.17.2.0
 
 docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator
 
-or 
+or
 
 docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.17.2.0
 ```
