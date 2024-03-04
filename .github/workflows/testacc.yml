@@ -56,14 +56,6 @@ jobs:
             --data-urlencode 'response=json' \
             --data-urlencode 'domain=/' -j -c cookies.txt --output /dev/null
 
-          # Create terraform project
-          curl -sf --location "${CLOUDSTACK_API_URL}" \
-            --header 'Content-Type: application/x-www-form-urlencoded' \
-            --data-urlencode 'command=createProject' \
-            --data-urlencode 'name=terraform' \
-            --data-urlencode 'displaytext=terraform' \
-            --data-urlencode 'response=json' -b cookies.txt -j --output /dev/null
-
           CLOUDSTACK_USER_ID=$(curl -fs "${CLOUDSTACK_API_URL}?command=listUsers&response=json" -b cookies.txt | jq -r '.listusersresponse.user[0].id')
           CLOUDSTACK_API_KEY=$(curl -s "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.apikey')
           CLOUDSTACK_SECRET_KEY=$(curl -fs "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.secretkey')
@@ -73,6 +65,13 @@ jobs:
 
           echo "CLOUDSTACK_API_KEY=$CLOUDSTACK_API_KEY" >> $GITHUB_ENV
           echo "CLOUDSTACK_SECRET_KEY=$CLOUDSTACK_SECRET_KEY" >> $GITHUB_ENV
+      - name: Install CMK
+        run: |
+          curl -sfL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.3.0/cmk.linux.x86-64 -o /usr/local/bin/cmk
+          chmod +x /usr/local/bin/cmk
+      - name: Create extra resources
+        run: |
+          cmk -u $CLOUDSTACK_API_URL -k $CLOUDSTACK_API_KEY -s $CLOUDSTACK_SECRET_KEY -o json create project name=terraform displaytext=terraform
       - name: Run acceptance test
         run: |
           make testacc
