@@ -85,4 +85,5 @@ jobs:
       matrix:
         cloudstack_version:
           - 4.17.2.0
-          - 4.18.0.0
+          - 4.18.1.0
+          - 4.19.0.0
