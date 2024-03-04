@@ -55,6 +55,15 @@ jobs:
             --data-urlencode 'password=password' \
             --data-urlencode 'response=json' \
             --data-urlencode 'domain=/' -j -c cookies.txt --output /dev/null
+
+          # Create terraform project
+          curl -sf --location "${CLOUDSTACK_API_URL}" \
+            --header 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'command=createProject' \
+            --data-urlencode 'name=terraform' \
+            --data-urlencode 'displaytext=terraform' \
+            --data-urlencode 'response=json' -b cookies.txt -j --output /dev/null
+
           CLOUDSTACK_USER_ID=$(curl -fs "${CLOUDSTACK_API_URL}?command=listUsers&response=json" -b cookies.txt | jq -r '.listusersresponse.user[0].id')
           CLOUDSTACK_API_KEY=$(curl -s "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.apikey')
           CLOUDSTACK_SECRET_KEY=$(curl -fs "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.secretkey')
