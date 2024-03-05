@@ -126,6 +126,12 @@ func resourceCloudStackKubernetesCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+
+			"noderootdisksize": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  8,
+			},
 		},
 	}
 }
@@ -170,6 +176,9 @@ func resourceCloudStackKubernetesClusterCreate(d *schema.ResourceData, meta inte
 	}
 	if controlNodesSize, ok := d.GetOk("control_nodes_size"); ok {
 		p.SetControlnodes(int64(controlNodesSize.(int)))
+	}
+	if noderootdisksize, ok := d.GetOk("noderootdisksize"); ok {
+		p.SetNoderootdisksize(int64(noderootdisksize.(int)))
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
