@@ -37,6 +37,8 @@ The following arguments are supported:
 * `host_id` -  (Optional)  destination Host ID to deploy the VM to - parameter available 
    for root admin only
 
+* `pod_id` -  (Optional) destination Pod ID to deploy the VM to - parameter available for root admin only
+
 * `cluster_id` - (Optional) destination Cluster ID to deploy the VM to - parameter available
    for root admin only
 
