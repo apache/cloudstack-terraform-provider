@@ -49,7 +49,7 @@ resource "cloudstack_vpc" "vpc-resource" {
 name         = "test-vpc"
 cidr         = "10.0.0.0/16"
 vpc_offering = "Default VPC Offering"
-zone         = "DC"
+zone         = "Sandbox-simulator"
 }
 
 data "cloudstack_vpc" "vpc-data-source"{
