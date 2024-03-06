@@ -81,6 +81,7 @@ jobs:
         ports:
           - 8080:5050
     strategy:
+      fail-fast: false
       matrix:
         cloudstack_version:
           - 4.17.2.0
