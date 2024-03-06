@@ -51,6 +51,7 @@ The following arguments are supported:
 * `ip_address` - (Computed) The IP address of the Kubernetes cluster.
 * `state` - (Optional) The state of the Kubernetes cluster. Defaults to `"Running"`.
 * `project` - (Optional) The project to assign the Kubernetes cluster to.
+* `noderootdisksize` - (Optional) root disk size in GB for each node.
 
 ## Attributes Reference
 
