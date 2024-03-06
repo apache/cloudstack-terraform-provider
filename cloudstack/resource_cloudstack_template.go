@@ -184,11 +184,15 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 
 	// Retrieve the zone ID
 	if v, ok := d.GetOk("zone"); ok {
-		zoneid, e := retrieveID(cs, "zone", v.(string))
-		if e != nil {
-			return e.Error()
+		if v.(string) != "all" {
+			zoneid, e := retrieveID(cs, "zone", v.(string))
+			if e != nil {
+				return e.Error()
+			}
+			p.SetZoneid(zoneid)
+		} else {
+			p.SetZoneid("-1")
 		}
-		p.SetZoneid(zoneid)
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
@@ -236,11 +240,14 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the template details
-	t, count, err := cs.Template.GetTemplateByID(
-		d.Id(),
-		"executable",
-		cloudstack.WithProject(d.Get("project").(string)),
-	)
+	p := cs.Template.NewListTemplatesParams("executable")
+	p.SetId(d.Id())
+	p.SetShowunique(true)
+	p.SetProjectid(d.Get("project").(string))
+
+	r, err := cs.Template.ListTemplates(p)
+	count := r.Count
+	t := r.Templates[0]
 	if err != nil {
 		if count == 0 {
 			log.Printf(
