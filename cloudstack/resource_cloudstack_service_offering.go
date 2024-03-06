@@ -84,7 +84,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Default:     "local",
+				Default:     "shared",
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(string)
 
