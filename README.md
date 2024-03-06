@@ -88,7 +88,7 @@ When Docker started the container you can go to http://localhost:8080/client and
 Once the login page is shown and you can login, you need to provision a simulated data-center:
 
 ```sh
-$ docker exec -ti cloudstack python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
+docker exec -it cloudstack-simulator python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
 ```
 
 If you refresh the client or login again, you will now get passed the initial welcome screen and be able to go to your account details and retrieve the API key and secret. Export those together with the URL:
