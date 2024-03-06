@@ -185,7 +185,7 @@ func TestAccCloudStackInstance_import(t *testing.T) {
 				ResourceName:            "cloudstack_instance.foobar",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"expunge", "user_data"},
+				ImportStateVerifyIgnore: []string{"expunge", "user_data", "uefi"},
 			},
 		},
 	})
@@ -206,7 +206,7 @@ func TestAccCloudStackInstance_importProject(t *testing.T) {
 				ImportState:             true,
 				ImportStateIdPrefix:     "terraform/",
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"expunge", "user_data"},
+				ImportStateVerifyIgnore: []string{"expunge", "user_data", "uefi"},
 			},
 		},
 	})
