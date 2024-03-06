@@ -677,12 +677,24 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	// Check is the tags have changed and if so, update the tags
+	// Check if the tags have changed and if so, update the tags
 	if d.HasChange("tags") {
 		if err := updateTags(cs, d, "UserVm"); err != nil {
 			return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
 		}
 		d.SetPartial("tags")
+	}
+
+	// Check if the details have changed and if so, update the details
+	if d.HasChange("details") {
+		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+		vmDetails := make(map[string]string)
+		if details := d.Get("details"); details != nil {
+			for k, v := range details.(map[string]interface{}) {
+				vmDetails[k] = v.(string)
+			}
+		}
+		p.SetDetails(vmDetails)
 	}
 
 	d.Partial(false)
