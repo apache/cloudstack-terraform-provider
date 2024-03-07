@@ -125,7 +125,7 @@ func testAccCheckCloudStackTemplateBasicAttributes(
 			return fmt.Errorf("Bad name: %s", template.Name)
 		}
 
-		if template.Format != "QCOW2" {
+		if template.Format != "VHD" {
 			return fmt.Errorf("Bad format: %s", template.Format)
 		}
 
@@ -133,7 +133,7 @@ func testAccCheckCloudStackTemplateBasicAttributes(
 			return fmt.Errorf("Bad hypervisor: %s", template.Hypervisor)
 		}
 
-		if template.Ostypename != "Centos 5.6 (64-bit)" {
+		if template.Ostypename != "CentOS 5.6 (64-bit)" {
 			return fmt.Errorf("Bad os type: %s", template.Ostypename)
 		}
 
@@ -189,9 +189,9 @@ func testAccCheckCloudStackTemplateDestroy(s *terraform.State) error {
 var testAccCloudStackTemplate_basic = fmt.Sprintf(`
 resource "cloudstack_template" "foo" {
   name = "terraform-test"
-  format = "QCOW2"
+  format = "VHD"
   hypervisor = "Simulator"
-  os_type = "Centos 5.6 (64-bit)"
+  os_type = "CentOS 5.6 (64-bit)"
   url = "%s"
   zone = "Sandbox-simulator"
   tags = {
@@ -203,9 +203,9 @@ var testAccCloudStackTemplate_update = fmt.Sprintf(`
 resource "cloudstack_template" "foo" {
   name = "terraform-test"
   display_text = "terraform-updated"
-  format = "QCOW2"
+  format = "VHD"
   hypervisor = "Simulator"
-  os_type = "Centos 5.6 (64-bit)"
+  os_type = "CentOS 5.6 (64-bit)"
   url = "%s"
   is_dynamically_scalable = true
   password_enabled = true

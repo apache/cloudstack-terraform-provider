@@ -243,21 +243,29 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	p := cs.Template.NewListTemplatesParams("executable")
 	p.SetId(d.Id())
 	p.SetShowunique(true)
-	p.SetProjectid(d.Get("project").(string))
+	project := d.Get("project").(string)
+	if project != "" {
+		if !cloudstack.IsID(project) {
+			id, _, err := cs.Project.GetProjectID(project)
+			if err != nil {
+				return err
+			}
+			project = id
+		}
+		p.SetProjectid(project)
+	}
 
 	r, err := cs.Template.ListTemplates(p)
-	count := r.Count
-	t := r.Templates[0]
 	if err != nil {
-		if count == 0 {
-			log.Printf(
-				"[DEBUG] Template %s no longer exists", d.Get("name").(string))
-			d.SetId("")
-			return nil
-		}
-
 		return err
+	} else if r.Count == 0 {
+		log.Printf(
+			"[DEBUG] Template %s no longer exists", d.Get("name").(string))
+		d.SetId("")
+		return nil
 	}
+
+	t := r.Templates[0]
 
 	d.Set("name", t.Name)
 	d.Set("display_text", t.Displaytext)

@@ -148,7 +148,7 @@ func resourceCloudStackPrivateGatewayRead(d *schema.ResourceData, meta interface
 	d.Set("gateway", gw.Gateway)
 	d.Set("ip_address", gw.Ipaddress)
 	d.Set("netmask", gw.Netmask)
-	d.Set("vlan", gw.Vlan)
+	d.Set("vlan", strings.Replace(gw.Vlan, "vlan://", "", -1))
 	d.Set("acl_id", gw.Aclid)
 	d.Set("vpc_id", gw.Vpcid)
 

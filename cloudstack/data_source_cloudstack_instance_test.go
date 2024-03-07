@@ -50,9 +50,8 @@ const testAccInstanceDataSourceConfig_basic = `
 	resource "cloudstack_instance" "my_instance" {
 		name             = "server-a"
 		service_offering = "Small Instance"
-		network_id       = "b9c953a0-8686-4240-b8a4-43849f7079ff"
-		template         = "CentOS 5.5(64-bit) no GUI (KVM)"
-		zone             = "DC"
+		template         = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+		zone             = "Sandbox-simulator"
 	  }
 	  data "cloudstack_instance" "my_instance_test" {
 		filter {

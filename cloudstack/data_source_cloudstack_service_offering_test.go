@@ -27,7 +27,7 @@ import (
 
 func TestAccServiceOfferingDataSource_basic(t *testing.T) {
 	resourceName := "cloudstack_service_offering.service-offering-resource"
-	datasourceName := "cloudstack_service_offering.service-offering-data-source"
+	datasourceName := "data.cloudstack_service_offering.service-offering-data-source"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -45,18 +45,16 @@ func TestAccServiceOfferingDataSource_basic(t *testing.T) {
 }
 
 const testServiceOfferingDataSourceConfig_basic = `
-resource "cloudstack_service_offering" "service-offering-resource"{
-	name       = "TestServiceUpdate"
-  display_text = "DisplayService"
-  }
+resource "cloudstack_service_offering" "service-offering-resource" {
+	name			= "TestServiceUpdate"
+	display_text	= "DisplayService"
+}
 
- data "cloudstack_service_offering" "service-offering-data-source"{
-    filter{
-    name = "name"
-    value="TestServiceUpdate"
-    }
-	  depends_on = [
-	  cloudstack_service_offering.service-resource
-	] 
-  }
-  `
+data "cloudstack_service_offering" "service-offering-data-source" {
+	filter {
+		name	= "name"
+		value	= "TestServiceUpdate"
+	}
+	depends_on = [cloudstack_service_offering.service-offering-resource]
+}
+`

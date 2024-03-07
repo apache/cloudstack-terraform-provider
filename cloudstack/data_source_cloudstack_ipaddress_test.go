@@ -46,13 +46,13 @@ func TestAccIPAddressDataSource_basic(t *testing.T) {
 
 const testIPAddressDataSourceConfig_basic = `
 resource "cloudstack_ipaddress" "ipaddress-resource" {
-	zone         = "DC"
+	zone         = "Sandbox-simulator"
   }
   
   data "cloudstack_ipaddress" "ipaddress-data-source"{
 	  filter{
 	  name = "zone_name"
-	  value= "DC"
+	  value= "Sandbox-simulator"
 	  }
 	  depends_on = [
 		cloudstack_ipaddress.ipaddress-resource

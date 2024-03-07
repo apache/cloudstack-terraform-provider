@@ -45,19 +45,30 @@ func TestAccVolumeDataSource_basic(t *testing.T) {
 }
 
 const testVolumeDataSourceConfig_basic = `
+resource "cloudstack_disk_offering" "disk-offering" {
+	name			=	"TestDiskOffering"
+	display_text	=	"TestDiskOffering"
+	disk_size		=	1
+}
+
+data "cloudstack_zone" "zone-data-source" {
+	filter {
+		name	=	"name"
+		value	=	"Sandbox-simulator"
+	}
+}
+
 resource "cloudstack_volume" "volume-resource"{
-	name       = "TestVolume"
-  disk_offering_id = "0038adec-5e3e-47df-b4b4-77b5dc8e3338"
-  zone_id = "9a7002b2-09a2-44dc-a332-f2e4e7f01539"
+	name				=	"TestVolume"
+	disk_offering_id	=	"${cloudstack_disk_offering.disk-offering.id}"
+	zone_id				=	"${data.cloudstack_zone.zone-data-source.id}"
   }
 
-  data "cloudstack_volume" "volume-data-source"{
-    filter{
-    name = "name"
-    value="TestVolume"
+data "cloudstack_volume" "volume-data-source"{
+	filter {
+		name	=	"name"
+		value	=	"TestVolume"
     }
-	  depends_on = [
-	  cloudstack_volume.volume-resource
-	]
-  }
-  `
+	depends_on	=	[cloudstack_volume.volume-resource]
+}
+`
