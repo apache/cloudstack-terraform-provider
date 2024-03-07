@@ -189,7 +189,7 @@ func testAccCheckCloudStackTemplateDestroy(s *terraform.State) error {
 var testAccCloudStackTemplate_basic = fmt.Sprintf(`
 resource "cloudstack_template" "foo" {
   name = "terraform-test"
-  format = "QCOW2"
+  format = "VHD"
   hypervisor = "Simulator"
   os_type = "Centos 5.6 (64-bit)"
   url = "%s"
@@ -203,7 +203,7 @@ var testAccCloudStackTemplate_update = fmt.Sprintf(`
 resource "cloudstack_template" "foo" {
   name = "terraform-test"
   display_text = "terraform-updated"
-  format = "QCOW2"
+  format = "VHD"
   hypervisor = "Simulator"
   os_type = "Centos 5.6 (64-bit)"
   url = "%s"

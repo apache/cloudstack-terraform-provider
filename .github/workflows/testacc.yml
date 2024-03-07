@@ -65,6 +65,7 @@ jobs:
 
           echo "CLOUDSTACK_API_KEY=$CLOUDSTACK_API_KEY" >> $GITHUB_ENV
           echo "CLOUDSTACK_SECRET_KEY=$CLOUDSTACK_SECRET_KEY" >> $GITHUB_ENV
+          echo "CLOUDSTACK_TEMPLATE_URL=http://dl.openvm.eu/cloudstack/macchinina/x86_64/macchinina-xen.vhd.bz2" >> $GITHUB_ENV
       - name: Install CMK
         run: |
           curl -sfL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.3.0/cmk.linux.x86-64 -o /usr/local/bin/cmk
