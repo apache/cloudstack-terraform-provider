@@ -116,7 +116,7 @@ func TestAccCloudStackDisk_import(t *testing.T) {
 				ResourceName:            "cloudstack_disk.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"shrink_ok"},
+				ImportStateVerifyIgnore: []string{"shrink_ok", "reattach_on_change"},
 			},
 		},
 	})
