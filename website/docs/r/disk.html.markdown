@@ -53,6 +53,9 @@ The following arguments are supported:
 * `zone` - (Required) The name or ID of the zone where this disk volume will be available.
     Changing this forces a new resource to be created.
 
+* `reattach_on_change` - (Optional) Determines whether or not to detach the disk volume
+    from the virtual machine on disk offering or size change.
+
 ## Attributes Reference
 
 The following attributes are exported:
