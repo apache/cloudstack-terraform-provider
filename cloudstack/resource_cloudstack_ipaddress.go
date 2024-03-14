@@ -45,7 +45,6 @@ func resourceCloudStackIPAddress() *schema.Resource {
 			"network_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				ForceNew: true,
 			},
 
