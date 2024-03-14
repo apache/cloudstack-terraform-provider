@@ -99,6 +99,9 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 	if networkid, ok := d.GetOk("network_id"); ok {
 		// Set the networkid
 		p.SetNetworkid(networkid.(string))
+		if vpcid, ok := d.GetOk("vpc_id"); ok && vpcid.(string) != "" {
+			return fmt.Errorf("set only network_id or vpc_id")
+		}
 	}
 
 	if vpcid, ok := d.GetOk("vpc_id"); ok {

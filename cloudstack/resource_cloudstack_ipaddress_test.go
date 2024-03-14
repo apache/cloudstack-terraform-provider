@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -62,6 +63,22 @@ func TestAccCloudStackIPAddress_vpc(t *testing.T) {
 					testAccCheckCloudStackIPAddressExists(
 						"cloudstack_ipaddress.foo", &ipaddr),
 				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackIPAddress_vpcid_with_network_id(t *testing.T) {
+
+	regex := regexp.MustCompile("set only network_id or vpc_id")
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackIPAddressDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExpectError: regex,
+				Config:      testAccCloudStackIPAddress_vpcid_with_network_id,
 			},
 		},
 	})
@@ -143,5 +160,27 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_ipaddress" "foo" {
   vpc_id = "${cloudstack_vpc.foo.id}"
+  zone = "${cloudstack_vpc.foo.zone}"
+}`
+
+const testAccCloudStackIPAddress_vpcid_with_network_id = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  vpc_id = "${cloudstack_vpc.foo.id}"
+  network_id = "${cloudstack_network.foo.id}"
   zone = "${cloudstack_vpc.foo.zone}"
 }`
