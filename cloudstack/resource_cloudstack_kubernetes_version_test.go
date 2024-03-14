@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -29,6 +30,7 @@ import (
 )
 
 func TestAccCloudStackKubernetesVersion_basic(t *testing.T) {
+	checkCKSEnabled(t)
 	var version cloudstack.KubernetesSupportedVersion
 
 	resource.Test(t, resource.TestCase{
@@ -48,6 +50,7 @@ func TestAccCloudStackKubernetesVersion_basic(t *testing.T) {
 }
 
 func TestAccCloudStackKubernetesVersion_update(t *testing.T) {
+	checkCKSEnabled(t)
 	var version cloudstack.KubernetesSupportedVersion
 
 	resource.Test(t, resource.TestCase{
@@ -76,6 +79,28 @@ func TestAccCloudStackKubernetesVersion_update(t *testing.T) {
 			},
 		},
 	})
+}
+
+func checkCKSEnabled(t *testing.T) {
+	cfg := Config{
+		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
+		APIKey:      os.Getenv("CLOUDSTACK_API_KEY"),
+		SecretKey:   os.Getenv("CLOUDSTACK_SECRET_KEY"),
+		HTTPGETOnly: true,
+		Timeout:     60,
+	}
+	cs, err := cfg.NewClient()
+	if err != nil {
+		return
+	}
+	p := cs.Configuration.NewListConfigurationsParams()
+	p.SetName("cloud.kubernetes.service.enabled")
+	r, err := cs.Configuration.ListConfigurations(p)
+	if err == nil {
+		if r.Configurations[0].Value == "false" {
+			t.Skip("This test requires cloud.kubernetes.service.enabled to be true")
+		}
+	}
 }
 
 func testAccCheckCloudStackKubernetesVersionExists(
