@@ -38,7 +38,6 @@ func TestAccSshKeyPairDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "id", resourceName, "id"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

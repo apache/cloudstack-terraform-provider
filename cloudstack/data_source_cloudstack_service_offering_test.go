@@ -38,7 +38,6 @@ func TestAccServiceOfferingDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

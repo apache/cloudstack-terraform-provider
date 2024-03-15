@@ -38,7 +38,6 @@ func TestAccIPAddressDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "zone_name", resourceName, "zone"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
