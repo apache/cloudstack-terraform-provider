@@ -42,25 +42,25 @@ func TestAccCloudStackSecurityGroupRule_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_security_group_rule.foo", "rule.#", "2"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.cidr_list.3056857544", "172.18.100.0/24"),
+						"cloudstack_security_group_rule.foo", "rule.0.cidr_list.0", "172.18.100.0/24"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.protocol", "tcp"),
+						"cloudstack_security_group_rule.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.ports.#", "1"),
+						"cloudstack_security_group_rule.foo", "rule.0.ports.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.ports.1889509032", "80"),
+						"cloudstack_security_group_rule.foo", "rule.0.ports.0", "80"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.traffic_type", "ingress"),
+						"cloudstack_security_group_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.protocol", "tcp"),
+						"cloudstack_security_group_rule.foo", "rule.1.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.ports.1889509032", "80"),
+						"cloudstack_security_group_rule.foo", "rule.1.ports.1", "80"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.ports.3638101695", "443"),
+						"cloudstack_security_group_rule.foo", "rule.1.ports.0", "443"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.traffic_type", "egress"),
+						"cloudstack_security_group_rule.foo", "rule.1.traffic_type", "egress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.user_security_group_list.1089118859", "terraform-security-group-bar"),
+						"cloudstack_security_group_rule.foo", "rule.1.user_security_group_list.0", "terraform-security-group-bar"),
 				),
 			},
 		},
@@ -80,25 +80,25 @@ func TestAccCloudStackSecurityGroupRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_security_group_rule.foo", "rule.#", "2"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.cidr_list.3056857544", "172.18.100.0/24"),
+						"cloudstack_security_group_rule.foo", "rule.0.cidr_list.0", "172.18.100.0/24"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.protocol", "tcp"),
+						"cloudstack_security_group_rule.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.ports.#", "1"),
+						"cloudstack_security_group_rule.foo", "rule.0.ports.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.ports.1889509032", "80"),
+						"cloudstack_security_group_rule.foo", "rule.0.ports.0", "80"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1322309156.traffic_type", "ingress"),
+						"cloudstack_security_group_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.protocol", "tcp"),
+						"cloudstack_security_group_rule.foo", "rule.1.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.ports.1889509032", "80"),
+						"cloudstack_security_group_rule.foo", "rule.1.ports.1", "80"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.ports.3638101695", "443"),
+						"cloudstack_security_group_rule.foo", "rule.1.ports.0", "443"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.traffic_type", "egress"),
+						"cloudstack_security_group_rule.foo", "rule.1.traffic_type", "egress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3666289950.user_security_group_list.1089118859", "terraform-security-group-bar"),
+						"cloudstack_security_group_rule.foo", "rule.1.user_security_group_list.0", "terraform-security-group-bar"),
 				),
 			},
 
@@ -109,33 +109,33 @@ func TestAccCloudStackSecurityGroupRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_security_group_rule.foo", "rule.#", "3"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3156342770.cidr_list.3056857544", "172.18.100.0/24"),
+						"cloudstack_security_group_rule.foo", "rule.0.cidr_list.0", "172.18.100.0/24"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3156342770.cidr_list.951907883", "172.18.200.0/24"),
+						"cloudstack_security_group_rule.foo", "rule.0.cidr_list.1", "172.18.200.0/24"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3156342770.protocol", "tcp"),
+						"cloudstack_security_group_rule.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3156342770.ports.1889509032", "80"),
+						"cloudstack_security_group_rule.foo", "rule.0.ports.1", "80"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3156342770.ports.3638101695", "443"),
+						"cloudstack_security_group_rule.foo", "rule.0.ports.0", "443"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3839437815.cidr_list.#", "1"),
+						"cloudstack_security_group_rule.foo", "rule.1.cidr_list.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3839437815.cidr_list.3056857544", "172.18.100.0/24"),
+						"cloudstack_security_group_rule.foo", "rule.1.cidr_list.0", "172.18.100.0/24"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3839437815.icmp_code", "-1"),
+						"cloudstack_security_group_rule.foo", "rule.1.icmp_code", "-1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.3839437815.icmp_type", "-1"),
+						"cloudstack_security_group_rule.foo", "rule.1.icmp_type", "-1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1804489748.protocol", "tcp"),
+						"cloudstack_security_group_rule.foo", "rule.2.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1804489748.ports.#", "1"),
+						"cloudstack_security_group_rule.foo", "rule.2.ports.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1804489748.ports.1889509032", "80"),
+						"cloudstack_security_group_rule.foo", "rule.2.ports.0", "80"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1804489748.traffic_type", "egress"),
+						"cloudstack_security_group_rule.foo", "rule.2.traffic_type", "egress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_security_group_rule.foo", "rule.1804489748.user_security_group_list.1089118859", "terraform-security-group-bar"),
+						"cloudstack_security_group_rule.foo", "rule.2.user_security_group_list.0", "terraform-security-group-bar"),
 				),
 			},
 		},

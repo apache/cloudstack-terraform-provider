@@ -42,11 +42,11 @@ func TestAccCloudStackEgressFirewall_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.ports.32925333", "8080"),
+						"cloudstack_egress_firewall.foo", "rule.0.ports.0", "8080"),
 				),
 			},
 		},
@@ -66,11 +66,11 @@ func TestAccCloudStackEgressFirewall_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.ports.32925333", "8080"),
+						"cloudstack_egress_firewall.foo", "rule.0.ports.0", "8080"),
 				),
 			},
 
@@ -81,19 +81,19 @@ func TestAccCloudStackEgressFirewall_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.#", "2"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.cidr_list.2966983089", "10.1.1.11/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.1", "10.1.1.11/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.ports.32925333", "8080"),
+						"cloudstack_egress_firewall.foo", "rule.0.ports.0", "8080"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.2961518528.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.1.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.2961518528.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.1.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.2961518528.ports.1889509032", "80"),
+						"cloudstack_egress_firewall.foo", "rule.1.ports.1", "80"),
 				),
 			},
 		},
