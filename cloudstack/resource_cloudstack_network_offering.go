@@ -24,7 +24,7 @@ import (
 	"log"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackNetworkOffering() *schema.Resource {
@@ -105,7 +105,6 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the name for network offering %s: %s", name, err)
 		}
 
-		d.SetPartial("name")
 	}
 
 	// Check if the display text is changed and if so, update the virtual machine
@@ -125,7 +124,6 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the display text for network offering %s: %s", name, err)
 		}
 
-		d.SetPartial("display_text")
 	}
 
 	// Check if the guest ip type is changed and if so, update the virtual machine
@@ -145,7 +143,6 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the guest ip type for network offering %s: %s", name, err)
 		}
 
-		d.SetPartial("guest_ip_type")
 	}
 
 	// Check if the traffic type is changed and if so, update the virtual machine
@@ -165,7 +162,6 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the traffic type for network offering %s: %s", name, err)
 		}
 
-		d.SetPartial("traffic_type")
 	}
 
 	d.Partial(false)

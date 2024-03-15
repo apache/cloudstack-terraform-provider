@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackKubernetesVersion() *schema.Resource {
@@ -178,7 +178,6 @@ func resourceCloudStackKubernetesVersionUpdate(d *schema.ResourceData, meta inte
 			return fmt.Errorf(
 				"Error Updating Kubernetes Version %s: %s", d.Id(), err)
 		}
-		d.SetPartial("state")
 	}
 
 	d.Partial(false)

@@ -24,7 +24,7 @@ import (
 	"log"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackServiceOffering() *schema.Resource {
@@ -209,7 +209,6 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the name for service offering %s: %s", name, err)
 		}
 
-		d.SetPartial("name")
 	}
 
 	// Check if the display text is changed and if so, update seervice offering
@@ -229,7 +228,6 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the display text for service offering %s: %s", name, err)
 		}
 
-		d.SetPartial("display_text")
 	}
 
 	if d.HasChange("host_tags") {
@@ -248,7 +246,6 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 				"Error updating the host tags for service offering %s: %s", name, err)
 		}
 
-		d.SetPartial("host_tags")
 	}
 
 	d.Partial(false)

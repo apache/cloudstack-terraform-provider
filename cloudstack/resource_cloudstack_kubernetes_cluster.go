@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackKubernetesCluster() *schema.Resource {
@@ -274,8 +274,6 @@ func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta inte
 			return fmt.Errorf(
 				"Error Scaling Kubernetes Cluster %s: %s", d.Id(), err)
 		}
-		d.SetPartial("service_offering")
-		d.SetPartial("size")
 	}
 
 	if d.HasChange("autoscaling_enabled") || d.HasChange("min_size") || d.HasChange("max_size") {
@@ -283,9 +281,6 @@ func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return err
 		}
-		d.SetPartial("autoscaling_enabled")
-		d.SetPartial("min_size")
-		d.SetPartial("max_size")
 	}
 
 	if d.HasChange("kubernetes_version") {
@@ -299,7 +294,6 @@ func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta inte
 			return fmt.Errorf(
 				"Error Upgrading Kubernetes Cluster %s: %s", d.Id(), err)
 		}
-		d.SetPartial("kubernetes_version")
 	}
 
 	if d.HasChange("state") {
@@ -322,7 +316,6 @@ func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta inte
 		default:
 			return fmt.Errorf("State must either be 'Running' or 'Stopped'")
 		}
-		d.SetPartial("state")
 	}
 
 	d.Partial(false)
