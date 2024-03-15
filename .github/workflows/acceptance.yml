@@ -23,8 +23,9 @@ on:
       - .github/workflows/acceptance.yml
       - '*.go'
   push:
-    branches-ignore:
-      - main
+    branches:
+      - '*'
+      - '!main'
     paths:
       - .github/workflows/acceptance.yml
       - '*.go'
