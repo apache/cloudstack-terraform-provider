@@ -102,6 +102,7 @@ func resourceCloudStackPrivateGatewayCreate(d *schema.ResourceData, meta interfa
 		d.Get("netmask").(string),
 		d.Get("vpc_id").(string),
 	)
+	p.SetVlan(d.Get("vlan").(string))
 
 	// Retrieve the network_offering ID
 	if networkofferingid != "" {
