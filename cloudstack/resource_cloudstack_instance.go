@@ -494,7 +494,6 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -698,8 +697,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		p.SetDetails(vmDetails)
 	}
-
-	d.Partial(false)
 
 	return resourceCloudStackInstanceRead(d, meta)
 }

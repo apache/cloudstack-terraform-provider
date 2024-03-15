@@ -169,7 +169,6 @@ func resourceCloudStackKubernetesVersionRead(d *schema.ResourceData, meta interf
 
 func resourceCloudStackKubernetesVersionUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	if d.HasChange("state") {
 		p := cs.Kubernetes.NewUpdateKubernetesSupportedVersionParams(d.Id(), d.Get("state").(string))
@@ -180,7 +179,6 @@ func resourceCloudStackKubernetesVersionUpdate(d *schema.ResourceData, meta inte
 		}
 	}
 
-	d.Partial(false)
 	return resourceCloudStackKubernetesVersionRead(d, meta)
 }
 

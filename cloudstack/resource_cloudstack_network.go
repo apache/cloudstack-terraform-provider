@@ -160,7 +160,6 @@ func resourceCloudStackNetwork() *schema.Resource {
 
 func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -276,7 +275,6 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		// Set the additional partial
 	}
 
-	d.Partial(false)
 	return resourceCloudStackNetworkRead(d, meta)
 }
 

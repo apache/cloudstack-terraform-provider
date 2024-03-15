@@ -105,7 +105,6 @@ func resourceCloudStackDisk() *schema.Resource {
 
 func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -162,7 +161,6 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 		// Set the additional partial
 	}
 
-	d.Partial(false)
 	return resourceCloudStackDiskRead(d, meta)
 }
 
@@ -207,7 +205,6 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -280,8 +277,6 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 			return fmt.Errorf("Error updating tags on disk %s: %s", name, err)
 		}
 	}
-
-	d.Partial(false)
 
 	return resourceCloudStackDiskRead(d, meta)
 }

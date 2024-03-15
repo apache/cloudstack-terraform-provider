@@ -259,7 +259,6 @@ func autoscaleKubernetesCluster(d *schema.ResourceData, meta interface{}) error 
 
 func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	if d.HasChange("service_offering") || d.HasChange("size") {
 		p := cs.Kubernetes.NewScaleKubernetesClusterParams(d.Id())
@@ -318,7 +317,6 @@ func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta inte
 		}
 	}
 
-	d.Partial(false)
 	return resourceCloudStackKubernetesClusterRead(d, meta)
 }
 

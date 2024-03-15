@@ -115,8 +115,6 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 		return err
 	}
 
-	d.Partial(true)
-
 	// Create a new parameter struct
 	p := cs.LoadBalancer.NewCreateLoadBalancerRuleParams(
 		d.Get("algorithm").(string),
@@ -179,8 +177,6 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return err
 	}
-
-	d.Partial(false)
 
 	return resourceCloudStackLoadBalancerRuleRead(d, meta)
 }

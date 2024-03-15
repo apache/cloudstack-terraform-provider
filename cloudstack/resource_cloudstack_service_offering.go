@@ -188,7 +188,6 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 
 func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -247,8 +246,6 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 		}
 
 	}
-
-	d.Partial(false)
 
 	return resourceCloudStackServiceOfferingRead(d, meta)
 }
