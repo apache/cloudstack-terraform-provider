@@ -187,15 +187,15 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_nic" "foo" {
-  network_id = "${cloudstack_network.bar.id}"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
+  network_id = cloudstack_network.bar.id
+  virtual_machine_id = cloudstack_instance.foobar.id
 }`
 
 const testAccCloudStackNIC_ipaddress = `
@@ -217,14 +217,14 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_nic" "foo" {
-  network_id = "${cloudstack_network.bar.id}"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
+  network_id = cloudstack_network.bar.id
+  virtual_machine_id = cloudstack_instance.foobar.id
   ip_address = "10.1.2.123"
 }`

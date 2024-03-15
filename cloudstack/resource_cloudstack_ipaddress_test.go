@@ -144,7 +144,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   tags = {
     terraform-tag = "true"
   }
@@ -159,8 +159,8 @@ resource "cloudstack_vpc" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`
 
 const testAccCloudStackIPAddress_vpcid_with_network_id = `
@@ -180,7 +180,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  network_id = "${cloudstack_network.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  network_id = cloudstack_network.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`

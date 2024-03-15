@@ -125,5 +125,5 @@ resource "cloudstack_vpc" "foo" {
 }
 
 resource "cloudstack_vpn_gateway" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }`

@@ -64,6 +64,6 @@ data "cloudstack_user" "user-data-source"{
   }
 
 output "user-output" {
-  value = "${data.cloudstack_user.user-data-source}"
+  value = data.cloudstack_user.user-data-source
 }
   `

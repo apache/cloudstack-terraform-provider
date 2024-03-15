@@ -147,7 +147,7 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
   depends_on = ["cloudstack_vpc.foo"]
 }
 
@@ -156,7 +156,7 @@ resource "cloudstack_private_gateway" "foo" {
   ip_address = "192.168.0.1"
   netmask = "255.255.255.0"
   vlan = "1"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  acl_id = "${cloudstack_network_acl.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.foo.id
   depends_on = ["cloudstack_vpc.foo","cloudstack_network_acl.foo"]
 }`

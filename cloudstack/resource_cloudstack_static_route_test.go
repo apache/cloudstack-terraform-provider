@@ -120,7 +120,7 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }
 
 resource "cloudstack_private_gateway" "foo" {
@@ -128,11 +128,11 @@ resource "cloudstack_private_gateway" "foo" {
   ip_address = "192.168.0.1"
   netmask = "255.255.255.0"
   vlan = "1"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  acl_id = "${cloudstack_network_acl.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.foo.id
 }
 
 resource "cloudstack_static_route" "foo" {
   cidr = "172.16.0.0/16"
-  gateway_id = "${cloudstack_private_gateway.foo.id}"
+  gateway_id = cloudstack_private_gateway.foo.id
 }`

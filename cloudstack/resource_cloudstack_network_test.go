@@ -290,8 +290,8 @@ resource "cloudstack_network" "foo" {
   name = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`
 
 const testAccCloudStackNetwork_acl = `
@@ -304,16 +304,16 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network_acl" "foo" {
   name = "foo"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  acl_id = "${cloudstack_network_acl.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`
 
 const testAccCloudStackNetwork_updateACL = `
@@ -326,14 +326,14 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network_acl" "bar" {
   name = "bar"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  acl_id = "${cloudstack_network_acl.bar.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.bar.id
+  zone = cloudstack_vpc.foo.zone
 }`

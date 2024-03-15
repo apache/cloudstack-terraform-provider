@@ -67,6 +67,6 @@ data "cloudstack_vpc" "vpc-data-source"{
 }
 
 output "vpc-output" {
-value = "${data.cloudstack_vpc.vpc-data-source}"
+value = data.cloudstack_vpc.vpc-data-source
 }
   `

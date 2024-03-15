@@ -146,20 +146,20 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-updated"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_port_forward" "foo" {
-  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
 
   forward {
     protocol = "tcp"
     private_port = 443
     public_port = 8443
-    virtual_machine_id = "${cloudstack_instance.foobar.id}"
+    virtual_machine_id = cloudstack_instance.foobar.id
   }
 }`
 
@@ -176,26 +176,26 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-updated"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_port_forward" "foo" {
-  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
 
   forward {
     protocol = "tcp"
     private_port = 443
     public_port = 8443
-    virtual_machine_id = "${cloudstack_instance.foobar.id}"
+    virtual_machine_id = cloudstack_instance.foobar.id
   }
 
   forward {
     protocol = "tcp"
     private_port = 80
     public_port = 8080
-    virtual_machine_id = "${cloudstack_instance.foobar.id}"
+    virtual_machine_id = cloudstack_instance.foobar.id
   }
 }`

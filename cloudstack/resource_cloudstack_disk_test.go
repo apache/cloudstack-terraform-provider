@@ -237,9 +237,9 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
@@ -248,6 +248,6 @@ resource "cloudstack_disk" "foo" {
   attach = true
   device_id = 4
   disk_offering = "Small"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
-  zone = "${cloudstack_instance.foobar.zone}"
+  virtual_machine_id = cloudstack_instance.foobar.id
+  zone = cloudstack_instance.foobar.zone
 }`

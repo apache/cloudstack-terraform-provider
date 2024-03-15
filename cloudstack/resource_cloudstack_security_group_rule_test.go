@@ -236,7 +236,7 @@ resource "cloudstack_security_group" "bar" {
 }
 
 resource "cloudstack_security_group_rule" "foo" {
-  security_group_id = "${cloudstack_security_group.foo.id}"
+  security_group_id = cloudstack_security_group.foo.id
 
   rule {
     cidr_list = ["172.18.100.0/24"]
@@ -266,7 +266,7 @@ resource "cloudstack_security_group" "bar" {
 }
 
 resource "cloudstack_security_group_rule" "foo" {
-  security_group_id = "${cloudstack_security_group.foo.id}"
+  security_group_id = cloudstack_security_group.foo.id
 
   rule {
     cidr_list = ["172.18.100.0/24", "172.18.200.0/24"]

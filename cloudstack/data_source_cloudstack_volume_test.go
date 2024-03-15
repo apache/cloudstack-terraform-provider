@@ -59,8 +59,8 @@ data "cloudstack_zone" "zone-data-source" {
 
 resource "cloudstack_volume" "volume-resource"{
 	name				=	"TestVolume"
-	disk_offering_id	=	"${cloudstack_disk_offering.disk-offering.id}"
-	zone_id				=	"${data.cloudstack_zone.zone-data-source.id}"
+	disk_offering_id	=	cloudstack_disk_offering.disk-offering.id
+	zone_id				=	data.cloudstack_zone.zone-data-source.id
   }
 
 data "cloudstack_volume" "volume-data-source"{

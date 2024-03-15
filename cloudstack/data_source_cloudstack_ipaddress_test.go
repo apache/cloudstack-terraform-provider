@@ -59,6 +59,6 @@ resource "cloudstack_ipaddress" "ipaddress-resource" {
 	}
   
   output "ipaddress-output" {
-	value = "${data.cloudstack_ipaddress.ipaddress-data-source}"
+	value = data.cloudstack_ipaddress.ipaddress-data-source
   }
   `

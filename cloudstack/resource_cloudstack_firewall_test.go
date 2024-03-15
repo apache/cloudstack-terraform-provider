@@ -195,7 +195,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_firewall" "foo" {
-  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
 
   rule {
     cidr_list = ["10.0.0.0/24"]
@@ -220,7 +220,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_firewall" "foo" {
-  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
 
   rule {
     cidr_list = ["10.0.0.0/24", "10.0.1.0/24"]

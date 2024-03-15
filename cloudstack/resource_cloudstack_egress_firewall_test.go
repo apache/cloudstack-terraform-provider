@@ -168,7 +168,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_egress_firewall" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 
   rule {
     cidr_list = ["10.1.1.10/32"]
@@ -186,7 +186,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_egress_firewall" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 
   rule {
     cidr_list = ["10.1.1.10/32", "10.1.1.11/32"]
