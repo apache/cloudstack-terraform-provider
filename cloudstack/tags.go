@@ -111,3 +111,11 @@ func tagsFromSchema(m map[string]interface{}) map[string]string {
 	}
 	return result
 }
+
+func tagsToMap(tags []cloudstack.Tags) map[string]string {
+	result := make(map[string]string, len(tags))
+	for _, tag := range tags {
+		result[tag.Key] = tag.Value
+	}
+	return result
+}

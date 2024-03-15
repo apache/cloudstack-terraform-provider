@@ -482,11 +482,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("security_group_names", groups)
 	}
 
-	tags := make(map[string]interface{})
-	for _, tag := range vm.Tags {
-		tags[tag.Key] = tag.Value
-	}
-	d.Set("tags", tags)
+	d.Set("tags", tagsToMap(vm.Tags))
 
 	setValueOrID(d, "service_offering", vm.Serviceofferingname, vm.Serviceofferingid)
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)

@@ -124,7 +124,7 @@ func ipAddressDescriptionAttributes(d *schema.ResourceData, publicIpAddress *clo
 	d.Set("project", publicIpAddress.Project)
 	d.Set("ip_address", publicIpAddress.Ipaddress)
 	d.Set("is_source_nat", publicIpAddress.Issourcenat)
-	d.Set("tags", publicIpAddress.Tags)
+	d.Set("tags", tagsToMap(publicIpAddress.Tags))
 
 	return nil
 }
