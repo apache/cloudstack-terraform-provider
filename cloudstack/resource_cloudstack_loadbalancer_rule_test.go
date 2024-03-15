@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackLoadBalancerRule_basic(t *testing.T) {
@@ -269,26 +269,26 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb"
-  ip_address_id = "${cloudstack_ipaddress.foo.id}"
+  ip_address_id = cloudstack_ipaddress.foo.id
   algorithm = "roundrobin"
   public_port = 80
   private_port = 80
-  member_ids = ["${cloudstack_instance.foobar1.id}"]
+  member_ids = [cloudstack_instance.foobar1.id]
 }`
 
 const testAccCloudStackLoadBalancerRule_update = `
@@ -301,26 +301,26 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb-update"
-  ip_address_id = "${cloudstack_ipaddress.foo.id}"
+  ip_address_id = cloudstack_ipaddress.foo.id
   algorithm = "leastconn"
   public_port = 80
   private_port = 80
-  member_ids = ["${cloudstack_instance.foobar1.id}"]
+  member_ids = [cloudstack_instance.foobar1.id]
 }`
 
 const testAccCloudStackLoadBalancerRule_forcenew = `
@@ -333,27 +333,27 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb-update"
-  ip_address_id = "${cloudstack_ipaddress.foo.id}"
+  ip_address_id = cloudstack_ipaddress.foo.id
   algorithm = "leastconn"
   public_port = 443
   private_port = 443
 	protocol = "tcp-proxy"
-  member_ids = ["${cloudstack_instance.foobar1.id}"]
+  member_ids = [cloudstack_instance.foobar1.id]
 }`
 
 const testAccCloudStackLoadBalancerRule_vpc = `
@@ -368,33 +368,33 @@ resource "cloudstack_network" "foo" {
   name = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb"
-  ip_address_id = "${cloudstack_ipaddress.foo.id}"
+  ip_address_id = cloudstack_ipaddress.foo.id
   algorithm = "roundrobin"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   public_port = 80
   private_port = 80
-  member_ids = ["${cloudstack_instance.foobar1.id}"]
+  member_ids = [cloudstack_instance.foobar1.id]
 }`
 
 const testAccCloudStackLoadBalancerRule_vpc_update = `
@@ -409,22 +409,22 @@ resource "cloudstack_network" "foo" {
   name = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }
 
 resource "cloudstack_instance" "foobar1" {
   name = "terraform-server1"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
@@ -432,18 +432,18 @@ resource "cloudstack_instance" "foobar2" {
   name = "terraform-server2"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
 resource "cloudstack_loadbalancer_rule" "foo" {
   name = "terraform-lb-update"
-  ip_address_id = "${cloudstack_ipaddress.foo.id}"
+  ip_address_id = cloudstack_ipaddress.foo.id
   algorithm = "leastconn"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   public_port = 443
   private_port = 443
-  member_ids = ["${cloudstack_instance.foobar1.id}", "${cloudstack_instance.foobar2.id}"]
+  member_ids = [cloudstack_instance.foobar1.id, cloudstack_instance.foobar2.id]
 }`
