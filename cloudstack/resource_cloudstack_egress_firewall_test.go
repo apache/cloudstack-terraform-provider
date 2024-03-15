@@ -162,6 +162,7 @@ func testAccCheckCloudStackEgressFirewallDestroy(s *terraform.State) error {
 const testAccCloudStackEgressFirewall_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -180,6 +181,7 @@ resource "cloudstack_egress_firewall" "foo" {
 const testAccCloudStackEgressFirewall_update = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"

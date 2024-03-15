@@ -117,6 +117,7 @@ func testAccCheckCloudStackStaticNATDestroy(s *terraform.State) error {
 const testAccCloudStackStaticNAT_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
 	source_nat_ip = true

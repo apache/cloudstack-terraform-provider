@@ -261,6 +261,7 @@ func testAccCheckCloudStackNetworkDestroy(s *terraform.State) error {
 const testAccCloudStackNetwork_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -272,6 +273,7 @@ resource "cloudstack_network" "foo" {
 const testAccCloudStackNetwork_project = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   project = "terraform"
@@ -288,6 +290,7 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
   vpc_id = cloudstack_vpc.foo.id
@@ -309,6 +312,7 @@ resource "cloudstack_network_acl" "foo" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
   vpc_id = cloudstack_vpc.foo.id
@@ -331,6 +335,7 @@ resource "cloudstack_network_acl" "bar" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
   vpc_id = cloudstack_vpc.foo.id

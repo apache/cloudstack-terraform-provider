@@ -228,6 +228,7 @@ resource "cloudstack_disk" "foo" {
 const testAccCloudStackDisk_deviceID = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+	display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
