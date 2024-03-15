@@ -22,6 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -202,11 +203,21 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 		return err
 	}
 
+	public_port, err := strconv.Atoi(lb.Publicport)
+	if err != nil {
+		return err
+	}
+
+	private_port, err := strconv.Atoi(lb.Privateport)
+	if err != nil {
+		return err
+	}
+
 	d.Set("name", lb.Name)
 	d.Set("ip_address_id", lb.Publicipid)
 	d.Set("algorithm", lb.Algorithm)
-	d.Set("public_port", lb.Publicport)
-	d.Set("private_port", lb.Privateport)
+	d.Set("public_port", public_port)
+	d.Set("private_port", private_port)
 	d.Set("protocol", lb.Protocol)
 
 	// Only set network if user specified it to avoid spurious diffs

@@ -22,7 +22,6 @@ package cloudstack
 import (
 	"fmt"
 	"log"
-	"net/url"
 	"strings"
 	"time"
 
@@ -101,16 +100,15 @@ func resourceCloudStackAutoScaleVMProfileCreate(d *schema.ResourceData, meta int
 		if err != nil {
 			return err
 		}
-		p.SetDestroyvmgraceperiod(int(duration.Seconds()))
+		p.SetExpungevmgraceperiod(int(duration.Seconds()))
 	}
 
 	if v, ok := d.GetOk("other_deploy_params"); ok {
-		otherMap := v.(map[string]interface{})
-		result := url.Values{}
-		for k, v := range otherMap {
-			result.Set(k, fmt.Sprint(v))
+		nv := make(map[string]string)
+		for k, v := range v.(map[string]interface{}) {
+			nv[k] = v.(string)
 		}
-		p.SetOtherdeployparams(result.Encode())
+		p.SetOtherdeployparams(nv)
 	}
 
 	// Create the new vm profile
@@ -164,19 +162,10 @@ func resourceCloudStackAutoScaleVMProfileRead(d *schema.ResourceData, meta inter
 	setValueOrID(d, "template", template.Name, p.Templateid)
 	setValueOrID(d, "zone", zone.Name, p.Zoneid)
 
-	d.Set("destroy_vm_grace_period", (time.Duration(p.Destroyvmgraceperiod) * time.Second).String())
+	d.Set("destroy_vm_grace_period", (time.Duration(p.Expungevmgraceperiod) * time.Second).String())
 
-	if p.Otherdeployparams != "" {
-		var values url.Values
-		values, err = url.ParseQuery(p.Otherdeployparams)
-		if err != nil {
-			return err
-		}
-		otherParams := make(map[string]interface{}, len(values))
-		for key := range values {
-			otherParams[key] = values.Get(key)
-		}
-		d.Set("other_deploy_params", otherParams)
+	if p.Otherdeployparams != nil {
+		d.Set("other_deploy_params", p.Otherdeployparams)
 	}
 
 	metadata, err := getMetadata(cs, d, "AutoScaleVmProfile")
@@ -211,7 +200,7 @@ func resourceCloudStackAutoScaleVMProfileUpdate(d *schema.ResourceData, meta int
 		if err != nil {
 			return err
 		}
-		p.SetDestroyvmgraceperiod(int(duration.Seconds()))
+		p.SetExpungevmgraceperiod(int(duration.Seconds()))
 	}
 
 	_, err := cs.AutoScale.UpdateAutoScaleVmProfile(p)
