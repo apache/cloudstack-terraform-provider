@@ -84,7 +84,7 @@ jobs:
       - name: Create extra resources
         run: |
           cmk -u $CLOUDSTACK_API_URL -k $CLOUDSTACK_API_KEY -s $CLOUDSTACK_SECRET_KEY -o json create project name=terraform displaytext=terraform
-      - uses: hashicorp/setup-terraform@v2
+      - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false
