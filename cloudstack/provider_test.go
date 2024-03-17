@@ -20,10 +20,14 @@
 package cloudstack
 
 import (
+	"context"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-mux/tf5muxserver"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 var testAccProviders map[string]*schema.Provider
@@ -48,27 +52,47 @@ func TestProvider_impl(t *testing.T) {
 	var _ *schema.Provider = New()
 }
 
-func testSetValueOnResourceData(t *testing.T) {
-	d := schema.ResourceData{}
-	d.Set("id", "name")
+func TestMuxServer(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
+			"cloudstack": func() (tfprotov5.ProviderServer, error) {
+				ctx := context.Background()
+				providers := []func() tfprotov5.ProviderServer{
+					New().GRPCProvider,
+				}
 
-	setValueOrID(&d, "id", "name", "54711781-274e-41b2-83c0-17194d0108f7")
+				muxServer, err := tf5muxserver.NewMuxServer(ctx, providers...)
 
-	if d.Get("id").(string) != "name" {
-		t.Fatal("err: 'id' does not match 'name'")
-	}
+				if err != nil {
+					return nil, err
+				}
+
+				return muxServer.ProviderServer(), nil
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: testMuxServerConfig_basic,
+			},
+		},
+	})
 }
 
-func testSetIDOnResourceData(t *testing.T) {
-	d := schema.ResourceData{}
-	d.Set("id", "54711781-274e-41b2-83c0-17194d0108f7")
+const testMuxServerConfig_basic = `
+resource "cloudstack_zone" "zone_resource"{
+	name       		= "TestZone"
+  	dns1       		= "8.8.8.8"
+  	internal_dns1  	=  "172.20.0.1"
+  	network_type   	=  "Advanced"
+  }
 
-	setValueOrID(&d, "id", "name", "54711781-274e-41b2-83c0-17194d0108f7")
-
-	if d.Get("id").(string) != "54711781-274e-41b2-83c0-17194d0108f7" {
-		t.Fatal("err: 'id' does not match '54711781-274e-41b2-83c0-17194d0108f7'")
-	}
-}
+  data "cloudstack_zone" "zone_data_source"{
+    filter{
+    	name 	=	"name"
+    	value	=	cloudstack_zone.zone_resource.name
+    }
+  }
+  `
 
 func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("CLOUDSTACK_API_URL"); v == "" {
