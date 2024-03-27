@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackVPNGateway_basic(t *testing.T) {
@@ -125,5 +125,5 @@ resource "cloudstack_vpc" "foo" {
 }
 
 resource "cloudstack_vpn_gateway" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }`

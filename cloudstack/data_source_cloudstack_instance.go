@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceCloudstackInstance() *schema.Resource {
@@ -155,11 +155,7 @@ func instanceDescriptionAttributes(d *schema.ResourceData, instance *cloudstack.
 	d.Set("zone_id", instance.Zoneid)
 	d.Set("nic", []interface{}{map[string]string{"ip_address": instance.Nic[0].Ipaddress}})
 
-	tags := make(map[string]interface{})
-	for _, tag := range instance.Tags {
-		tags[tag.Key] = tag.Value
-	}
-	d.Set("tags", tags)
+	d.Set("tags", tagsToMap(instance.Tags))
 
 	return nil
 }

@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackDisk() *schema.Resource {
@@ -105,7 +105,6 @@ func resourceCloudStackDisk() *schema.Resource {
 
 func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -145,14 +144,6 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error creating the new disk %s: %s", name, err)
 	}
 
-	d.SetPartial("name")
-	d.SetPartial("device_id")
-	d.SetPartial("disk_offering")
-	d.SetPartial("size")
-	d.SetPartial("virtual_machine_id")
-	d.SetPartial("project")
-	d.SetPartial("zone")
-
 	// Set the volume ID and partials
 	d.SetId(r.Id)
 
@@ -161,7 +152,6 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return fmt.Errorf("Error setting tags on the new disk %s: %s", name, err)
 	}
-	d.SetPartial("tags")
 
 	if d.Get("attach").(bool) {
 		if err := resourceCloudStackDiskAttach(d, meta); err != nil {
@@ -169,10 +159,8 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 		}
 
 		// Set the additional partial
-		d.SetPartial("attach")
 	}
 
-	d.Partial(false)
 	return resourceCloudStackDiskRead(d, meta)
 }
 
@@ -217,7 +205,6 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -257,8 +244,6 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 
 		// Update the volume ID and set partials
 		d.SetId(r.Id)
-		d.SetPartial("disk_offering")
-		d.SetPartial("size")
 	}
 
 	// If the device ID changed, just detach here so we can re-attach the
@@ -278,9 +263,6 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 
 		// Set the additional partials
-		d.SetPartial("attach")
-		d.SetPartial("device_id")
-		d.SetPartial("virtual_machine_id")
 	} else {
 		// Detach the volume
 		if err := resourceCloudStackDiskDetach(d, meta); err != nil {
@@ -294,10 +276,7 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return fmt.Errorf("Error updating tags on disk %s: %s", name, err)
 		}
-		d.SetPartial("tags")
 	}
-
-	d.Partial(false)
 
 	return resourceCloudStackDiskRead(d, meta)
 }

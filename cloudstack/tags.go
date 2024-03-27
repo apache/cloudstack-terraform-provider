@@ -23,7 +23,7 @@ import (
 	"log"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // tagsSchema returns the schema to use for tags
@@ -108,6 +108,14 @@ func tagsFromSchema(m map[string]interface{}) map[string]string {
 	result := make(map[string]string, len(m))
 	for k, v := range m {
 		result[k] = v.(string)
+	}
+	return result
+}
+
+func tagsToMap(tags []cloudstack.Tags) map[string]string {
+	result := make(map[string]string, len(tags))
+	for _, tag := range tags {
+		result[tag.Key] = tag.Value
 	}
 	return result
 }

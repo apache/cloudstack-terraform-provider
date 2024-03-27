@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackVPNConnection_basic(t *testing.T) {
@@ -115,37 +115,37 @@ resource "cloudstack_vpc" "bar" {
 }
 
 resource "cloudstack_vpn_gateway" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }
 
 resource "cloudstack_vpn_gateway" "bar" {
-  vpc_id = "${cloudstack_vpc.bar.id}"
+  vpc_id = cloudstack_vpc.bar.id
 }
 
 resource "cloudstack_vpn_customer_gateway" "foo" {
   name = "terraform-foo"
-  cidr = "${cloudstack_vpc.foo.cidr}"
+  cidr = cloudstack_vpc.foo.cidr
   esp_policy = "aes256-sha1"
-  gateway = "${cloudstack_vpn_gateway.foo.public_ip}"
+  gateway = cloudstack_vpn_gateway.foo.public_ip
   ike_policy = "aes256-sha1;modp1536"
   ipsec_psk = "terraform"
 }
 
 resource "cloudstack_vpn_customer_gateway" "bar" {
   name = "terraform-bar"
-  cidr = "${cloudstack_vpc.bar.cidr}"
+  cidr = cloudstack_vpc.bar.cidr
   esp_policy = "aes256-sha1"
-  gateway = "${cloudstack_vpn_gateway.bar.public_ip}"
+  gateway = cloudstack_vpn_gateway.bar.public_ip
   ike_policy = "aes256-sha1;modp1536"
   ipsec_psk = "terraform"
 }
 
 resource "cloudstack_vpn_connection" "foo-bar" {
-  customer_gateway_id = "${cloudstack_vpn_customer_gateway.foo.id}"
-  vpn_gateway_id = "${cloudstack_vpn_gateway.bar.id}"
+  customer_gateway_id = cloudstack_vpn_customer_gateway.foo.id
+  vpn_gateway_id = cloudstack_vpn_gateway.bar.id
 }
 
 resource "cloudstack_vpn_connection" "bar-foo" {
-  customer_gateway_id = "${cloudstack_vpn_customer_gateway.bar.id}"
-  vpn_gateway_id = "${cloudstack_vpn_gateway.foo.id}"
+  customer_gateway_id = cloudstack_vpn_customer_gateway.bar.id
+  vpn_gateway_id = cloudstack_vpn_gateway.foo.id
 }`

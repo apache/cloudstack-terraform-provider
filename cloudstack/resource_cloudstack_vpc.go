@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackVPC() *schema.Resource {
@@ -264,7 +264,6 @@ func resourceCloudStackVPCUpdate(d *schema.ResourceData, meta interface{}) error
 		if err != nil {
 			return fmt.Errorf("Error updating tags on VPC %s: %s", name, err)
 		}
-		d.SetPartial("tags")
 	}
 
 	return resourceCloudStackVPCRead(d, meta)

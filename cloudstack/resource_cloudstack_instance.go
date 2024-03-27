@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackInstance() *schema.Resource {
@@ -482,11 +482,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("security_group_names", groups)
 	}
 
-	tags := make(map[string]interface{})
-	for _, tag := range vm.Tags {
-		tags[tag.Key] = tag.Value
-	}
-	d.Set("tags", tags)
+	d.Set("tags", tagsToMap(vm.Tags))
 
 	setValueOrID(d, "service_offering", vm.Serviceofferingname, vm.Serviceofferingid)
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
@@ -498,7 +494,6 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 
 func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-	d.Partial(true)
 
 	name := d.Get("name").(string)
 
@@ -519,7 +514,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				"Error updating the display name for instance %s: %s", name, err)
 		}
 
-		d.SetPartial("display_name")
 	}
 
 	// Check if the group is changed and if so, update the virtual machine
@@ -539,7 +533,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				"Error updating the group for instance %s: %s", name, err)
 		}
 
-		d.SetPartial("group")
 	}
 
 	// Attributes that require reboot to update
@@ -570,7 +563,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 					"Error updating the name for instance %s: %s", name, err)
 			}
 
-			d.SetPartial("name")
 		}
 
 		// Check if the service offering is changed and if so, update the offering
@@ -592,7 +584,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return fmt.Errorf(
 					"Error changing the service offering for instance %s: %s", name, err)
 			}
-			d.SetPartial("service_offering")
 		}
 
 		// Check if the affinity group IDs have changed and if so, update the IDs
@@ -615,7 +606,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return fmt.Errorf(
 					"Error updating the affinity groups for instance %s: %s", name, err)
 			}
-			d.SetPartial("affinity_group_ids")
 		}
 
 		// Check if the affinity group names have changed and if so, update the names
@@ -638,14 +628,17 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return fmt.Errorf(
 					"Error updating the affinity groups for instance %s: %s", name, err)
 			}
-			d.SetPartial("affinity_group_names")
 		}
 
 		// Check if the keypair has changed and if so, update the keypair
 		if d.HasChange("keypair") {
 			log.Printf("[DEBUG] SSH keypair changed for %s, starting update", name)
 
-			p := cs.SSH.NewResetSSHKeyForVirtualMachineParams(d.Id(), d.Get("keypair").(string))
+			p := cs.SSH.NewResetSSHKeyForVirtualMachineParams(d.Id())
+
+			if keypair, ok := d.GetOk("keypair"); ok {
+				p.SetKeypair(keypair.(string))
+			}
 
 			// If there is a project supplied, we retrieve and set the project id
 			if err := setProjectid(p, cs, d); err != nil {
@@ -657,7 +650,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return fmt.Errorf(
 					"Error changing the SSH keypair for instance %s: %s", name, err)
 			}
-			d.SetPartial("keypair")
 		}
 
 		// Check if the user data has changed and if so, update the user data
@@ -676,7 +668,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return fmt.Errorf(
 					"Error updating user_data for instance %s: %s", name, err)
 			}
-			d.SetPartial("user_data")
 		}
 
 		// Start the virtual machine again
@@ -693,7 +684,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := updateTags(cs, d, "UserVm"); err != nil {
 			return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
 		}
-		d.SetPartial("tags")
 	}
 
 	// Check if the details have changed and if so, update the details
@@ -707,8 +697,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		p.SetDetails(vmDetails)
 	}
-
-	d.Partial(false)
 
 	return resourceCloudStackInstanceRead(d, meta)
 }

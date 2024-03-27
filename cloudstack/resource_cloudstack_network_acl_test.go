@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackNetworkACL_basic(t *testing.T) {
@@ -142,5 +142,5 @@ resource "cloudstack_vpc" "foo" {
 resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
   description = "terraform-acl-text"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }`
