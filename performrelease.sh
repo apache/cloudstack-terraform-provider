@@ -115,9 +115,9 @@ if [ "$tag" == "yes" ]; then
   echo 'tag'
   cd $sourcedir
   if [ "$certid" == "X" ]; then
-      git tag -s $version -m "Tagging release $version on branch $branch."
+      git tag -s v$version -m "Tagging release $version on branch $branch."
   else
-      git tag -u $certid -s $version -m "Tagging release $version on branch $branch."
+      git tag -u $certid -s v$version -m "Tagging release $version on branch $branch."
   fi
 fi
 
