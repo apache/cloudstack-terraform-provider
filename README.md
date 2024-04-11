@@ -5,17 +5,49 @@ Requirements
 ------------
 
 -	[Terraform](https://www.terraform.io/downloads.html) 1.0.x
--	[Go](https://golang.org/doc/install) 1.16+ (to build the provider plugin)
+-	[Go](https://golang.org/doc/install) 1.20+ (to build the provider plugin)
 
-Using the Provider from Terraform registry
-------------------------------------------
-To install the CloudStack provider, copy and paste the below code into your Terraform configuration. Then, run terraform init.
-```sh
+See wiki: https://github.com/apache/cloudstack-terraform-provider/wiki
+
+Installing from Github Release
+------------------------------
+
+User can install the CloudStack Terraform Provider using the [Github Releases](https://github.com/apache/cloudstack-terraform-provider/releases) with the installation steps below.
+
+Replace the `RELEASE` version with the version you're trying to install and use.
+
+The valid `ARCH` options are:
+
+- linux_amd64
+- linux_386
+- linux_arm64
+- linux_arm
+- darwin_amd64
+- darwin_arm64
+- freebsd_amd64
+- freebsd_386
+- freebsd_arm64
+- freebsd_arm
+
+Steps for installation:
+
+```
+RELEASE=0.5.0
+ARCH=darwin_arm64
+mkdir -p ~/.terraform.d/plugins/local/cloudstack/cloudstack/${RELEASE}/${ARCH}
+wget "https://github.com/apache/cloudstack-terraform-provider/releases/download/v${RELEASE}/cloudstack-terraform-provider_${RELEASE}_${ARCH}.zip"
+unzip cloudstack-terraform-provider_${RELEASE}_${ARCH}.zip -d cloudstack-terraform-provider_${RELEASE}
+mv cloudstack-terraform-provider_${RELEASE}/cloudstack-terraform-provider_v${RELEASE} ~/.terraform.d/plugins/local/cloudstack/cloudstack/${RELEASE}/${ARCH}/terraform-provider-cloudstack_v${RELEASE}
+```
+
+To use the locally installed provider, please use the following in your main.tf etc, and then run `terraform init`:
+
+```
 terraform {
   required_providers {
     cloudstack = {
-      source = "cloudstack/cloudstack"
-      version = "0.4.0"
+      source = "local/cloudstack/cloudstack"
+      version = "0.5.0"
     }
   }
 }
@@ -24,7 +56,33 @@ provider "cloudstack" {
   # Configuration options
 }
 ```
-For more details on how to install and use the provider, click [here](website/) or visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
+
+Note: this can be used when users are not able to install using the Terraform registry.
+
+Installing from Terrafrom registry
+----------------------------------
+To install the CloudStack provider, copy and paste the below code into your Terraform configuration. Then, run terraform init.
+```sh
+terraform {
+  required_providers {
+    cloudstack = {
+      source = "cloudstack/cloudstack"
+      version = "0.5.0"
+    }
+  }
+}
+
+provider "cloudstack" {
+  # Configuration options
+}
+```
+
+User hitting installation issue using registry can install using the local install method.
+
+Documentation
+-------------
+
+For more details on how to use the provider, visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
 
 Developing the Provider
 ---------------------------
