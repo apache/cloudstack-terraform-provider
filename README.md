@@ -82,7 +82,7 @@ User hitting installation issue using registry can install using the local insta
 Documentation
 -------------
 
-For more details on how to use the provider, visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
+For more details on how to use the provider, click [here](website/) or visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
 
 Developing the Provider
 ---------------------------
