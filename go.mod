@@ -6,8 +6,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/terraform v0.12.0
-	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
-	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
+	golang.org/x/net v0.23.0 // indirect
 )
 
 go 1.16
