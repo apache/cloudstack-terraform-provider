@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -27,6 +28,7 @@ import (
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -169,4 +171,25 @@ func importStatePassthrough(d *schema.ResourceData, meta interface{}) ([]*schema
 	d.SetId(s[len(s)-1])
 
 	return []*schema.ResourceData{d}, nil
+}
+
+type ResourceWithConfigure struct {
+	client *cloudstack.CloudStackClient
+}
+
+func (r *ResourceWithConfigure) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*cloudstack.CloudStackClient)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *cloudstack.CloudStackClient, got %T", req.ProviderData),
+		)
+	}
+
+	r.client = client
 }
