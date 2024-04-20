@@ -102,11 +102,8 @@ else
   gpg -v --default-key $certid --armor --output apache-cloudstack-terraform-provider-$version-src.tar.bz2.asc --detach-sig apache-cloudstack-terraform-provider-$version-src.tar.bz2
 fi
 
-echo 'md5'
-gpg -v --print-md MD5 apache-cloudstack-terraform-provider-$version-src.tar.bz2 > apache-cloudstack-terraform-provider-$version-src.tar.bz2.md5
-
 echo 'sha512'
-gpg -v --print-md SHA512 apache-cloudstack-terraform-provider-$version-src.tar.bz2 > apache-cloudstack-terraform-provider-$version-src.tar.bz2.sha512
+sha512sum apache-cloudstack-terraform-provider-$version-src.tar.bz2 > apache-cloudstack-terraform-provider-$version-src.tar.bz2.sha512
 
 echo 'verify'
 gpg -v --verify apache-cloudstack-terraform-provider-$version-src.tar.bz2.asc apache-cloudstack-terraform-provider-$version-src.tar.bz2
