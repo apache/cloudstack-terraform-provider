@@ -131,6 +131,8 @@ func Provider() terraform.ResourceProvider {
 			"cloudstack_user":                 resourceCloudStackUser(),
 			"cloudstack_domain":               resourceCloudStackDomain(),
 			"cloudstack_pod":                  resourceCloudStackPod(),
+			"cloudstack_cluster":              resourceCloudStackCluster(),
+			"cloudstack_physical_network":     resourceCloudStackPhysicalNetwork(),
 		},
 
 		ConfigureFunc: providerConfigure,

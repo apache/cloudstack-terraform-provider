@@ -64,6 +64,18 @@ func resourceCloudStackPod() *schema.Resource {
 			"allocation_state": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  "Enabled",
+				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
+					validOptions := []string{
+						"Enabled",
+						"Disabled",
+					}
+					err := validateOptions(validOptions, v.(string), k)
+					if err != nil {
+						errors = append(errors, err)
+					}
+					return
+				},
 			},
 			"has_annotations": {
 				Type:     schema.TypeBool,

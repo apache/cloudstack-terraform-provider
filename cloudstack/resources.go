@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -169,4 +170,14 @@ func importStatePassthrough(d *schema.ResourceData, meta interface{}) ([]*schema
 	d.SetId(s[len(s)-1])
 
 	return []*schema.ResourceData{d}, nil
+}
+
+// validateOptions checks if a string is in a list.
+func validateOptions(validOptions []string, input, k string) error {
+	sort.Strings(validOptions)
+	index := sort.SearchStrings(validOptions, input)
+	if index >= len(validOptions) || validOptions[index] != input {
+		return fmt.Errorf("%q must be one of %v got %v", k, validOptions, input)
+	}
+	return nil
 }
