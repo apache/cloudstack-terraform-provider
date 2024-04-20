@@ -36,12 +36,20 @@ import (
 var testAccProviders map[string]*schema.Provider
 var testAccProvider *schema.Provider
 
+var testAccProvidersV6 map[string]func() (tfprotov6.ProviderServer, error)
+var testAccProviderV6 func() (tfprotov6.ProviderServer, error)
+
 var cloudStackTemplateURL = os.Getenv("CLOUDSTACK_TEMPLATE_URL")
 
 func init() {
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"cloudstack": testAccProvider,
+	}
+
+	testAccProviderV6 = providerserver.NewProtocol6WithError(New())
+	testAccProvidersV6 = map[string]func() (tfprotov6.ProviderServer, error){
+		"cloudstack": testAccProviderV6,
 	}
 }
 
