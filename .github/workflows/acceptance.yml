@@ -131,5 +131,5 @@ jobs:
     # Only run if any of the previous jobs failed
     if: ${{ failure() }}
     steps:
-      - name: Previous jobs fails
+      - name: Previous jobs failed
         run: exit 1
