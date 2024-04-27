@@ -124,3 +124,12 @@ jobs:
         opentofu-version:
           - '1.6.*'
         cloudstack-version: ${{ fromJson(needs.prepare-matrix.outputs.cloudstack-versions) }}
+
+  all-jobs-passed: # Will succeed if it is skipped
+    runs-on: ubuntu-latest
+    needs: [acceptance-terraform, acceptance-opentofu]
+    # Only run if any of the previous jobs failed
+    if: ${{ failure() }}
+    steps:
+      - name: Previous jobs fails
+        run: exit 1
