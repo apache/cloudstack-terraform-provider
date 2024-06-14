@@ -180,6 +180,8 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 
 	if displaytext, ok := d.GetOk("display_text"); ok {
 		p.SetDisplaytext(displaytext.(string))
+	} else {
+		p.SetDisplaytext(name)
 	}
 
 	// Get the network offering to check if it supports specifying IP ranges
