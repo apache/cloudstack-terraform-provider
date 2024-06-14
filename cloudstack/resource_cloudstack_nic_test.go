@@ -171,7 +171,7 @@ func testAccCheckCloudStackNICDestroy(s *terraform.State) error {
 const testAccCloudStackNIC_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -179,7 +179,7 @@ resource "cloudstack_network" "foo" {
 
 resource "cloudstack_network" "bar" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.2.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -203,7 +203,7 @@ resource "cloudstack_nic" "foo" {
 const testAccCloudStackNIC_ipaddress = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -211,7 +211,7 @@ resource "cloudstack_network" "foo" {
 
 resource "cloudstack_network" "bar" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.2.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"

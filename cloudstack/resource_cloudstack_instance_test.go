@@ -312,7 +312,7 @@ func testAccCheckCloudStackInstanceDestroy(s *terraform.State) error {
 const testAccCloudStackInstance_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -335,7 +335,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_stopped = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -355,7 +355,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_renameAndResize = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -375,7 +375,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_fixedIP = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -395,7 +395,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_keyPair = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -412,14 +412,14 @@ resource "cloudstack_instance" "foobar" {
   network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
-	keypair = cloudstack_ssh_keypair.foo.name
+  keypair = cloudstack_ssh_keypair.foo.name
   expunge = true
 }`
 
 const testAccCloudStackInstance_project = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   project = "terraform"

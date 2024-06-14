@@ -117,10 +117,10 @@ func testAccCheckCloudStackStaticNATDestroy(s *terraform.State) error {
 const testAccCloudStackStaticNAT_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
-	source_nat_ip = true
+  source_nat_ip = true
   zone = "Sandbox-simulator"
 }
 
@@ -139,6 +139,6 @@ resource "cloudstack_ipaddress" "foo" {
 }
 
 resource "cloudstack_static_nat" "foo" {
-	ip_address_id = cloudstack_ipaddress.foo.id
+  ip_address_id = cloudstack_ipaddress.foo.id
   virtual_machine_id = cloudstack_instance.foobar.id
 }`

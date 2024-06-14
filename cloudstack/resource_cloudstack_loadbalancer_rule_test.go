@@ -262,7 +262,7 @@ func testAccCheckCloudStackLoadBalancerRuleDestroy(s *terraform.State) error {
 const testAccCloudStackLoadBalancerRule_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   source_nat_ip = true
@@ -295,7 +295,7 @@ resource "cloudstack_loadbalancer_rule" "foo" {
 const testAccCloudStackLoadBalancerRule_update = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   source_nat_ip = true
@@ -328,7 +328,7 @@ resource "cloudstack_loadbalancer_rule" "foo" {
 const testAccCloudStackLoadBalancerRule_forcenew = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   source_nat_ip = true
@@ -355,7 +355,7 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   algorithm = "leastconn"
   public_port = 443
   private_port = 443
-	protocol = "tcp-proxy"
+  protocol = "tcp-proxy"
   member_ids = [cloudstack_instance.foobar1.id]
 }`
 
@@ -369,7 +369,7 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
   vpc_id = cloudstack_vpc.foo.id
@@ -411,7 +411,7 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
   vpc_id = cloudstack_vpc.foo.id

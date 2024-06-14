@@ -188,10 +188,10 @@ func testAccCheckCloudStackFirewallDestroy(s *terraform.State) error {
 const testAccCloudStackFirewall_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
-	source_nat_ip = true
+  source_nat_ip = true
   zone = "Sandbox-simulator"
 }
 
@@ -214,10 +214,10 @@ resource "cloudstack_firewall" "foo" {
 const testAccCloudStackFirewall_update = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
-	display_text = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
-	source_nat_ip = true
+  source_nat_ip = true
   zone = "Sandbox-simulator"
 }
 
