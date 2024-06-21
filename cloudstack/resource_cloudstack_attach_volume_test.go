@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccCloudstackAttachVolume_basic(t *testing.T) {
@@ -43,6 +43,7 @@ func TestAccCloudstackAttachVolume_basic(t *testing.T) {
 const testAccCloudstackAttachVolume_basic = `
 resource "cloudstack_network" "foo" {
 	name = "terraform-network"
+    display_text = "terraform-network"
 	cidr = "10.1.1.0/24"
 	network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
 	zone = "Sandbox-simulator"
@@ -52,16 +53,16 @@ resource "cloudstack_network" "foo" {
 	name = "terraform-test"
 	display_name = "terraform"
 	service_offering= "Small Instance"
-	network_id = "${cloudstack_network.foo.id}"
+	network_id = cloudstack_network.foo.id
 	template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-	zone = "${cloudstack_network.foo.zone}"
+	zone = cloudstack_network.foo.zone
 	expunge = true
 }
   
   resource "cloudstack_disk" "foo" {
 	name = "terraform-disk"
 	disk_offering = "Small"
-	zone = "${cloudstack_instance.foobar.zone}"
+	zone = cloudstack_instance.foobar.zone
 }
 
 resource "cloudstack_attach_volume" "foo" {

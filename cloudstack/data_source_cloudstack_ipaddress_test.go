@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccIPAddressDataSource_basic(t *testing.T) {
@@ -38,7 +38,6 @@ func TestAccIPAddressDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "zone_name", resourceName, "zone"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -60,6 +59,6 @@ resource "cloudstack_ipaddress" "ipaddress-resource" {
 	}
   
   output "ipaddress-output" {
-	value = "${data.cloudstack_ipaddress.ipaddress-data-source}"
+	value = data.cloudstack_ipaddress.ipaddress-data-source
   }
   `

@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // basic acceptance to check if the display_name attribute has same value in
@@ -40,7 +40,6 @@ func TestAccInstanceDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "display_name", resourceName, "display_name"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

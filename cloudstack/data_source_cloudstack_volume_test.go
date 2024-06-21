@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccVolumeDataSource_basic(t *testing.T) {
@@ -38,7 +38,6 @@ func TestAccVolumeDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -60,8 +59,8 @@ data "cloudstack_zone" "zone-data-source" {
 
 resource "cloudstack_volume" "volume-resource"{
 	name				=	"TestVolume"
-	disk_offering_id	=	"${cloudstack_disk_offering.disk-offering.id}"
-	zone_id				=	"${data.cloudstack_zone.zone-data-source.id}"
+	disk_offering_id	=	cloudstack_disk_offering.disk-offering.id
+	zone_id				=	data.cloudstack_zone.zone-data-source.id
   }
 
 data "cloudstack_volume" "volume-data-source"{

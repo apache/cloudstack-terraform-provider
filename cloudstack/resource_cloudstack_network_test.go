@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackNetwork_basic(t *testing.T) {
@@ -106,9 +106,16 @@ func TestAccCloudStackNetwork_updateACL(t *testing.T) {
 					testAccCheckCloudStackNetworkVPCAttributes(&network),
 				),
 			},
-
 			{
 				Config: testAccCloudStackNetwork_updateACL,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					testAccCheckCloudStackNetworkVPCAttributes(&network),
+				),
+			},
+			{
+				Config: testAccCloudStackNetwork_updateACL_cleanup,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackNetworkExists(
 						"cloudstack_network.foo", &network),
@@ -261,6 +268,7 @@ func testAccCheckCloudStackNetworkDestroy(s *terraform.State) error {
 const testAccCloudStackNetwork_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -272,6 +280,7 @@ resource "cloudstack_network" "foo" {
 const testAccCloudStackNetwork_project = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   project = "terraform"
@@ -288,10 +297,11 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`
 
 const testAccCloudStackNetwork_acl = `
@@ -304,16 +314,17 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network_acl" "foo" {
   name = "foo"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
 }
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  acl_id = "${cloudstack_network_acl.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`
 
 const testAccCloudStackNetwork_updateACL = `
@@ -326,14 +337,43 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network_acl" "bar" {
   name = "bar"
-  vpc_id = "${cloudstack_vpc.foo.id}"
+  vpc_id = cloudstack_vpc.foo.id
+}
+
+resource "cloudstack_network_acl" "foo" {
+  name = "foo"
+  vpc_id = cloudstack_vpc.foo.id
 }
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  acl_id = "${cloudstack_network_acl.bar.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.bar.id
+  zone = cloudstack_vpc.foo.zone
+}`
+
+const testAccCloudStackNetwork_updateACL_cleanup = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network_acl" "bar" {
+  name = "bar"
+  vpc_id = cloudstack_vpc.foo.id
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.bar.id
+  zone = cloudstack_vpc.foo.zone
 }`

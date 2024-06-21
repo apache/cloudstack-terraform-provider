@@ -1,16 +1,13 @@
-CloudStack Terraform Provider
-=============================
+# CloudStack Terraform Provider
 
-Requirements
-------------
+## Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) 1.0.x
--	[Go](https://golang.org/doc/install) 1.20+ (to build the provider plugin)
+- [Terraform](https://www.terraform.io/downloads.html) 1.0.x
+- [Go](https://golang.org/doc/install) 1.20+ (to build the provider plugin)
 
 See wiki: https://github.com/apache/cloudstack-terraform-provider/wiki
 
-Installing from Github Release
-------------------------------
+## Installing from Github Release
 
 User can install the CloudStack Terraform Provider using the [Github Releases](https://github.com/apache/cloudstack-terraform-provider/releases) with the installation steps below.
 
@@ -59,9 +56,10 @@ provider "cloudstack" {
 
 Note: this can be used when users are not able to install using the Terraform registry.
 
-Installing from Terrafrom registry
-----------------------------------
+## Installing from Terrafrom registry
+
 To install the CloudStack provider, copy and paste the below code into your Terraform configuration. Then, run terraform init.
+
 ```sh
 terraform {
   required_providers {
@@ -79,15 +77,13 @@ provider "cloudstack" {
 
 User hitting installation issue using registry can install using the local install method.
 
-Documentation
--------------
+## Documentation
 
 For more details on how to use the provider, click [here](website/) or visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
 
-Developing the Provider
----------------------------
+## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.16+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.16+ is _required_). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 Clone repository to: `$GOPATH/src/github.com/apache/cloudstack-terraform-provider`
 
@@ -105,6 +101,7 @@ $ cd $GOPATH/src/github.com/apache/cloudstack-terraform-provider
 $ make build
 $ ls $GOPATH/bin/terraform-provider-cloudstack
 ```
+
 Once the build is ready, you have to copy the binary into Terraform locally (version appended).
 
 On Linux and Mac this path is at ~/.terraform.d/plugins,
@@ -116,8 +113,7 @@ $  mkdir -p ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_a
 $  cp $GOPATH/bin/terraform-provider-cloudstack ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
 ```
 
-Testing the Provider
---------------------
+## Testing the Provider
 
 In order to test the provider, you can simply run `make test`.
 
@@ -132,13 +128,13 @@ docker pull apache/cloudstack-simulator
 
 or pull it with a particular build tag
 
-docker pull apache/cloudstack-simulator:4.17.2.0
+docker pull apache/cloudstack-simulator:4.19.0.0
 
 docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator
 
 or
 
-docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.17.2.0
+docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.19.0.0
 ```
 
 When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
@@ -163,8 +159,8 @@ In order for all the tests to pass, you will need to create a new (empty) projec
 $ make testacc
 ```
 
-Sample Terraform configuration when testing locally
-------------------------------------------------------------
+## Sample Terraform configuration when testing locally
+
 Below is an example configuration to initialize provider and create a Virtual Machine instance
 
 ```sh
@@ -180,9 +176,9 @@ terraform {
 
 provider "cloudstack" {
   # Configuration options
-  api_url    = "${var.cloudstack_api_url}"
-  api_key    = "${var.cloudstack_api_key}"
-  secret_key = "${var.cloudstack_secret_key}"
+  api_url    = var.cloudstack_api_url
+  api_key    = var.cloudstack_api_key
+  secret_key = var.cloudstack_secret_key
 }
 
 resource "cloudstack_instance" "web" {
@@ -193,6 +189,7 @@ resource "cloudstack_instance" "web" {
   zone             = "2b61ed5d-e8bd-431d-bf52-d127655dffab"
 }
 ```
+
 ## History
 
 This codebase relicensed under APLv2 and donated to the Apache CloudStack

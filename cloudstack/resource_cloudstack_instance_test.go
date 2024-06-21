@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackInstance_basic(t *testing.T) {
@@ -312,6 +312,7 @@ func testAccCheckCloudStackInstanceDestroy(s *terraform.State) error {
 const testAccCloudStackInstance_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -321,7 +322,7 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   user_data = "foobar\nfoo\nbar"
@@ -334,6 +335,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_stopped = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -343,7 +345,7 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   start_vm = false
@@ -353,6 +355,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_renameAndResize = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -362,7 +365,7 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-updated"
   display_name = "terraform-updated"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   user_data = "foobar\nfoo\nbar"
@@ -372,6 +375,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_fixedIP = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -381,7 +385,7 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   ip_address = "10.1.1.123"
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
@@ -391,6 +395,7 @@ resource "cloudstack_instance" "foobar" {
 const testAccCloudStackInstance_keyPair = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -404,16 +409,17 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
-	keypair = "${cloudstack_ssh_keypair.foo.name}"
+  keypair = cloudstack_ssh_keypair.foo.name
   expunge = true
 }`
 
 const testAccCloudStackInstance_project = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   project = "terraform"
@@ -424,9 +430,9 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-test"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   project = "terraform"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }`

@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackPortForward_basic(t *testing.T) {
@@ -136,9 +136,10 @@ func testAccCheckCloudStackPortForwardDestroy(s *terraform.State) error {
 const testAccCloudStackPortForward_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
-	source_nat_ip = true
+  source_nat_ip = true
   zone = "Sandbox-simulator"
 }
 
@@ -146,29 +147,30 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-updated"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_port_forward" "foo" {
-  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
 
   forward {
     protocol = "tcp"
     private_port = 443
     public_port = 8443
-    virtual_machine_id = "${cloudstack_instance.foobar.id}"
+    virtual_machine_id = cloudstack_instance.foobar.id
   }
 }`
 
 const testAccCloudStackPortForward_update = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
-	source_nat_ip = true
+  source_nat_ip = true
   zone = "Sandbox-simulator"
 }
 
@@ -176,26 +178,26 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform-updated"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_port_forward" "foo" {
-  ip_address_id = "${cloudstack_network.foo.source_nat_ip_id}"
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
 
   forward {
     protocol = "tcp"
     private_port = 443
     public_port = 8443
-    virtual_machine_id = "${cloudstack_instance.foobar.id}"
+    virtual_machine_id = cloudstack_instance.foobar.id
   }
 
   forward {
     protocol = "tcp"
     private_port = 80
     public_port = 8080
-    virtual_machine_id = "${cloudstack_instance.foobar.id}"
+    virtual_machine_id = cloudstack_instance.foobar.id
   }
 }`

@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackPrivateGateway() *schema.Resource {
@@ -100,9 +100,9 @@ func resourceCloudStackPrivateGatewayCreate(d *schema.ResourceData, meta interfa
 		d.Get("gateway").(string),
 		ipaddress,
 		d.Get("netmask").(string),
-		d.Get("vlan").(string),
 		d.Get("vpc_id").(string),
 	)
+	p.SetVlan(d.Get("vlan").(string))
 
 	// Retrieve the network_offering ID
 	if networkofferingid != "" {

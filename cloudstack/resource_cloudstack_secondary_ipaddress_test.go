@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackSecondaryIPAddress_basic(t *testing.T) {
@@ -221,6 +221,7 @@ func testAccCheckCloudStackSecondaryIPAddressDestroy(s *terraform.State) error {
 const testAccCloudStackSecondaryIPAddress_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -229,19 +230,20 @@ resource "cloudstack_network" "foo" {
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_secondary_ipaddress" "foo" {
-	virtual_machine_id = "${cloudstack_instance.foobar.id}"
-} `
+  virtual_machine_id = cloudstack_instance.foobar.id
+}`
 
 const testAccCloudStackSecondaryIPAddress_fixedIP = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -250,7 +252,7 @@ resource "cloudstack_network" "foo" {
 resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
@@ -258,5 +260,5 @@ resource "cloudstack_instance" "foobar" {
 
 resource "cloudstack_secondary_ipaddress" "foo" {
 	ip_address = "10.1.1.123"
-	virtual_machine_id = "${cloudstack_instance.foobar.id}"
+	virtual_machine_id = cloudstack_instance.foobar.id
 }`

@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackEgressFirewall_basic(t *testing.T) {
@@ -42,11 +42,11 @@ func TestAccCloudStackEgressFirewall_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.ports.32925333", "8080"),
+						"cloudstack_egress_firewall.foo", "rule.0.ports.0", "8080"),
 				),
 			},
 		},
@@ -66,11 +66,11 @@ func TestAccCloudStackEgressFirewall_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.3342666485.ports.32925333", "8080"),
+						"cloudstack_egress_firewall.foo", "rule.0.ports.0", "8080"),
 				),
 			},
 
@@ -81,19 +81,19 @@ func TestAccCloudStackEgressFirewall_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.#", "2"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.cidr_list.2966983089", "10.1.1.11/32"),
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.1", "10.1.1.11/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.1558935996.ports.32925333", "8080"),
+						"cloudstack_egress_firewall.foo", "rule.0.ports.0", "8080"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.2961518528.cidr_list.140834516", "10.1.1.10/32"),
+						"cloudstack_egress_firewall.foo", "rule.1.cidr_list.0", "10.1.1.10/32"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.2961518528.protocol", "tcp"),
+						"cloudstack_egress_firewall.foo", "rule.1.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.2961518528.ports.1889509032", "80"),
+						"cloudstack_egress_firewall.foo", "rule.1.ports.1", "80"),
 				),
 			},
 		},
@@ -162,13 +162,14 @@ func testAccCheckCloudStackEgressFirewallDestroy(s *terraform.State) error {
 const testAccCloudStackEgressFirewall_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_egress_firewall" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 
   rule {
     cidr_list = ["10.1.1.10/32"]
@@ -180,13 +181,14 @@ resource "cloudstack_egress_firewall" "foo" {
 const testAccCloudStackEgressFirewall_update = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
 }
 
 resource "cloudstack_egress_firewall" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 
   rule {
     cidr_list = ["10.1.1.10/32", "10.1.1.11/32"]

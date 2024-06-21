@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackStaticNAT_basic(t *testing.T) {
@@ -117,9 +117,10 @@ func testAccCheckCloudStackStaticNATDestroy(s *terraform.State) error {
 const testAccCloudStackStaticNAT_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
-	source_nat_ip = true
+  source_nat_ip = true
   zone = "Sandbox-simulator"
 }
 
@@ -127,17 +128,17 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
   service_offering= "Small Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = "${cloudstack_network.foo.zone}"
+  zone = cloudstack_network.foo.zone
   expunge = true
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
 }
 
 resource "cloudstack_static_nat" "foo" {
-	ip_address_id = "${cloudstack_ipaddress.foo.id}"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
+  ip_address_id = cloudstack_ipaddress.foo.id
+  virtual_machine_id = cloudstack_instance.foobar.id
 }`

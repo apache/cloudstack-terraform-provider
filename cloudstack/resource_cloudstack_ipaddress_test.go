@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackIPAddress_basic(t *testing.T) {
@@ -137,6 +137,7 @@ func testAccCheckCloudStackIPAddressDestroy(s *terraform.State) error {
 const testAccCloudStackIPAddress_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   source_nat_ip = true
@@ -144,7 +145,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   tags = {
     terraform-tag = "true"
   }
@@ -159,8 +160,8 @@ resource "cloudstack_vpc" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`
 
 const testAccCloudStackIPAddress_vpcid_with_network_id = `
@@ -173,6 +174,7 @@ resource "cloudstack_vpc" "foo" {
 
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   source_nat_ip = true
@@ -180,7 +182,7 @@ resource "cloudstack_network" "foo" {
 }
 
 resource "cloudstack_ipaddress" "foo" {
-  vpc_id = "${cloudstack_vpc.foo.id}"
-  network_id = "${cloudstack_network.foo.id}"
-  zone = "${cloudstack_vpc.foo.zone}"
+  vpc_id = cloudstack_vpc.foo.id
+  network_id = cloudstack_network.foo.id
+  zone = cloudstack_vpc.foo.zone
 }`

@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackNIC_basic(t *testing.T) {
@@ -171,6 +171,7 @@ func testAccCheckCloudStackNICDestroy(s *terraform.State) error {
 const testAccCloudStackNIC_basic = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -178,6 +179,7 @@ resource "cloudstack_network" "foo" {
 
 resource "cloudstack_network" "bar" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.2.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -187,20 +189,21 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_nic" "foo" {
-  network_id = "${cloudstack_network.bar.id}"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
+  network_id = cloudstack_network.bar.id
+  virtual_machine_id = cloudstack_instance.foobar.id
 }`
 
 const testAccCloudStackNIC_ipaddress = `
 resource "cloudstack_network" "foo" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.1.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -208,6 +211,7 @@ resource "cloudstack_network" "foo" {
 
 resource "cloudstack_network" "bar" {
   name = "terraform-network"
+  display_text = "terraform-network"
   cidr = "10.1.2.0/24"
   network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
   zone = "Sandbox-simulator"
@@ -217,14 +221,14 @@ resource "cloudstack_instance" "foobar" {
   name = "terraform-test"
   display_name = "terraform"
   service_offering= "Medium Instance"
-  network_id = "${cloudstack_network.foo.id}"
+  network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   expunge = true
 }
 
 resource "cloudstack_nic" "foo" {
-  network_id = "${cloudstack_network.bar.id}"
-  virtual_machine_id = "${cloudstack_instance.foobar.id}"
+  network_id = cloudstack_network.bar.id
+  virtual_machine_id = cloudstack_instance.foobar.id
   ip_address = "10.1.2.123"
 }`

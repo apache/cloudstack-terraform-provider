@@ -21,11 +21,12 @@ package cloudstack
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackAutoscaleVMProfile_basic(t *testing.T) {
@@ -162,7 +163,10 @@ func testAccCheckCloudStackAutoscaleVMProfileBasicAttributes(
 			return fmt.Errorf("Bad zone: %s", vmProfile.Zoneid)
 		}
 
-		if vmProfile.Otherdeployparams != "displayname=display1&networkids=net1" {
+		if reflect.DeepEqual(vmProfile.Otherdeployparams, map[string]string{
+			"displayname": "display1",
+			"networkids":  "net1",
+		}) {
 			return fmt.Errorf("Bad otherdeployparams: %s", vmProfile.Otherdeployparams)
 		}
 
@@ -174,8 +178,8 @@ func testAccCheckCloudStackAutoscaleVMProfileUpdatedAttributes(
 	vmProfile *cloudstack.AutoScaleVmProfile) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
-		if vmProfile.Destroyvmgraceperiod != 10 {
-			return fmt.Errorf("Bad destroy_vm_grace_period: %d", vmProfile.Destroyvmgraceperiod)
+		if vmProfile.Expungevmgraceperiod != 10 {
+			return fmt.Errorf("Bad destroy_vm_grace_period: %d", vmProfile.Expungevmgraceperiod)
 		}
 
 		return nil

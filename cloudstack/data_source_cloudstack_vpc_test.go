@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccVPCDataSource_basic(t *testing.T) {
@@ -67,6 +67,6 @@ data "cloudstack_vpc" "vpc-data-source"{
 }
 
 output "vpc-output" {
-value = "${data.cloudstack_vpc.vpc-data-source}"
+value = data.cloudstack_vpc.vpc-data-source
 }
   `

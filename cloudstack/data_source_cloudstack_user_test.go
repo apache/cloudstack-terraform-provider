@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccUserDataSource_basic(t *testing.T) {
@@ -38,7 +38,6 @@ func TestAccUserDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "first_name", resourceName, "first_name"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -65,6 +64,6 @@ data "cloudstack_user" "user-data-source"{
   }
 
 output "user-output" {
-  value = "${data.cloudstack_user.user-data-source}"
+  value = data.cloudstack_user.user-data-source
 }
   `

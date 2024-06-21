@@ -22,7 +22,7 @@ package cloudstack
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccNetworkOfferingDataSource_basic(t *testing.T) {
@@ -38,7 +38,6 @@ func TestAccNetworkOfferingDataSource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
 				),
-				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

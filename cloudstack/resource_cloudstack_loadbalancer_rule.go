@@ -22,10 +22,11 @@ package cloudstack
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackLoadBalancerRule() *schema.Resource {
@@ -114,8 +115,6 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 		return err
 	}
 
-	d.Partial(true)
-
 	// Create a new parameter struct
 	p := cs.LoadBalancer.NewCreateLoadBalancerRuleParams(
 		d.Get("algorithm").(string),
@@ -155,14 +154,6 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 
 	// Set the load balancer rule ID and set partials
 	d.SetId(r.Id)
-	d.SetPartial("name")
-	d.SetPartial("description")
-	d.SetPartial("ip_address_id")
-	d.SetPartial("network_id")
-	d.SetPartial("algorithm")
-	d.SetPartial("private_port")
-	d.SetPartial("public_port")
-	d.SetPartial("protocol")
 
 	if certificateID, ok := d.GetOk("certificate_id"); ok {
 		// Create a new parameter struct
@@ -171,7 +162,6 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 			return err
 		}
 	}
-	d.SetPartial("certificate_id")
 
 	// Create a new parameter struct
 	mp := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(r.Id)
@@ -187,9 +177,6 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return err
 	}
-
-	d.SetPartial("member_ids")
-	d.Partial(false)
 
 	return resourceCloudStackLoadBalancerRuleRead(d, meta)
 }
@@ -212,11 +199,21 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 		return err
 	}
 
+	public_port, err := strconv.Atoi(lb.Publicport)
+	if err != nil {
+		return err
+	}
+
+	private_port, err := strconv.Atoi(lb.Privateport)
+	if err != nil {
+		return err
+	}
+
 	d.Set("name", lb.Name)
 	d.Set("ip_address_id", lb.Publicipid)
 	d.Set("algorithm", lb.Algorithm)
-	d.Set("public_port", lb.Publicport)
-	d.Set("private_port", lb.Privateport)
+	d.Set("public_port", public_port)
+	d.Set("private_port", private_port)
 	d.Set("protocol", lb.Protocol)
 
 	// Only set network if user specified it to avoid spurious diffs

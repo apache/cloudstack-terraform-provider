@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceCloudstackIPAddress() *schema.Resource {
@@ -124,7 +124,7 @@ func ipAddressDescriptionAttributes(d *schema.ResourceData, publicIpAddress *clo
 	d.Set("project", publicIpAddress.Project)
 	d.Set("ip_address", publicIpAddress.Ipaddress)
 	d.Set("is_source_nat", publicIpAddress.Issourcenat)
-	d.Set("tags", publicIpAddress.Tags)
+	d.Set("tags", tagsToMap(publicIpAddress.Tags))
 
 	return nil
 }

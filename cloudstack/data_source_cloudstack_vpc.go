@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceCloudstackVPC() *schema.Resource {
@@ -123,7 +123,7 @@ func vpcDescriptionAttributes(d *schema.ResourceData, vpc *cloudstack.VPC) error
 	d.Set("network_domain", vpc.Networkdomain)
 	d.Set("project", vpc.Project)
 	d.Set("zone_name", vpc.Zonename)
-	d.Set("tags", vpc.Tags)
+	d.Set("tags", tagsToMap(vpc.Tags))
 
 	return nil
 }
