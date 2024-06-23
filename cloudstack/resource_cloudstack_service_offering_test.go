@@ -33,7 +33,7 @@ func TestAccCloudStackServiceOffering_basic(t *testing.T) {
 
 	// var so cloudstack.ServiceOffering
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: testAccProvidersV6,
+		ProtoV6ProviderFactories: testAccMuxProvider,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(`

@@ -36,8 +36,7 @@ import (
 var testAccProviders map[string]*schema.Provider
 var testAccProvider *schema.Provider
 
-var testAccProvidersV6 map[string]func() (tfprotov6.ProviderServer, error)
-var testAccProviderV6 func() (tfprotov6.ProviderServer, error)
+var testAccMuxProvider map[string]func() (tfprotov6.ProviderServer, error)
 
 var cloudStackTemplateURL = os.Getenv("CLOUDSTACK_TEMPLATE_URL")
 
@@ -47,9 +46,34 @@ func init() {
 		"cloudstack": testAccProvider,
 	}
 
-	testAccProviderV6 = providerserver.NewProtocol6WithError(New())
-	testAccProvidersV6 = map[string]func() (tfprotov6.ProviderServer, error){
-		"cloudstack": testAccProviderV6,
+	testAccMuxProvider = map[string]func() (tfprotov6.ProviderServer, error){
+		"cloudstack": func() (tfprotov6.ProviderServer, error) {
+			ctx := context.Background()
+
+			upgradedSdkServer, err := tf5to6server.UpgradeServer(
+				ctx,
+				Provider().GRPCProvider,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			providers := []func() tfprotov6.ProviderServer{
+				providerserver.NewProtocol6(New()),
+				func() tfprotov6.ProviderServer {
+					return upgradedSdkServer
+				},
+			}
+
+			muxServer, err := tf6muxserver.NewMuxServer(ctx, providers...)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return muxServer.ProviderServer(), nil
+		},
 	}
 }
 
@@ -65,35 +89,7 @@ func TestProvider_impl(t *testing.T) {
 
 func TestMuxServer(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
-			"cloudstack": func() (tfprotov6.ProviderServer, error) {
-				ctx := context.Background()
-
-				upgradedSdkServer, err := tf5to6server.UpgradeServer(
-					ctx,
-					Provider().GRPCProvider,
-				)
-
-				if err != nil {
-					return nil, err
-				}
-
-				providers := []func() tfprotov6.ProviderServer{
-					providerserver.NewProtocol6(New()),
-					func() tfprotov6.ProviderServer {
-						return upgradedSdkServer
-					},
-				}
-
-				muxServer, err := tf6muxserver.NewMuxServer(ctx, providers...)
-
-				if err != nil {
-					return nil, err
-				}
-
-				return muxServer.ProviderServer(), nil
-			},
-		},
+		ProtoV6ProviderFactories: testAccMuxProvider,
 		Steps: []resource.TestStep{
 			{
 				Config:      testMuxServerConfig_conflict,
