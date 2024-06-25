@@ -34,7 +34,7 @@ The following arguments are supported:
 * `service_offering` - (Required) The name or ID of the service offering used
     for this instance.
 
-* `host_id` -  (Optional)  destination Host ID to deploy the VM to - parameter available 
+* `host_id` -  (Optional)  destination Host ID to deploy the VM to - parameter available
    for root admin only
 
 * `pod_id` -  (Optional) destination Pod ID to deploy the VM to - parameter available for root admin only
@@ -82,7 +82,10 @@ The following arguments are supported:
     instance. This can be either plain text or base64 encoded text.
 
 * `keypair` - (Optional) The name of the SSH key pair that will be used to
-    access this instance.
+    access this instance. (Mutual exclusive with keypairs)
+
+* `keypairs` - (Optional) A list of SSH key pair names that will be used to
+    access this instance. (Mutual exclusive with keypair)
 
 * `expunge` - (Optional) This determines if the instance is expunged when it is
     destroyed (defaults false)
