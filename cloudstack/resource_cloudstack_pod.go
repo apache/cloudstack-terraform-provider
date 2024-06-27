@@ -21,7 +21,7 @@ package cloudstack
 
 import (
 	"github.com/apache/cloudstack-go/v2/cloudstack"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceCloudStackPod() *schema.Resource {
@@ -69,7 +69,7 @@ func resourceCloudStackPod() *schema.Resource {
 func resourceCloudStackPodCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	p := cs.Pod.NewCreatePodParams(d.Get("gateway").(string), d.Get("name").(string), d.Get("netmask").(string), d.Get("start_ip").(string), d.Get("zone_id").(string))
+	p := cs.Pod.NewCreatePodParams(d.Get("name").(string), d.Get("zone_id").(string))
 	if v, ok := d.GetOk("allocation_state"); ok {
 		p.SetAllocationstate(v.(string))
 	}
