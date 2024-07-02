@@ -19,13 +19,7 @@ name: Acceptance Test
 
 on:
   pull_request:
-    paths:
-      - .github/workflows/acceptance.yml
-      - '**.go'
   push:
-    paths:
-      - .github/workflows/acceptance.yml
-      - '**.go'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-acceptance
