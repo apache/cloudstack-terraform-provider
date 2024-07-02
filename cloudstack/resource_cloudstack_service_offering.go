@@ -619,9 +619,6 @@ func (r *resourceCloudstackServiceOffering) Create(ctx context.Context, req reso
 				if !data.MaxIops.IsNull() && !data.MaxIops.IsUnknown() {
 					p.SetMaxiops(data.MaxIops.ValueInt64())
 				}
-			} else {
-				p.SetMiniops(0)
-				p.SetMaxiops(0)
 			}
 
 			if !data.HypervisorSnapshotReserve.IsNull() && !data.HypervisorSnapshotReserve.IsUnknown() {
