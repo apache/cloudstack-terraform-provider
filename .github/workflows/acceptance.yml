@@ -22,10 +22,14 @@ on:
     paths:
       - .github/workflows/acceptance.yml
       - '**.go'
+      - 'go.mod'
+      - 'go.sum'
   push:
     paths:
       - .github/workflows/acceptance.yml
       - '**.go'
+      - 'go.mod'
+      - 'go.sum'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-acceptance
