@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func New() *schema.Provider {
+func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"api_url": {
@@ -41,6 +41,7 @@ func New() *schema.Provider {
 				Optional:      true,
 				DefaultFunc:   schema.EnvDefaultFunc("CLOUDSTACK_API_KEY", nil),
 				ConflictsWith: []string{"config", "profile"},
+				Sensitive:     true,
 			},
 
 			"secret_key": {
@@ -48,6 +49,7 @@ func New() *schema.Provider {
 				Optional:      true,
 				DefaultFunc:   schema.EnvDefaultFunc("CLOUDSTACK_SECRET_KEY", nil),
 				ConflictsWith: []string{"config", "profile"},
+				Sensitive:     true,
 			},
 
 			"config": {
@@ -124,7 +126,6 @@ func New() *schema.Provider {
 			"cloudstack_disk_offering":        resourceCloudStackDiskOffering(),
 			"cloudstack_volume":               resourceCloudStackVolume(),
 			"cloudstack_zone":                 resourceCloudStackZone(),
-			"cloudstack_service_offering":     resourceCloudStackServiceOffering(),
 			"cloudstack_account":              resourceCloudStackAccount(),
 			"cloudstack_user":                 resourceCloudStackUser(),
 			"cloudstack_domain":               resourceCloudStackDomain(),
