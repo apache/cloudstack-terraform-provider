@@ -190,6 +190,54 @@ resource "cloudstack_instance" "web" {
 }
 ```
 
+## Releasing Terraform Provider
+
+The CloudStack Terraform Provider release process requires `goreleaser` to be performed
+by a committer or a PMC member of the project: https://goreleaser.com/install
+
+Check and ensure TF provider passes builds, GA and run this for local checks:
+```
+goreleaser release --snapshot --clean
+```
+
+Next, create a personalised Github token:  https://github.com/settings/tokens/new?scopes=repo,write:packages
+
+```
+export GITHUB_TOKEN="YOUR_GH_TOKEN"
+```
+
+Note: Due to how the Terraform registry works, it require the repo to be named in a certain way.
+For this reason, the builds are published via https://github.com/cloudstack/terraform-provider-cloudstack/releases
+
+To do this, add the following remote for publishing builds:
+
+```
+git remote add cloudstack git@github.com:cloudstack/terraform-provider-cloudstack.git
+```
+
+Finally tag the release, for example and push to Github:
+
+```
+git tag -a v0.5.0-pre -m "v0.5.0-pre Alpha Release for testing purposes"
+git push cloudstack v0.5.0-pre
+```
+
+Run goreleaser to release them:
+```
+goreleaser release --clean
+```
+
+Or, just release using:
+```
+goreleaser release
+```
+
+For testing or to push on other repos, you need to fix repo path in the
+`.goreleaser.yml` and run:
+```
+goreleaser release --clean --skip-validate
+```
+
 ## History
 
 This codebase relicensed under APLv2 and donated to the Apache CloudStack

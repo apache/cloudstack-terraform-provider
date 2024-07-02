@@ -1,7 +1,7 @@
 module github.com/terraform-providers/terraform-provider-cloudstack
 
 require (
-	github.com/apache/cloudstack-go/v2 v2.16.0
+	github.com/apache/cloudstack-go/v2 v2.16.1
 	github.com/go-ini/ini v1.67.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/terraform-plugin-framework v1.7.0
@@ -55,7 +55,7 @@ require (
 	github.com/zclconf/go-cty v1.14.3 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect

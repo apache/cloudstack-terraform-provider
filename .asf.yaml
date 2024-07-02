@@ -10,6 +10,15 @@ github:
     issues: true
     projects: true
 
+  protected_branches:
+    main:
+      required_status_checks:
+        contexts:
+           - build
+           - all-jobs-passed
+
   collaborators:
     - kiranchavala
     - vishesh92
+    - fabiomatavelli
+    - CodeBleu
