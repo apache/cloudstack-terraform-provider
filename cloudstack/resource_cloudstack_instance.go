@@ -139,9 +139,17 @@ func resourceCloudStackInstance() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"keypair": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"keypair": &schema.Schema{
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"keypairs"},
+			},
+
+			"keypairs": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"keypair"},
 			},
 
 			"host_id": {
@@ -213,6 +221,7 @@ func resourceCloudStackInstance() *schema.Resource {
 }
 
 func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Retrieve the service_offering ID
@@ -354,6 +363,14 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetKeypair(keypair.(string))
 	}
 
+	if keypairs, ok := d.GetOk("keypairs"); ok {
+		var keypairStrings []string
+		for _, kp := range keypairs.([]interface{}) {
+			keypairStrings = append(keypairStrings, fmt.Sprintf("%v", kp))
+		}
+		p.SetKeypairs(keypairStrings)
+	}
+
 	// If a host_id is supplied, add it to the parameter struct
 
 	if hostid, ok := d.GetOk("host_id"); ok {
@@ -493,6 +510,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	name := d.Get("name").(string)
@@ -537,7 +555,8 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	// Attributes that require reboot to update
 	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("user_data") {
+		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") || d.HasChange("user_data") {
+
 		// Before we can actually make these changes, the virtual machine must be stopped
 		_, err := cs.VirtualMachine.StopVirtualMachine(
 			cs.VirtualMachine.NewStopVirtualMachineParams(d.Id()))
@@ -631,13 +650,33 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		// Check if the keypair has changed and if so, update the keypair
-		if d.HasChange("keypair") {
-			log.Printf("[DEBUG] SSH keypair changed for %s, starting update", name)
+		if d.HasChange("keypair") || d.HasChange("keypairs") {
+			log.Printf("[DEBUG] SSH keypair(s) changed for %s, starting update", name)
 
 			p := cs.SSH.NewResetSSHKeyForVirtualMachineParams(d.Id())
 
 			if keypair, ok := d.GetOk("keypair"); ok {
 				p.SetKeypair(keypair.(string))
+			}
+
+			if keypairs, ok := d.GetOk("keypairs"); ok {
+
+				// Convert keypairsInterface to []interface{}
+				keypairsInterfaces := keypairs.([]interface{})
+
+				// Now, safely convert []interface{} to []string with error handling
+				strKeyPairs := make([]string, len(keypairsInterfaces))
+
+				for i, v := range keypairsInterfaces {
+					switch v := v.(type) {
+					case string:
+						strKeyPairs[i] = v
+					default:
+						log.Printf("Value at index %d is not a string: %v", i, v)
+						continue
+					}
+				}
+				p.SetKeypairs(strKeyPairs)
 			}
 
 			// If there is a project supplied, we retrieve and set the project id
@@ -648,7 +687,7 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			_, err = cs.SSH.ResetSSHKeyForVirtualMachine(p)
 			if err != nil {
 				return fmt.Errorf(
-					"Error changing the SSH keypair for instance %s: %s", name, err)
+					"Error changing the SSH keypair(s) for instance %s: %s", name, err)
 			}
 		}
 

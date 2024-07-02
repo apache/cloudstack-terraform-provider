@@ -150,6 +150,68 @@ func TestAccCloudStackInstance_keyPair(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_keyPairs(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackInstance_keyPairs,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists("cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "keypairs.#", "2"), // Expecting 2 key pairs
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "keypairs.0", "terraform-test-keypair-foo"),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "keypairs.1", "terraform-test-keypair-bar"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackInstance_keyPair_update(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackInstance_keyPair,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists(
+						"cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr(
+						"cloudstack_instance.foobar", "keypair", "terraform-test-keypair"),
+				),
+			},
+
+			{
+				Config: testAccCloudStackInstance_keyPairs,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists("cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "keypairs.#", "2"), // Expecting 2 key pairs
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "keypairs.0", "terraform-test-keypair-foo"),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "keypairs.1", "terraform-test-keypair-bar"),
+				),
+			},
+
+			{
+				Config: testAccCloudStackInstance_keyPair,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists(
+						"cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr(
+						"cloudstack_instance.foobar", "keypair", "terraform-test-keypair"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackInstance_project(t *testing.T) {
 	var instance cloudstack.VirtualMachine
 
@@ -413,6 +475,33 @@ resource "cloudstack_instance" "foobar" {
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
   zone = "Sandbox-simulator"
   keypair = cloudstack_ssh_keypair.foo.name
+  expunge = true
+}`
+
+const testAccCloudStackInstance_keyPairs = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ssh_keypair" "foo" {
+  name = "terraform-test-keypair-foo"
+}
+
+resource "cloudstack_ssh_keypair" "bar" {
+  name = "terraform-test-keypair-bar"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering= "Small Instance"
+  network_id = "${cloudstack_network.foo.id}"
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+  keypairs = ["${cloudstack_ssh_keypair.foo.name}", "${cloudstack_ssh_keypair.bar.name}"]
   expunge = true
 }`
 
