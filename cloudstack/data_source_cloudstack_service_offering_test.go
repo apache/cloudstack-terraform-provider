@@ -30,8 +30,8 @@ func TestAccServiceOfferingDataSource_basic(t *testing.T) {
 	datasourceName := "data.cloudstack_service_offering.service-offering-data-source"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccMuxProvider,
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
 				Config: testServiceOfferingDataSourceConfig_basic,
@@ -47,9 +47,6 @@ const testServiceOfferingDataSourceConfig_basic = `
 resource "cloudstack_service_offering" "service-offering-resource" {
 	name			= "TestServiceUpdate"
 	display_text	= "DisplayService"
-	cpu_number		= 2
-	cpu_speed		= 2200
-	memory          = 8096
 }
 
 data "cloudstack_service_offering" "service-offering-data-source" {

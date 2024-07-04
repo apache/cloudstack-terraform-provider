@@ -104,7 +104,7 @@ func TestMuxServer(t *testing.T) {
 
 const testMuxServerConfig_basic = `
 resource "cloudstack_zone" "zone_resource"{
-	name       		= "TestZone1"
+	name       		= "TestZone"
   	dns1       		= "8.8.8.8"
   	internal_dns1  	=  "172.20.0.1"
   	network_type   	=  "Advanced"
