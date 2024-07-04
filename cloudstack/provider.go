@@ -126,6 +126,7 @@ func Provider() *schema.Provider {
 			"cloudstack_disk_offering":        resourceCloudStackDiskOffering(),
 			"cloudstack_volume":               resourceCloudStackVolume(),
 			"cloudstack_zone":                 resourceCloudStackZone(),
+			"cloudstack_service_offering":     resourceCloudStackServiceOffering(),
 			"cloudstack_account":              resourceCloudStackAccount(),
 			"cloudstack_user":                 resourceCloudStackUser(),
 			"cloudstack_domain":               resourceCloudStackDomain(),
