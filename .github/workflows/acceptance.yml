@@ -30,7 +30,7 @@ permissions:
 
 env:
   CLOUDSTACK_API_URL: http://localhost:8080/client/api
-  CLOUDSTACK_VERSIONS: "['4.18.2.0', '4.19.0.1']"
+  CLOUDSTACK_VERSIONS: "['4.18.2.1', '4.19.0.2']"
 
 jobs:
   prepare-matrix:
