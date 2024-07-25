@@ -22,10 +22,13 @@ package cloudstack
 import (
 	"context"
 	"os"
+	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-mux/tf5muxserver"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
+	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -33,44 +36,65 @@ import (
 var testAccProviders map[string]*schema.Provider
 var testAccProvider *schema.Provider
 
+var testAccMuxProvider map[string]func() (tfprotov6.ProviderServer, error)
+
 var cloudStackTemplateURL = os.Getenv("CLOUDSTACK_TEMPLATE_URL")
 
 func init() {
-	testAccProvider = New()
+	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"cloudstack": testAccProvider,
+	}
+
+	testAccMuxProvider = map[string]func() (tfprotov6.ProviderServer, error){
+		"cloudstack": func() (tfprotov6.ProviderServer, error) {
+			ctx := context.Background()
+
+			upgradedSdkServer, err := tf5to6server.UpgradeServer(
+				ctx,
+				Provider().GRPCProvider,
+			)
+
+			if err != nil {
+				return nil, err
+			}
+
+			providers := []func() tfprotov6.ProviderServer{
+				providerserver.NewProtocol6(New()),
+				func() tfprotov6.ProviderServer {
+					return upgradedSdkServer
+				},
+			}
+
+			muxServer, err := tf6muxserver.NewMuxServer(ctx, providers...)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return muxServer.ProviderServer(), nil
+		},
 	}
 }
 
 func TestProvider(t *testing.T) {
-	if err := New().InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func TestProvider_impl(t *testing.T) {
-	var _ *schema.Provider = New()
+	var _ *schema.Provider = Provider()
 }
 
 func TestMuxServer(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
-			"cloudstack": func() (tfprotov5.ProviderServer, error) {
-				ctx := context.Background()
-				providers := []func() tfprotov5.ProviderServer{
-					New().GRPCProvider,
-				}
-
-				muxServer, err := tf5muxserver.NewMuxServer(ctx, providers...)
-
-				if err != nil {
-					return nil, err
-				}
-
-				return muxServer.ProviderServer(), nil
-			},
-		},
+		ProtoV6ProviderFactories: testAccMuxProvider,
 		Steps: []resource.TestStep{
+			{
+				Config:      testMuxServerConfig_conflict,
+				ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+			},
 			{
 				Config: testMuxServerConfig_basic,
 			},
@@ -92,6 +116,22 @@ resource "cloudstack_zone" "zone_resource"{
     	value	=	cloudstack_zone.zone_resource.name
     }
   }
+  `
+
+const testMuxServerConfig_conflict = `
+provider "cloudstack" {
+	api_url = "http://localhost:8080/client/api"
+	api_key = "xxxxx"
+	secret_key = "xxxxx"
+	config = "cloudstack.ini"
+}
+
+data "cloudstack_zone" "zone_data_source"{
+    filter{
+    	name 	=	"name"
+    	value	=	"test"
+    }
+}
   `
 
 func testAccPreCheck(t *testing.T) {
