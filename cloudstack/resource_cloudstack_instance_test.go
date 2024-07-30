@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -269,6 +270,26 @@ func TestAccCloudStackInstance_importProject(t *testing.T) {
 				ImportStateIdPrefix:     "terraform/",
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"expunge", "user_data", "uefi"},
+			},
+		},
+	})
+}
+
+func TestAccCloudStackInstance_userData(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"random": {
+				VersionConstraint: ">= 3.6.0",
+				Source:            "hashicorp/random",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccCloudStackInstance_userData,
+				ExpectError: regexp.MustCompile("User data has exceeded configurable max length"),
 			},
 		},
 	})
@@ -524,4 +545,34 @@ resource "cloudstack_instance" "foobar" {
   project = "terraform"
   zone = cloudstack_network.foo.zone
   expunge = true
+}`
+
+const testAccCloudStackInstance_userData = `
+resource "random_bytes" "string" {
+  length = 32768
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering= "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = cloudstack_network.foo.zone
+  expunge = true
+  user_data = <<-EOFTF
+#!/bin/bash
+
+echo <<EOF
+${random_bytes.string.base64}
+EOF
+EOFTF
 }`

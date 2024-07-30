@@ -390,7 +390,7 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if userData, ok := d.GetOk("user_data"); ok {
-		ud, err := getUserData(userData.(string), cs.HTTPGETOnly)
+		ud, err := getUserData(userData.(string))
 		if err != nil {
 			return err
 		}
@@ -695,7 +695,7 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if d.HasChange("user_data") {
 			log.Printf("[DEBUG] user_data changed for %s, starting update", name)
 
-			ud, err := getUserData(d.Get("user_data").(string), cs.HTTPGETOnly)
+			ud, err := getUserData(d.Get("user_data").(string))
 			if err != nil {
 				return err
 			}
@@ -772,24 +772,10 @@ func resourceCloudStackInstanceImport(d *schema.ResourceData, meta interface{}) 
 }
 
 // getUserData returns the user data as a base64 encoded string
-func getUserData(userData string, httpGetOnly bool) (string, error) {
+func getUserData(userData string) (string, error) {
 	ud := userData
 	if _, err := base64.StdEncoding.DecodeString(ud); err != nil {
 		ud = base64.StdEncoding.EncodeToString([]byte(userData))
-	}
-
-	// deployVirtualMachine uses POST by default, so max userdata is 32K
-	maxUD := 32768
-
-	if httpGetOnly {
-		// deployVirtualMachine using GET instead, so max userdata is 2K
-		maxUD = 2048
-	}
-
-	if len(ud) > maxUD {
-		return "", fmt.Errorf(
-			"The supplied user_data contains %d bytes after encoding, "+
-				"this exceeds the limit of %d bytes", len(ud), maxUD)
 	}
 
 	return ud, nil
