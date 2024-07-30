@@ -30,7 +30,7 @@ permissions:
 
 env:
   CLOUDSTACK_API_URL: http://localhost:8080/client/api
-  CLOUDSTACK_VERSIONS: "['4.18.2.0', '4.19.0.1']"
+  CLOUDSTACK_VERSIONS: "['4.18.2.1', '4.19.0.2']"
 
 jobs:
   prepare-matrix:
@@ -78,8 +78,8 @@ jobs:
       fail-fast: false
       matrix:
         terraform-version:
-          - '1.7.*'
           - '1.8.*'
+          - '1.9.*'
         cloudstack-version: ${{ fromJson(needs.prepare-matrix.outputs.cloudstack-versions) }}
 
   acceptance-opentofu:
@@ -117,6 +117,7 @@ jobs:
       matrix:
         opentofu-version:
           - '1.6.*'
+          - '1.7.*'
         cloudstack-version: ${{ fromJson(needs.prepare-matrix.outputs.cloudstack-versions) }}
 
   all-jobs-passed: # Will succeed if it is skipped
