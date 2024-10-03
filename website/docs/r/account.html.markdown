@@ -36,6 +36,7 @@ The following arguments are supported:
 * `account_type` - (Required) The account type. Possible values are `0` for regular user, `1` for admin, and `2` for domain admin.
 * `role_id` - (Required) The ID of the role associated with the account.
 * `account` - (Optional) The account name. If not specified, the username will be used as the account name.
+* `domainid` - (Optional) Creates the user under the specified domain
 
 ## Attributes Reference
 
