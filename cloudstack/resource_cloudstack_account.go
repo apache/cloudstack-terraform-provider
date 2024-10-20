@@ -66,6 +66,10 @@ func resourceCloudStackAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"domainid": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -80,6 +84,7 @@ func resourceCloudStackAccountCreate(d *schema.ResourceData, meta interface{}) e
 	role_id := d.Get("role_id").(string)
 	account_type := d.Get("account_type").(int)
 	account := d.Get("account").(string)
+	domainid := d.Get("domainid").(string)
 
 	// Create a new parameter struct
 	p := cs.Account.NewCreateAccountParams(email, first_name, last_name, password, username)
@@ -90,6 +95,7 @@ func resourceCloudStackAccountCreate(d *schema.ResourceData, meta interface{}) e
 	} else {
 		p.SetAccount(username)
 	}
+	p.SetDomainid(domainid)
 
 	log.Printf("[DEBUG] Creating Account %s", account)
 	a, err := cs.Account.CreateAccount(p)
