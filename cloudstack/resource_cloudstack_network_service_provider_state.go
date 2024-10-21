@@ -61,7 +61,13 @@ func resourceCloudStackNetworkServiceProviderStateRead(d *schema.ResourceData, m
 	}
 
 	d.SetId(nsp.Id)
-	d.Set("enabled", nsp.State)
+	if nsp.State == "Enabled" {
+		d.Set("enabled", true)
+	} else {
+		d.Set("enabled", false)
+	}
+
+	// d.Set("enabled", nsp.State)
 
 	return nil
 }
