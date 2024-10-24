@@ -14,69 +14,83 @@ import (
 func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string]schema.Attribute {
 	common := map[string]schema.Attribute{
 		"deployment_planner": schema.StringAttribute{
-			Optional: true,
+			Description: "The deployment planner for the service offering",
+			Optional:    true,
 		},
 		"disk_offering_id": schema.StringAttribute{
-			Optional: true,
+			Description: "The ID of the disk offering",
+			Optional:    true,
 		},
 		"display_text": schema.StringAttribute{
-			Required: true,
+			Description: "The display text of the service offering",
+			Required:    true,
 		},
 		"domain_ids": schema.SetAttribute{
+			Description: "the ID of the containing domain(s), null for public offerings",
 			Optional:    true,
 			ElementType: types.StringType,
 		},
 		"dynamic_scaling_enabled": schema.BoolAttribute{
-			Optional: true,
-			Computed: true,
+			Description: "Enable dynamic scaling of the service offering",
+			Optional:    true,
+			Computed:    true,
 			PlanModifiers: []planmodifier.Bool{
 				boolplanmodifier.RequiresReplace(),
 			},
 			Default: booldefault.StaticBool(false),
 		},
 		"host_tags": schema.StringAttribute{
-			Optional: true,
+			Description: "The host tag for this service offering",
+			Optional:    true,
 		},
 		"id": schema.StringAttribute{
-			Computed: true,
+			Description: "uuid of service offering",
+			Computed:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"is_volatile": schema.BoolAttribute{
-			Optional: true,
-			Computed: true,
+			Description: "Service offering is volatile",
+			Optional:    true,
+			Computed:    true,
 			PlanModifiers: []planmodifier.Bool{
 				boolplanmodifier.RequiresReplace(),
 			},
 			Default: booldefault.StaticBool(false),
 		},
 		"limit_cpu_use": schema.BoolAttribute{
-			Optional: true,
-			Computed: true,
+			Description: "Restrict the CPU usage to committed service offering",
+			Optional:    true,
+			Computed:    true,
 			PlanModifiers: []planmodifier.Bool{
 				boolplanmodifier.RequiresReplace(),
 			},
 			Default: booldefault.StaticBool(false),
 		},
 		"name": schema.StringAttribute{
-			Required: true,
+			Description: "The name of the service offering",
+			Required:    true,
 		},
 		"network_rate": schema.Int32Attribute{
-			Optional: true,
+			Description: "Data transfer rate in megabits per second",
+			Optional:    true,
 		},
 		"offer_ha": schema.BoolAttribute{
-			Optional: true,
-			Computed: true,
+			Description: "The HA for the service offering",
+			Optional:    true,
+			Computed:    true,
 			PlanModifiers: []planmodifier.Bool{
 				boolplanmodifier.RequiresReplace(),
 			},
 			Default: booldefault.StaticBool(false),
 		},
 		"storage_tags": schema.StringAttribute{
-			Optional: true,
+			Description: "the tags for the service offering",
+			Optional:    true,
 		},
 		"zone_ids": schema.SetAttribute{
+			Description: "The ID of the zone(s)",
 			Optional:    true,
 			ElementType: types.StringType,
 		},
@@ -84,37 +98,43 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"bytes_read_rate": schema.Int64Attribute{
-					Required: true,
+					Description: "io requests read rate of the disk offering",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"bytes_read_rate_max": schema.Int64Attribute{
-					Required: true,
+					Description: "burst requests read rate of the disk offering",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"bytes_read_rate_max_length": schema.Int64Attribute{
-					Required: true,
+					Description: "length (in seconds) of the burst",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"bytes_write_rate": schema.Int64Attribute{
-					Required: true,
+					Description: "io requests write rate of the disk offering",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"bytes_write_rate_max": schema.Int64Attribute{
-					Required: true,
+					Description: "burst io requests write rate of the disk offering",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"bytes_write_rate_max_length": schema.Int64Attribute{
-					Required: true,
+					Description: "length (in seconds) of the burst",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
@@ -125,31 +145,36 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"cache_mode": schema.StringAttribute{
-					Required: true,
+					Description: "the cache mode to use for this disk offering. none, writeback or writethrough",
+					Required:    true,
 					PlanModifiers: []planmodifier.String{
 						stringplanmodifier.RequiresReplace(),
 					},
 				},
 				"disk_offering_strictness": schema.BoolAttribute{
-					Required: true,
+					Description: "True/False to indicate the strictness of the disk offering association with the compute offering. When set to true, override of disk offering is not allowed when VM is deployed and change disk offering is not allowed for the ROOT disk after the VM is deployed",
+					Required:    true,
 					PlanModifiers: []planmodifier.Bool{
 						boolplanmodifier.RequiresReplace(),
 					},
 				},
 				"provisioning_type": schema.StringAttribute{
-					Required: true,
+					Description: "provisioning type used to create volumes. Valid values are thin, sparse, fat.",
+					Required:    true,
 					PlanModifiers: []planmodifier.String{
 						stringplanmodifier.RequiresReplace(),
 					},
 				},
 				"root_disk_size": schema.Int64Attribute{
-					Required: true,
+					Description: "the Root disk size in GB.",
+					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"storage_type": schema.StringAttribute{
-					Required: true,
+					Description: "the storage type of the service offering. Values are local and shared.",
+					Required:    true,
 					PlanModifiers: []planmodifier.String{
 						stringplanmodifier.RequiresReplace(),
 					},
@@ -160,25 +185,29 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 			Optional: true,
 			Attributes: map[string]schema.Attribute{
 				"customized_iops": schema.BoolAttribute{
-					Optional: true,
+					Description: "true if disk offering uses custom iops, false otherwise",
+					Optional:    true,
 					PlanModifiers: []planmodifier.Bool{
 						boolplanmodifier.RequiresReplace(),
 					},
 				},
 				"hypervisor_snapshot_reserve": schema.Int32Attribute{
-					Optional: true,
+					Description: "Hypervisor snapshot reserve space as a percent of a volume (for managed storage using Xen or VMware)",
+					Optional:    true,
 					PlanModifiers: []planmodifier.Int32{
 						int32planmodifier.RequiresReplace(),
 					},
 				},
 				"max_iops": schema.Int64Attribute{
-					Optional: true,
+					Description: "max iops of the compute offering",
+					Optional:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
 				},
 				"min_iops": schema.Int64Attribute{
-					Optional: true,
+					Description: "min iops of the compute offering",
+					Optional:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},

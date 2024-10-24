@@ -30,31 +30,36 @@ func (r *serviceOfferingConstrainedResource) Schema(_ context.Context, _ resourc
 	resp.Schema = schema.Schema{
 		Attributes: serviceOfferingMergeCommonSchema(map[string]schema.Attribute{
 			"cpu_speed": schema.Int32Attribute{
-				Required: true,
+				Description: "Speed of CPU in Mhz.  This does not apply to kvm.",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
 			},
 			"max_cpu_number": schema.Int32Attribute{
-				Required: true,
+				Description: "The maximum number of CPUs to be set with Custom Computer Offering",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
 			},
 			"max_memory": schema.Int32Attribute{
-				Required: true,
+				Description: "The maximum memory size of the custom service offering in MB",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
 			},
 			"min_cpu_number": schema.Int32Attribute{
-				Required: true,
+				Description: "The minimum number of CPUs to be set with Custom Computer Offering",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
 			},
 			"min_memory": schema.Int32Attribute{
-				Required: true,
+				Description: "The minimum memory size of the custom service offering in MB",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},

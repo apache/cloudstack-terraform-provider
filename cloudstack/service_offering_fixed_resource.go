@@ -30,19 +30,22 @@ func (r *serviceOfferingFixedResource) Schema(_ context.Context, _ resource.Sche
 	resp.Schema = schema.Schema{
 		Attributes: serviceOfferingMergeCommonSchema(map[string]schema.Attribute{
 			"cpu_number": schema.Int32Attribute{
-				Required: true,
+				Description: "Number of CPU cores",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
 			},
 			"cpu_speed": schema.Int32Attribute{
-				Required: true,
+				Description: "the CPU speed of the service offering in MHz.  This does not apply to KVM.",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
 			},
 			"memory": schema.Int32Attribute{
-				Required: true,
+				Description: "the total memory of the service offering in MB",
+				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
 				},
