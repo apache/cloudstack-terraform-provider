@@ -61,6 +61,7 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 // -
 func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context, cs *cloudstack.ServiceOffering) {
 	state.Id = types.StringValue(cs.Id)
+
 	if cs.Deploymentplanner != "" {
 		state.DeploymentPlanner = types.StringValue(cs.Deploymentplanner)
 	}
@@ -156,7 +157,7 @@ func (state *ServiceOfferingDiskQosStorage) commonRead(ctx context.Context, cs *
 // ------------------------------------------------------------------------------------------------------------------------------
 // common Create methods
 // -
-func (plan *serviceOfferingCommonResourceModel) commonCreateParams(p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
+func (plan *serviceOfferingCommonResourceModel) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
 	if !plan.DeploymentPlanner.IsNull() && !plan.DeploymentPlanner.IsUnknown() {
 		p.SetDeploymentplanner(plan.DeploymentPlanner.ValueString())
 	} else {
@@ -167,9 +168,7 @@ func (plan *serviceOfferingCommonResourceModel) commonCreateParams(p *cloudstack
 	}
 	if !plan.DomainIds.IsNull() {
 		domainids := make([]string, len(plan.DomainIds.Elements()))
-		for i, v := range plan.DomainIds.Elements() {
-			domainids[i] = v.String()
-		}
+		plan.DomainIds.ElementsAs(ctx, &domainids, false)
 		p.SetDomainid(domainids)
 	}
 	if !plan.DynamicScalingEnabled.IsNull() {
@@ -194,17 +193,15 @@ func (plan *serviceOfferingCommonResourceModel) commonCreateParams(p *cloudstack
 		p.SetTags(plan.StorageTags.ValueString())
 	}
 	if !plan.ZoneIds.IsNull() {
-		zids := make([]string, len(plan.ZoneIds.Elements()))
-		for i, v := range plan.ZoneIds.Elements() {
-			zids[i] = v.String()
-		}
-		p.SetZoneid(zids)
+		zoneIds := make([]string, len(plan.ZoneIds.Elements()))
+		plan.ZoneIds.ElementsAs(ctx, &zoneIds, false)
+		p.SetZoneid(zoneIds)
 	}
 
 	return p
 
 }
-func (plan *ServiceOfferingDiskQosHypervisor) commonCreateParams(p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
+func (plan *ServiceOfferingDiskQosHypervisor) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
 	if !plan.DiskBytesReadRate.IsNull() {
 		p.SetBytesreadrate(plan.DiskBytesReadRate.ValueInt64())
 	}
@@ -227,7 +224,7 @@ func (plan *ServiceOfferingDiskQosHypervisor) commonCreateParams(p *cloudstack.C
 	return p
 }
 
-func (plan *ServiceOfferingDiskOffering) commonCreateParams(p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
+func (plan *ServiceOfferingDiskOffering) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
 
 	if !plan.CacheMode.IsNull() {
 		p.SetCachemode(plan.CacheMode.ValueString())
@@ -249,7 +246,7 @@ func (plan *ServiceOfferingDiskOffering) commonCreateParams(p *cloudstack.Create
 
 }
 
-func (plan *ServiceOfferingDiskQosStorage) commonCreateParams(p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
+func (plan *ServiceOfferingDiskQosStorage) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
 	if !plan.CustomizedIops.IsNull() {
 		p.SetCustomizediops(plan.CustomizedIops.ValueBool())
 	}

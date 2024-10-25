@@ -92,10 +92,10 @@ func (r *serviceOfferingConstrainedResource) Create(ctx context.Context, req res
 
 	// common params
 	params := r.client.ServiceOffering.NewCreateServiceOfferingParams(plan.DisplayText.ValueString(), plan.Name.ValueString())
-	plan.commonCreateParams(params)
-	planDiskQosHypervisor.commonCreateParams(params)
-	planDiskOffering.commonCreateParams(params)
-	planDiskQosStorage.commonCreateParams(params)
+	plan.commonCreateParams(ctx, params)
+	planDiskQosHypervisor.commonCreateParams(ctx, params)
+	planDiskOffering.commonCreateParams(ctx, params)
+	planDiskQosStorage.commonCreateParams(ctx, params)
 
 	// resource specific params
 	if !plan.CpuSpeed.IsNull() {
