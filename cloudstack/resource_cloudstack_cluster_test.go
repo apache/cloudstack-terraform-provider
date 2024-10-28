@@ -33,12 +33,6 @@ func TestAccCloudStackCluster_basic(t *testing.T) {
 			{
 				Config: testAccCloudStackCluster_basic,
 			},
-			// {
-			// 	Config: testAccCloudStackCluster_update,
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttr("cloudstack_cluster.test", "name", "acctestupdated"),
-			// 	),
-			// },
 		},
 	})
 }
@@ -55,10 +49,10 @@ resource "cloudstack_zone" "test" {
 }
 resource "cloudstack_pod" "test" {
 	allocation_state = "Disabled"
-	gateway          = "172.29.0.1"
+	gateway          = "172.30.0.1"
 	name             = "accpod"
 	netmask          = "255.255.240.0"
-	start_ip         =  "172.29.0.2"
+	start_ip         =  "172.30.0.2"
 	zone_id          =  cloudstack_zone.test.id
 }
 resource "cloudstack_cluster" "test" {
@@ -68,8 +62,4 @@ resource "cloudstack_cluster" "test" {
 	pod_id       = cloudstack_pod.test.id
 	zone_id      = cloudstack_zone.test.id
 }
-`
-
-const testAccCloudStackCluster_update = `
-
 `
