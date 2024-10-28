@@ -44,12 +44,37 @@ import (
 // }
 
 const testAccCloudStackStoragePoolConfig_basic = `
+resource "cloudstack_zone" "test" {
+	name          = "acctest"
+	dns1          = "8.8.8.8"
+	dns2          = "8.8.8.8"
+	internal_dns1 = "8.8.4.4"
+	internal_dns2 = "8.8.4.4"
+	network_type  = "Advanced"
+	domain        = "cloudstack.apache.org"
+}
+resource "cloudstack_pod" "test" {
+	allocation_state = "Disabled"
+	gateway          = "172.29.0.1"
+	name             = "accpod"
+	netmask          = "255.255.240.0"
+	start_ip         =  "172.29.0.2"
+	zone_id          =  cloudstack_zone.test.id
+}
+resource "cloudstack_cluster" "test" {
+	cluster_name = "acccluster"
+	cluster_type = "CloudManaged"
+	hypervisor   = "KVM"
+	pod_id       = cloudstack_pod.test.id
+	zone_id      = cloudstack_zone.test.id
+}
+
 resource "cloudstack_storage_pool" "test" {
 	name         = "accprimarystorage"
 	url          = "nfs://10.147.28.6/export/home/sandbox/primary11"
-	zone_id      = "0ed38eb3-f279-4951-ac20-fef39ebab20c"
-	cluster_id   = "9daeeb36-d8b7-497a-9b53-bbebba88c817"
-	pod_id       = "2ff52b73-139e-4c40-a0a3-5b7d87d8e3c4"
+	zone_id      = cloudstack_zone.test.id
+	cluster_id   = cloudstack_cluster.test.id
+	pod_id       = cloudstack_pod.test.id
 	scope        = "CLUSTER"
 	hypervisor   = "Simulator"
 	tags         = "XYZ,123"
@@ -57,12 +82,37 @@ resource "cloudstack_storage_pool" "test" {
 `
 
 const testAccCloudStackStoragePoolConfig_update = `
+resource "cloudstack_zone" "test" {
+	name          = "acctest"
+	dns1          = "8.8.8.8"
+	dns2          = "8.8.8.8"
+	internal_dns1 = "8.8.4.4"
+	internal_dns2 = "8.8.4.4"
+	network_type  = "Advanced"
+	domain        = "cloudstack.apache.org"
+}
+resource "cloudstack_pod" "test" {
+	allocation_state = "Disabled"
+	gateway          = "172.29.0.1"
+	name             = "accpod"
+	netmask          = "255.255.240.0"
+	start_ip         =  "172.29.0.2"
+	zone_id          =  cloudstack_zone.test.id
+}
+resource "cloudstack_cluster" "test" {
+	cluster_name = "acccluster"
+	cluster_type = "CloudManaged"
+	hypervisor   = "KVM"
+	pod_id       = cloudstack_pod.test.id
+	zone_id      = cloudstack_zone.test.id
+}
+
 resource "cloudstack_storage_pool" "test" {
 	name         = "accprimarystorage1"
 	url          = "nfs://10.147.28.6/export/home/sandbox/primary11"
-	zone_id      = "0ed38eb3-f279-4951-ac20-fef39ebab20c"
-	cluster_id   = "9daeeb36-d8b7-497a-9b53-bbebba88c817"
-	pod_id       = "2ff52b73-139e-4c40-a0a3-5b7d87d8e3c4"
+	zone_id      = cloudstack_zone.test.id
+	cluster_id   = cloudstack_cluster.test.id
+	pod_id       = cloudstack_pod.test.id
 	scope        = "CLUSTER"
 	hypervisor   = "Simulator"
 	state        = "Maintenance"
