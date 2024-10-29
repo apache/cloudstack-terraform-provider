@@ -38,53 +38,65 @@ func resourceCloudStackConfiguration() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "configuration by name",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
-			"accountid": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"account_id": {
+				Description: "the ID of the Account to update the parameter value for corresponding account",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-			"clusterid": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"cluster_id": {
+				Description: "the ID of the Cluster to update the parameter value for corresponding cluster",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-			"domainid": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"domain_id": {
+				Description: "the ID of the Domain to update the parameter value for corresponding domain",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-			"imagestoreuuid": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"image_store_uuid": {
+				Description: "the ID of the Image Store to update the parameter value for corresponding image store",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-			"storeid": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"store_id": {
+				Description: "the ID of the Storage pool to update the parameter value for corresponding storage pool",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 			"value": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "the value of the configuration",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-			"zoneid": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"zone_id": {
+				Description: "the ID of the Zone to update the parameter value for corresponding zone",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 			// computed
 			"category": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "configurations by category",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"description": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "the description of the configuration",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"is_dynamic": {
-				Type:     schema.TypeBool,
-				Computed: true,
+				Description: "true if the configuration is dynamic",
+				Type:        schema.TypeBool,
+				Computed:    true,
 			},
 			"scope": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "scope(zone/cluster/pool/account) of the parameter that needs to be updated",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 		},
 	}
@@ -98,25 +110,25 @@ func resourceCloudStackConfigurationRead(d *schema.ResourceData, meta interface{
 	p.SetName(d.Id())
 
 	// optional
-	if v, ok := d.GetOk("accountid"); ok {
+	if v, ok := d.GetOk("account_id"); ok {
 		p.SetAccountid(v.(string))
 	}
 	if v, ok := d.GetOk("category"); ok {
 		p.SetCategory(v.(string))
 	}
-	if v, ok := d.GetOk("clusterid"); ok {
+	if v, ok := d.GetOk("cluster_id"); ok {
 		p.SetClusterid(v.(string))
 	}
-	if v, ok := d.GetOk("domainid"); ok {
+	if v, ok := d.GetOk("domain_id"); ok {
 		p.SetDomainid(v.(string))
 	}
-	if v, ok := d.GetOk("imagestoreuuid"); ok {
+	if v, ok := d.GetOk("image_store_uuid"); ok {
 		p.SetImagestoreuuid(v.(string))
 	}
-	if v, ok := d.GetOk("storeid"); ok {
+	if v, ok := d.GetOk("store_id"); ok {
 		p.SetStorageid(v.(string))
 	}
-	if v, ok := d.GetOk("zoneid"); ok {
+	if v, ok := d.GetOk("zone_id"); ok {
 		p.SetZoneid(v.(string))
 	}
 
@@ -162,25 +174,25 @@ func resourceCloudStackConfigurationUpdate(d *schema.ResourceData, meta interfac
 	p := cs.Configuration.NewUpdateConfigurationParams(d.Id())
 
 	// Optional
-	if v, ok := d.GetOk("accountid"); ok {
+	if v, ok := d.GetOk("account_id"); ok {
 		p.SetAccountid(v.(string))
 	}
-	if v, ok := d.GetOk("clusterid"); ok {
+	if v, ok := d.GetOk("cluster_id"); ok {
 		p.SetClusterid(v.(string))
 	}
-	if v, ok := d.GetOk("domainid"); ok {
+	if v, ok := d.GetOk("domain_id"); ok {
 		p.SetDomainid(v.(string))
 	}
-	if v, ok := d.GetOk("imagestoreuuid"); ok {
+	if v, ok := d.GetOk("image_store_uuid"); ok {
 		p.SetImagestoreuuid(v.(string))
 	}
-	if v, ok := d.GetOk("storeid"); ok {
+	if v, ok := d.GetOk("store_id"); ok {
 		p.SetStorageid(v.(string))
 	}
 	if v, ok := d.GetOk("value"); ok {
 		p.SetValue(v.(string))
 	}
-	if v, ok := d.GetOk("zoneid"); ok {
+	if v, ok := d.GetOk("zone_id"); ok {
 		p.SetZoneid(v.(string))
 	}
 
@@ -199,22 +211,22 @@ func resourceCloudStackConfigurationDelete(d *schema.ResourceData, meta interfac
 	p := cs.Configuration.NewResetConfigurationParams(d.Id())
 
 	// Optional
-	if v, ok := d.GetOk("accountid"); ok {
+	if v, ok := d.GetOk("account_id"); ok {
 		p.SetAccountid(v.(string))
 	}
-	if v, ok := d.GetOk("clusterid"); ok {
+	if v, ok := d.GetOk("cluster_id"); ok {
 		p.SetClusterid(v.(string))
 	}
-	if v, ok := d.GetOk("domainid"); ok {
+	if v, ok := d.GetOk("domain_id"); ok {
 		p.SetDomainid(v.(string))
 	}
-	if v, ok := d.GetOk("imagestoreuuid"); ok {
+	if v, ok := d.GetOk("image_store_uuid"); ok {
 		p.SetImagestoreid(v.(string))
 	}
-	if v, ok := d.GetOk("storeid"); ok {
+	if v, ok := d.GetOk("store_id"); ok {
 		p.SetStorageid(v.(string))
 	}
-	if v, ok := d.GetOk("zoneid"); ok {
+	if v, ok := d.GetOk("zone_id"); ok {
 		p.SetZoneid(v.(string))
 	}
 
