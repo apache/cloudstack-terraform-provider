@@ -45,7 +45,7 @@ import (
 
 const testAccCloudStackStoragePoolConfig_basic = `
 resource "cloudstack_zone" "test" {
-	name          = "acctest"
+	name          = "acc_zone"
 	dns1          = "8.8.8.8"
 	dns2          = "8.8.8.8"
 	internal_dns1 = "8.8.4.4"
@@ -56,13 +56,13 @@ resource "cloudstack_zone" "test" {
 resource "cloudstack_pod" "test" {
 	allocation_state = "Disabled"
 	gateway          = "172.31.0.1"
-	name             = "accpod"
+	name             = "acc_pod"
 	netmask          = "255.255.240.0"
 	start_ip         =  "172.31.0.2"
 	zone_id          =  cloudstack_zone.test.id
 }
 resource "cloudstack_cluster" "test" {
-	cluster_name = "acccluster"
+	cluster_name = "acc_cluster"
 	cluster_type = "CloudManaged"
 	hypervisor   = "KVM"
 	pod_id       = cloudstack_pod.test.id
@@ -70,7 +70,7 @@ resource "cloudstack_cluster" "test" {
 }
 
 resource "cloudstack_storage_pool" "test" {
-	name         = "accprimarystorage"
+	name         = "acc_primarystorage"
 	url          = "nfs://10.147.28.6/export/home/sandbox/primary11"
 	zone_id      = cloudstack_zone.test.id
 	cluster_id   = cloudstack_cluster.test.id
@@ -83,7 +83,7 @@ resource "cloudstack_storage_pool" "test" {
 
 const testAccCloudStackStoragePoolConfig_update = `
 resource "cloudstack_zone" "test" {
-	name          = "acctest"
+	name          = "acc_zone"
 	dns1          = "8.8.8.8"
 	dns2          = "8.8.8.8"
 	internal_dns1 = "8.8.4.4"
@@ -94,13 +94,13 @@ resource "cloudstack_zone" "test" {
 resource "cloudstack_pod" "test" {
 	allocation_state = "Disabled"
 	gateway          = "172.31.0.1"
-	name             = "accpod"
+	name             = "acc_pod"
 	netmask          = "255.255.240.0"
 	start_ip         =  "172.31.0.2"
 	zone_id          =  cloudstack_zone.test.id
 }
 resource "cloudstack_cluster" "test" {
-	cluster_name = "acccluster"
+	cluster_name = "acc_cluster"
 	cluster_type = "CloudManaged"
 	hypervisor   = "KVM"
 	pod_id       = cloudstack_pod.test.id
@@ -108,7 +108,7 @@ resource "cloudstack_cluster" "test" {
 }
 
 resource "cloudstack_storage_pool" "test" {
-	name         = "accprimarystorage1"
+	name         = "acc_primarystorage1"
 	url          = "nfs://10.147.28.6/export/home/sandbox/primary11"
 	zone_id      = cloudstack_zone.test.id
 	cluster_id   = cloudstack_cluster.test.id

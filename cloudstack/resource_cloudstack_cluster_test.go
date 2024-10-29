@@ -39,7 +39,7 @@ func TestAccCloudStackCluster_basic(t *testing.T) {
 
 const testAccCloudStackCluster_basic = `
 resource "cloudstack_zone" "test" {
-	name          = "acctest"
+	name          = "acc_zone"
 	dns1          = "8.8.8.8"
 	dns2          = "8.8.8.8"
 	internal_dns1 = "8.8.4.4"
@@ -50,13 +50,13 @@ resource "cloudstack_zone" "test" {
 resource "cloudstack_pod" "test" {
 	allocation_state = "Disabled"
 	gateway          = "172.30.0.1"
-	name             = "accpod"
+	name             = "acc_pod"
 	netmask          = "255.255.240.0"
-	start_ip         =  "172.30.0.2"
-	zone_id          =  cloudstack_zone.test.id
+	start_ip         = "172.30.0.2"
+	zone_id          = cloudstack_zone.test.id
 }
 resource "cloudstack_cluster" "test" {
-	cluster_name = "acccluster"
+	cluster_name = "acc_cluster"
 	cluster_type = "CloudManaged"
 	hypervisor   = "KVM"
 	pod_id       = cloudstack_pod.test.id

@@ -20,6 +20,8 @@
 package cloudstack
 
 import (
+	"strings"
+
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -41,6 +43,7 @@ func resourceCloudStackPod() *schema.Resource {
 			"end_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"gateway": {
 				Type:     schema.TypeString,
@@ -76,6 +79,18 @@ func resourceCloudStackPodCreate(d *schema.ResourceData, meta interface{}) error
 	if v, ok := d.GetOk("end_ip"); ok {
 		p.SetEndip(v.(string))
 	}
+	if v, ok := d.GetOk("gateway"); ok {
+		p.SetGateway(v.(string))
+	}
+	if v, ok := d.GetOk("netmask"); ok {
+		p.SetNetmask(v.(string))
+	}
+	if v, ok := d.GetOk("start_ip"); ok {
+		p.SetStartip(v.(string))
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		p.SetZoneid(v.(string))
+	}
 
 	r, err := cs.Pod.CreatePod(p)
 	if err != nil {
@@ -96,11 +111,11 @@ func resourceCloudStackPodRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("allocation_state", r.Allocationstate)
-	d.Set("end_ip", r.Endip)
+	d.Set("end_ip", strings.Join(r.Endip, " "))
 	d.Set("gateway", r.Gateway)
 	d.Set("name", r.Name)
 	d.Set("netmask", r.Netmask)
-	d.Set("start_ip", r.Startip)
+	d.Set("start_ip", strings.Join(r.Startip, " "))
 	d.Set("zone_id", r.Zoneid)
 
 	return nil
