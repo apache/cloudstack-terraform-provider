@@ -37,16 +37,19 @@ func resourceCloudStackNetworkServiceProviderState() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "the name for the physical network service provider",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"physical_network_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "the Physical Network ID to add the provider to",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"enabled": {
-				Type:     schema.TypeBool,
-				Required: true,
+				Description: "state of the network provider",
+				Type:        schema.TypeBool,
+				Required:    true,
 			},
 		},
 	}
@@ -66,8 +69,6 @@ func resourceCloudStackNetworkServiceProviderStateRead(d *schema.ResourceData, m
 	} else {
 		d.Set("enabled", false)
 	}
-
-	// d.Set("enabled", nsp.State)
 
 	return nil
 }
