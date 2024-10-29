@@ -30,7 +30,7 @@ func (r *serviceOfferingConstrainedResource) Schema(_ context.Context, _ resourc
 	resp.Schema = schema.Schema{
 		Attributes: serviceOfferingMergeCommonSchema(map[string]schema.Attribute{
 			"cpu_speed": schema.Int32Attribute{
-				Description: "Speed of CPU in Mhz.  This does not apply to kvm.",
+				Description: "VMware and Xen based hypervisors this is the CPU speed of the service offering in MHz. For the KVM hypervisor the values of the parameters cpuSpeed and cpuNumber will be used to calculate the `shares` value. This value is used by the KVM hypervisor to calculate how much time the VM will have access to the host's CPU. The `shares` value does not have a unit, and its purpose is being a weight value for the host to compare between its guest VMs. For more information, see https://libvirt.org/formatdomain.html#cpu-tuning.",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
