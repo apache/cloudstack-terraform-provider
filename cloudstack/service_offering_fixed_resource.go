@@ -55,13 +55,11 @@ func (r *serviceOfferingFixedResource) Schema(_ context.Context, _ resource.Sche
 }
 
 func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	//
 	var plan serviceOfferingFixedResourceModel
 	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var planDiskOffering ServiceOfferingDiskOffering
 	var planDiskQosStorage ServiceOfferingDiskQosStorage
 
-	//
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
 		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosHypervisor.As(ctx, &planDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
@@ -101,21 +99,17 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 		return
 	}
 
-	//
 	plan.Id = types.StringValue(cs.Id)
-
-	//
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	//
+
 	var state serviceOfferingFixedResourceModel
 	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var stateDiskOffering ServiceOfferingDiskOffering
 	var stateDiskQosStorage ServiceOfferingDiskQosStorage
 
-	//
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
 		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
@@ -130,7 +124,6 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 		return
 	}
 
-	//
 	cs, _, err := r.client.ServiceOffering.GetServiceOfferingByID(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -151,7 +144,6 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 		state.Memory = types.Int32Value(int32(cs.Memory))
 	}
 
-	//
 	state.commonRead(ctx, cs)
 	stateDiskQosHypervisor.commonRead(ctx, cs)
 	stateDiskOffering.commonRead(ctx, cs)
@@ -160,26 +152,22 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 		return
 	}
 
-	//
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *serviceOfferingFixedResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	//
 	var state serviceOfferingFixedResourceModel
-	//
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	//
 	params := r.client.ServiceOffering.NewUpdateServiceOfferingParams(state.Id.ValueString())
 	state.commonUpdateParams(ctx, params)
 
-	//
 	cs, err := r.client.ServiceOffering.UpdateServiceOffering(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -189,7 +177,6 @@ func (r *serviceOfferingFixedResource) Update(ctx context.Context, req resource.
 		return
 	}
 
-	//
 	state.commonUpdate(ctx, cs)
 	if resp.Diagnostics.HasError() {
 		return
@@ -199,10 +186,8 @@ func (r *serviceOfferingFixedResource) Update(ctx context.Context, req resource.
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *serviceOfferingFixedResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	//
 	var state serviceOfferingFixedResourceModel
 
-	//
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -220,7 +205,6 @@ func (r *serviceOfferingFixedResource) Delete(ctx context.Context, req resource.
 	}
 }
 
-// Configure adds the provider configured client to the resource.
 func (r *serviceOfferingFixedResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Add a nil check when handling ProviderData because Terraform
 	// sets that data after it calls the ConfigureProvider RPC.

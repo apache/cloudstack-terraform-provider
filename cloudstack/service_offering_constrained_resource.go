@@ -37,7 +37,7 @@ func (r *serviceOfferingConstrainedResource) Schema(_ context.Context, _ resourc
 				},
 			},
 			"max_cpu_number": schema.Int32Attribute{
-				Description: "The maximum number of CPUs to be set with Custom Computer Offering",
+				Description: "The maximum number of CPUs to be set with Custom Compute Offering",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
@@ -51,7 +51,7 @@ func (r *serviceOfferingConstrainedResource) Schema(_ context.Context, _ resourc
 				},
 			},
 			"min_cpu_number": schema.Int32Attribute{
-				Description: "The minimum number of CPUs to be set with Custom Computer Offering",
+				Description: "The minimum number of CPUs to be set with Custom Compute Offering",
 				Required:    true,
 				PlanModifiers: []planmodifier.Int32{
 					int32planmodifier.RequiresReplace(),
@@ -69,13 +69,11 @@ func (r *serviceOfferingConstrainedResource) Schema(_ context.Context, _ resourc
 }
 
 func (r *serviceOfferingConstrainedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	//
 	var plan serviceOfferingConstrainedResourceModel
 	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var planDiskOffering ServiceOfferingDiskOffering
 	var planDiskQosStorage ServiceOfferingDiskQosStorage
 
-	//
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
 		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosHypervisor.As(ctx, &planDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
@@ -132,13 +130,11 @@ func (r *serviceOfferingConstrainedResource) Create(ctx context.Context, req res
 }
 
 func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	//
 	var state serviceOfferingConstrainedResourceModel
 	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var stateDiskOffering ServiceOfferingDiskOffering
 	var stateDiskQosStorage ServiceOfferingDiskQosStorage
 
-	//
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
 		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
@@ -153,7 +149,6 @@ func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resou
 		return
 	}
 
-	//
 	cs, _, err := r.client.ServiceOffering.GetServiceOfferingByID(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -167,13 +162,12 @@ func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resou
 	if cs.Cpuspeed > 0 {
 		state.CpuSpeed = types.Int32Value(int32(cs.Cpuspeed))
 	}
-	// These fields arent returned from list
+	// These fields arent returned from cs client
 	// max_cpu_number
 	// max_memory
 	// min_cpu_number
 	// min_memory
 
-	//
 	state.commonRead(ctx, cs)
 	stateDiskQosHypervisor.commonRead(ctx, cs)
 	stateDiskOffering.commonRead(ctx, cs)
@@ -182,27 +176,22 @@ func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resou
 		return
 	}
 
-	//
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *serviceOfferingConstrainedResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	//
 	var state serviceOfferingConstrainedResourceModel
 
-	//
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	//
 	params := r.client.ServiceOffering.NewUpdateServiceOfferingParams(state.Id.ValueString())
 	state.commonUpdateParams(ctx, params)
 
-	//
 	cs, err := r.client.ServiceOffering.UpdateServiceOffering(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -212,7 +201,6 @@ func (r *serviceOfferingConstrainedResource) Update(ctx context.Context, req res
 		return
 	}
 
-	//
 	state.commonUpdate(ctx, cs)
 	if resp.Diagnostics.HasError() {
 		return
@@ -220,12 +208,9 @@ func (r *serviceOfferingConstrainedResource) Update(ctx context.Context, req res
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-// Delete deletes the resource and removes the Terraform state on success.
 func (r *serviceOfferingConstrainedResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	//
 	var state serviceOfferingConstrainedResourceModel
 
-	//
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -243,7 +228,6 @@ func (r *serviceOfferingConstrainedResource) Delete(ctx context.Context, req res
 	}
 }
 
-// Configure adds the provider configured client to the resource.
 func (r *serviceOfferingConstrainedResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Add a nil check when handling ProviderData because Terraform
 	// sets that data after it calls the ConfigureProvider RPC.

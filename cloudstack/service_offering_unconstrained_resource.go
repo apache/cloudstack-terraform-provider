@@ -32,13 +32,11 @@ func (r *serviceOfferingUnconstrainedResource) Schema(_ context.Context, _ resou
 }
 
 func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	//
 	var plan serviceOfferingUnconstrainedResourceModel
 	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var planDiskOffering ServiceOfferingDiskOffering
 	var planDiskQosStorage ServiceOfferingDiskQosStorage
 
-	//
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
 		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosHypervisor.As(ctx, &planDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
@@ -70,22 +68,17 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 		return
 	}
 
-	//
 	plan.Id = types.StringValue(cs.Id)
-
-	//
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 }
 
 func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	//
 	var state serviceOfferingUnconstrainedResourceModel
 	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var stateDiskOffering ServiceOfferingDiskOffering
 	var stateDiskQosStorage ServiceOfferingDiskQosStorage
 
-	//
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
 		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
@@ -100,7 +93,6 @@ func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req res
 		return
 	}
 
-	//
 	cs, _, err := r.client.ServiceOffering.GetServiceOfferingByID(state.Id.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -110,7 +102,6 @@ func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req res
 		return
 	}
 
-	//
 	state.commonRead(ctx, cs)
 	stateDiskQosHypervisor.commonRead(ctx, cs)
 	stateDiskOffering.commonRead(ctx, cs)
@@ -119,26 +110,21 @@ func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req res
 		return
 	}
 
-	//
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
 }
 
 func (r *serviceOfferingUnconstrainedResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	//
 	var state serviceOfferingUnconstrainedResourceModel
 
-	//
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	//
 	params := r.client.ServiceOffering.NewUpdateServiceOfferingParams(state.Id.ValueString())
 	state.commonUpdateParams(ctx, params)
 
-	//
 	cs, err := r.client.ServiceOffering.UpdateServiceOffering(params)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -148,7 +134,6 @@ func (r *serviceOfferingUnconstrainedResource) Update(ctx context.Context, req r
 		return
 	}
 
-	//
 	state.commonUpdate(ctx, cs)
 	if resp.Diagnostics.HasError() {
 		return
@@ -158,10 +143,8 @@ func (r *serviceOfferingUnconstrainedResource) Update(ctx context.Context, req r
 }
 
 func (r *serviceOfferingUnconstrainedResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	//
 	var state serviceOfferingUnconstrainedResourceModel
 
-	//
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

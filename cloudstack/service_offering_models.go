@@ -11,8 +11,6 @@ type serviceOfferingConstrainedResourceModel struct {
 	serviceOfferingCommonResourceModel
 }
 
-// customized types.String `tfsdk:"Iscustomized"`
-
 type serviceOfferingUnconstrainedResourceModel struct {
 	serviceOfferingCommonResourceModel
 }
@@ -25,21 +23,20 @@ type serviceOfferingFixedResourceModel struct {
 }
 
 type serviceOfferingCommonResourceModel struct {
-	DeploymentPlanner     types.String `tfsdk:"deployment_planner"`
-	DiskOfferingId        types.String `tfsdk:"disk_offering_id"`
-	DisplayText           types.String `tfsdk:"display_text"`
-	DomainIds             types.Set    `tfsdk:"domain_ids"`
-	DynamicScalingEnabled types.Bool   `tfsdk:"dynamic_scaling_enabled"`
-	HostTags              types.String `tfsdk:"host_tags"`
-	Id                    types.String `tfsdk:"id"`
-	IsVolatile            types.Bool   `tfsdk:"is_volatile"`
-	LimitCpuUse           types.Bool   `tfsdk:"limit_cpu_use"`
-	Name                  types.String `tfsdk:"name"`
-	NetworkRate           types.Int32  `tfsdk:"network_rate"`
-	OfferHa               types.Bool   `tfsdk:"offer_ha"`
-	StorageTags           types.String `tfsdk:"storage_tags"`
-	ZoneIds               types.Set    `tfsdk:"zone_ids"`
-	//
+	DeploymentPlanner                types.String `tfsdk:"deployment_planner"`
+	DiskOfferingId                   types.String `tfsdk:"disk_offering_id"`
+	DisplayText                      types.String `tfsdk:"display_text"`
+	DomainIds                        types.Set    `tfsdk:"domain_ids"`
+	DynamicScalingEnabled            types.Bool   `tfsdk:"dynamic_scaling_enabled"`
+	HostTags                         types.String `tfsdk:"host_tags"`
+	Id                               types.String `tfsdk:"id"`
+	IsVolatile                       types.Bool   `tfsdk:"is_volatile"`
+	LimitCpuUse                      types.Bool   `tfsdk:"limit_cpu_use"`
+	Name                             types.String `tfsdk:"name"`
+	NetworkRate                      types.Int32  `tfsdk:"network_rate"`
+	OfferHa                          types.Bool   `tfsdk:"offer_ha"`
+	StorageTags                      types.String `tfsdk:"storage_tags"`
+	ZoneIds                          types.Set    `tfsdk:"zone_ids"`
 	ServiceOfferingDiskQosHypervisor types.Object `tfsdk:"disk_hypervisor"`
 	ServiceOfferingDiskOffering      types.Object `tfsdk:"disk_offering"`
 	ServiceOfferingDiskQosStorage    types.Object `tfsdk:"disk_storage"`
