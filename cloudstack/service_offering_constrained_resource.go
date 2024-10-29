@@ -3,6 +3,7 @@ package cloudstack
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -162,11 +163,50 @@ func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resou
 	if cs.Cpuspeed > 0 {
 		state.CpuSpeed = types.Int32Value(int32(cs.Cpuspeed))
 	}
-	// These fields arent returned from cs client
-	// max_cpu_number
-	// max_memory
-	// min_cpu_number
-	// min_memory
+	if v, found := cs.Serviceofferingdetails["maxcpunumber"]; found {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error reading service offering",
+				"Could not read constrained service offering max cpu, unexpected error: "+err.Error(),
+			)
+			return
+		}
+		state.MaxCpuNumber = types.Int32Value(int32(i))
+	}
+	if v, found := cs.Serviceofferingdetails["mincpunumber"]; found {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error reading service offering",
+				"Could not read constrained service offering min cpu number, unexpected error: "+err.Error(),
+			)
+			return
+		}
+		state.MinCpuNumber = types.Int32Value(int32(i))
+	}
+	if v, found := cs.Serviceofferingdetails["maxmemory"]; found {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error reading service offering",
+				"Could not read constrained service offering max memory, unexpected error: "+err.Error(),
+			)
+			return
+		}
+		state.MaxMemory = types.Int32Value(int32(i))
+	}
+	if v, found := cs.Serviceofferingdetails["minmemory"]; found {
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error reading service offering",
+				"Could not read constrained service offering min memory, unexpected error: "+err.Error(),
+			)
+			return
+		}
+		state.MinMemory = types.Int32Value(int32(i))
+	}
 
 	state.commonRead(ctx, cs)
 	stateDiskQosHypervisor.commonRead(ctx, cs)
