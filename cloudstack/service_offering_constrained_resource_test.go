@@ -77,6 +77,13 @@ func TestAccServiceOfferingConstrained(t *testing.T) {
 }
 
 const testAccServiceOfferingCustomConstrained1 = `
+resource "cloudstack_zone" "test" {
+	name          = "acctest"
+	dns1          = "8.8.8.8"
+	internal_dns1 = "8.8.4.4"
+	network_type  = "Advanced"
+}
+
 resource "cloudstack_service_offering_constrained" "constrained1" {
 	display_text = "constrained1"
 	name         = "constrained1"
@@ -91,17 +98,16 @@ resource "cloudstack_service_offering_constrained" "constrained1" {
 	min_memory     = 1024
 	
 	// other
-	storage_tags = "foo"
 	host_tags    = "test0101,test0202"
 	network_rate = 1024
 	deployment_planner = "UserDispersingPlanner"
 	
-	//Feature flags
+	// Feature flags
 	dynamic_scaling_enabled = false
 	is_volatile             = false
 	limit_cpu_use           = false
 	offer_ha                = false
-	zone_ids = []
+	zone_ids = [cloudstack_zone.test.id]
 
 }
 `
@@ -121,7 +127,6 @@ resource "cloudstack_service_offering_constrained" "constrained1" {
 	min_memory     = 1024
 
 	// other
-	storage_tags = "foo1"
 	host_tags    = "test0101,test0202"
 	network_rate = 1024
 	deployment_planner = "UserDispersingPlanner"
@@ -215,10 +220,11 @@ resource "cloudstack_service_offering_constrained" "constrained1" {
 
 	disk_offering = {
 		storage_type = "local"
+		sdfjklsdf = "sdfjks"
 		provisioning_type = "thin"
 		cache_mode = "none"
 		root_disk_size = "5"
-		tags = "FOO"
+		storage_tags = "FOO"
 		disk_offering_strictness = false
 	}
 }
@@ -254,7 +260,7 @@ resource "cloudstack_service_offering_constrained" "disk_hypervisor" {
 		provisioning_type = "thin"
 		cache_mode = "none"
 		root_disk_size = "5"
-		tags = "FOO"
+		storage_tags = "FOO"
 		disk_offering_strictness = false
 	}
 	disk_hypervisor = {
@@ -298,7 +304,7 @@ resource "cloudstack_service_offering_constrained" "disk_storage" {
 		provisioning_type = "thin"
 		cache_mode = "none"
 		root_disk_size = "5"
-		tags = "FOO"
+		storage_tags = "FOO"
 		disk_offering_strictness = false
 	}
 	disk_hypervisor = {

@@ -1,3 +1,26 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+
+// Nested schema attributes arent validated
+// disk_offering, disk_hypervisor, disk_storage
+// ref: https://github.com/hashicorp/terraform-plugin-framework/issues/805
+
 package cloudstack
 
 import (
@@ -85,14 +108,54 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 			},
 			Default: booldefault.StaticBool(false),
 		},
-		"storage_tags": schema.StringAttribute{
-			Description: "the tags for the service offering",
-			Optional:    true,
-		},
 		"zone_ids": schema.SetAttribute{
 			Description: "The ID of the zone(s)",
 			Optional:    true,
 			ElementType: types.StringType,
+		},
+		"disk_offering": schema.SingleNestedAttribute{
+			Optional: true,
+			Attributes: map[string]schema.Attribute{
+				"cache_mode": schema.StringAttribute{
+					Description: "the cache mode to use for this disk offering. none, writeback or writethrough",
+					Required:    true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.RequiresReplace(),
+					},
+				},
+				"disk_offering_strictness": schema.BoolAttribute{
+					Description: "True/False to indicate the strictness of the disk offering association with the compute offering. When set to true, override of disk offering is not allowed when VM is deployed and change disk offering is not allowed for the ROOT disk after the VM is deployed",
+					Required:    true,
+					PlanModifiers: []planmodifier.Bool{
+						boolplanmodifier.RequiresReplace(),
+					},
+				},
+				"provisioning_type": schema.StringAttribute{
+					Description: "provisioning type used to create volumes. Valid values are thin, sparse, fat.",
+					Required:    true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.RequiresReplace(),
+					},
+				},
+				"root_disk_size": schema.Int64Attribute{
+					Description: "the Root disk size in GB.",
+					Required:    true,
+					PlanModifiers: []planmodifier.Int64{
+						int64planmodifier.RequiresReplace(),
+					},
+				},
+				"storage_type": schema.StringAttribute{
+					Description: "the storage type of the service offering. Values are local and shared.",
+					Required:    true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.RequiresReplace(),
+					},
+				},
+				"storage_tags": schema.StringAttribute{
+					Description: "the tags for the service offering",
+					Optional:    true,
+				},
+			},
 		},
 		"disk_hypervisor": schema.SingleNestedAttribute{
 			Optional: true,
@@ -137,46 +200,6 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 					Required:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
-					},
-				},
-			},
-		},
-		"disk_offering": schema.SingleNestedAttribute{
-			Optional: true,
-			Attributes: map[string]schema.Attribute{
-				"cache_mode": schema.StringAttribute{
-					Description: "the cache mode to use for this disk offering. none, writeback or writethrough",
-					Required:    true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.RequiresReplace(),
-					},
-				},
-				"disk_offering_strictness": schema.BoolAttribute{
-					Description: "True/False to indicate the strictness of the disk offering association with the compute offering. When set to true, override of disk offering is not allowed when VM is deployed and change disk offering is not allowed for the ROOT disk after the VM is deployed",
-					Required:    true,
-					PlanModifiers: []planmodifier.Bool{
-						boolplanmodifier.RequiresReplace(),
-					},
-				},
-				"provisioning_type": schema.StringAttribute{
-					Description: "provisioning type used to create volumes. Valid values are thin, sparse, fat.",
-					Required:    true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.RequiresReplace(),
-					},
-				},
-				"root_disk_size": schema.Int64Attribute{
-					Description: "the Root disk size in GB.",
-					Required:    true,
-					PlanModifiers: []planmodifier.Int64{
-						int64planmodifier.RequiresReplace(),
-					},
-				},
-				"storage_type": schema.StringAttribute{
-					Description: "the storage type of the service offering. Values are local and shared.",
-					Required:    true,
-					PlanModifiers: []planmodifier.String{
-						stringplanmodifier.RequiresReplace(),
 					},
 				},
 			},

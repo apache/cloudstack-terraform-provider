@@ -137,7 +137,7 @@ resource "cloudstack_service_offering_unconstrained" "disk" {
 		provisioning_type = "thin"
 		cache_mode = "none"
 		root_disk_size = "5"
-		tags = "FOO"
+		storage_tags = "test0101,test0202"
 		disk_offering_strictness = false
 	}
 }
@@ -162,7 +162,7 @@ resource "cloudstack_service_offering_unconstrained" "disk_hypervisor" {
 		provisioning_type = "thin"
 		cache_mode = "none"
 		root_disk_size = "5"
-		tags = "FOO"
+		storage_tags = "test0101,test0202"
 		disk_offering_strictness = false
 	}
 	disk_hypervisor = {
@@ -196,7 +196,7 @@ resource "cloudstack_service_offering_unconstrained" "disk_storage" {
 		provisioning_type = "thin"
 		cache_mode = "none"
 		root_disk_size = "5"
-		tags = "FOO"
+		storage_tags = "test0101,test0202"
 		disk_offering_strictness = false
 	}
 	disk_storage = {

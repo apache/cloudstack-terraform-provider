@@ -1,3 +1,20 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package cloudstack
 
 import (
@@ -24,9 +41,6 @@ func (state *serviceOfferingCommonResourceModel) commonUpdate(ctx context.Contex
 	if cs.Name != "" {
 		state.Name = types.StringValue(cs.Name)
 	}
-	if cs.Storagetags != "" {
-		state.StorageTags = types.StringValue(cs.Storagetags)
-	}
 	if cs.Zoneid != "" {
 		state.ZoneIds, _ = types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
 	}
@@ -45,11 +59,10 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 	if !plan.Name.IsNull() {
 		p.SetName(plan.Name.ValueString())
 	}
-	if !plan.StorageTags.IsNull() {
-		p.SetStoragetags(plan.StorageTags.ValueString())
-	}
 	if !plan.ZoneIds.IsNull() && len(plan.ZoneIds.Elements()) > 0 {
 		p.SetZoneid(plan.ZoneIds.String())
+	} else {
+		p.SetZoneid("all")
 	}
 
 	return p
@@ -82,9 +95,6 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 	}
 	if cs.Networkrate > 0 {
 		state.NetworkRate = types.Int32Value(int32(cs.Networkrate))
-	}
-	if cs.Storagetags != "" {
-		state.StorageTags = types.StringValue(cs.Storagetags)
 	}
 	if cs.Zoneid != "" {
 		state.ZoneIds, _ = types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
@@ -135,6 +145,9 @@ func (state *ServiceOfferingDiskOffering) commonRead(ctx context.Context, cs *cl
 	}
 	if cs.Storagetype != "" {
 		state.StorageType = types.StringValue(cs.Storagetype)
+	}
+	if cs.Storagetags != "" {
+		state.StorageTags = types.StringValue(cs.Storagetags)
 	}
 }
 
@@ -189,9 +202,6 @@ func (plan *serviceOfferingCommonResourceModel) commonCreateParams(ctx context.C
 	if !plan.OfferHa.IsNull() {
 		p.SetOfferha(plan.OfferHa.ValueBool())
 	}
-	if !plan.StorageTags.IsNull() {
-		p.SetTags(plan.StorageTags.ValueString())
-	}
 	if !plan.ZoneIds.IsNull() {
 		zoneIds := make([]string, len(plan.ZoneIds.Elements()))
 		plan.ZoneIds.ElementsAs(ctx, &zoneIds, false)
@@ -240,6 +250,9 @@ func (plan *ServiceOfferingDiskOffering) commonCreateParams(ctx context.Context,
 	}
 	if !plan.StorageType.IsNull() {
 		p.SetStoragetype(plan.StorageType.ValueString())
+	}
+	if !plan.StorageTags.IsNull() {
+		p.SetTags(plan.StorageTags.ValueString())
 	}
 
 	return p

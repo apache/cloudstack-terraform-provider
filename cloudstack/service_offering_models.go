@@ -1,3 +1,22 @@
+//
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+
 package cloudstack
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
@@ -35,7 +54,6 @@ type serviceOfferingCommonResourceModel struct {
 	Name                             types.String `tfsdk:"name"`
 	NetworkRate                      types.Int32  `tfsdk:"network_rate"`
 	OfferHa                          types.Bool   `tfsdk:"offer_ha"`
-	StorageTags                      types.String `tfsdk:"storage_tags"`
 	ZoneIds                          types.Set    `tfsdk:"zone_ids"`
 	ServiceOfferingDiskQosHypervisor types.Object `tfsdk:"disk_hypervisor"`
 	ServiceOfferingDiskOffering      types.Object `tfsdk:"disk_offering"`
@@ -57,6 +75,7 @@ type ServiceOfferingDiskOffering struct {
 	ProvisionType          types.String `tfsdk:"provisioning_type"`
 	RootDiskSize           types.Int64  `tfsdk:"root_disk_size"`
 	StorageType            types.String `tfsdk:"storage_type"`
+	StorageTags            types.String `tfsdk:"storage_tags"`
 }
 
 type ServiceOfferingDiskQosStorage struct {
