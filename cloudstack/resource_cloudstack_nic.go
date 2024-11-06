@@ -53,6 +53,13 @@ func resourceCloudStackNIC() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -97,7 +104,10 @@ func resourceCloudStackNICRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the virtual machine details
-	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(d.Get("virtual_machine_id").(string))
+	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(
+		d.Get("virtual_machine_id").(string),
+		cloudstack.WithProject(d.Get("project").(string)),
+	)
 	if err != nil {
 		if count == 0 {
 			log.Printf("[DEBUG] Instance %s does no longer exist", d.Get("virtual_machine_id").(string))

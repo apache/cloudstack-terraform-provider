@@ -37,6 +37,11 @@ func dataSourceCloudstackIPAddress() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
+			"projectid": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+
 			//Computed values
 			"is_portable": {
 				Type:     schema.TypeBool,
@@ -81,6 +86,7 @@ func dataSourceCloudstackIPAddress() *schema.Resource {
 func datasourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.Address.NewListPublicIpAddressesParams()
+	p.SetProjectid(d.Get("projectid").(string))
 	csPublicIPAddresses, err := cs.Address.ListPublicIpAddresses(p)
 
 	if err != nil {

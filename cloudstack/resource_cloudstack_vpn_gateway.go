@@ -48,6 +48,13 @@ func resourceCloudStackVPNGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -73,7 +80,11 @@ func resourceCloudStackVPNGatewayRead(d *schema.ResourceData, meta interface{}) 
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the VPN Gateway details
-	v, count, err := cs.VPN.GetVpnGatewayByID(d.Id())
+	v, count, err := cs.VPN.GetVpnGatewayByID(
+	  d.Id(),
+	  cloudstack.WithProject(d.Get("project").(string)),
+    )
+
 	if err != nil {
 		if count == 0 {
 			log.Printf(

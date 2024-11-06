@@ -453,6 +453,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	p := cs.Volume.NewListVolumesParams()
 	p.SetType("ROOT")
 	p.SetVirtualmachineid(d.Id())
+	p.SetProjectid(d.Get("project").(string))
 
 	// Get the root disk of the instance.
 	l, err := cs.Volume.ListVolumes(p)

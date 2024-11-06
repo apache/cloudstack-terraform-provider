@@ -37,6 +37,11 @@ func dataSourceCloudstackInstance() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
+			"projectid": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+
 			//Computed values
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -98,6 +103,7 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.VirtualMachine.NewListVirtualMachinesParams()
+	p.SetProjectid(d.Get("projectid").(string))
 	csInstances, err := cs.VirtualMachine.ListVirtualMachines(p)
 
 	if err != nil {
