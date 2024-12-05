@@ -96,6 +96,9 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	// cloudstack params
 	params := r.client.ServiceOffering.NewCreateServiceOfferingParams(plan.DisplayText.ValueString(), plan.Name.ValueString())
 	plan.commonCreateParams(ctx, params)
+	planDiskQosHypervisor.commonCreateParams(ctx, params)
+	planDiskOffering.commonCreateParams(ctx, params)
+	planDiskQosStorage.commonCreateParams(ctx, params)
 
 	// resource specific params
 	if !plan.CpuNumber.IsNull() {
