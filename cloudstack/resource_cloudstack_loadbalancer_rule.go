@@ -97,6 +97,14 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 				Set:      schema.HashString,
 			},
 
+			"cidrlist": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
+			},
+
 			"project": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -141,6 +149,16 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 	// Set the protocol
 	if protocol, ok := d.GetOk("protocol"); ok {
 		p.SetProtocol(protocol.(string))
+	}
+
+	// Set CIDR list
+	if cidr, ok := d.GetOk("cidrlist"); ok {
+		var cidrList []string
+		for _, id := range cidr.(*schema.Set).List() {
+			cidrList = append(cidrList, id.(string))
+		}
+
+		p.SetCidrlist(cidrList)
 	}
 
 	// Set the ipaddress id
@@ -215,6 +233,11 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("public_port", public_port)
 	d.Set("private_port", private_port)
 	d.Set("protocol", lb.Protocol)
+
+	// Only set cidr if user specified it to avoid spurious diffs
+	if _, ok := d.GetOk("cidrlist"); ok {
+		d.Set("cidrlist", strings.Split(lb.Cidrlist, ","))
+	}
 
 	// Only set network if user specified it to avoid spurious diffs
 	if _, ok := d.GetOk("network_id"); ok {
