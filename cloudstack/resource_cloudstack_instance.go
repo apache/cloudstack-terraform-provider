@@ -500,6 +500,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("tags", tagsToMap(vm.Tags))
+	d.Set("details", vm.Details)
 
 	setValueOrID(d, "service_offering", vm.Serviceofferingname, vm.Serviceofferingid)
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
