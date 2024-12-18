@@ -175,6 +175,14 @@ func resourceCloudStackInstance() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"data_disks": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Set:      schema.HashString,
+			},
+
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -213,6 +221,12 @@ func resourceCloudStackInstance() *schema.Resource {
 			"pod_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+
+			"data_disk_scan": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 
 			"tags": tagsSchema(),
@@ -405,6 +419,17 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(r.Id)
 
+	// If there are data disk IDs supplied, attach them
+	if dataDiskIDs := d.Get("data_disks").(*schema.Set); dataDiskIDs.Len() > 0 {
+		for _, dataDisk := range dataDiskIDs.List() {
+			pv := cs.Volume.NewAttachVolumeParams(dataDisk.(string), r.Id)
+			_, err := Retry(10, retryableAttachVolumeFunc(cs, pv))
+			if err != nil {
+				return fmt.Errorf("Error attaching volume to VM: %s", err)
+			}
+		}
+	}
+
 	// Set tags if necessary
 	if err = setTags(cs, d, "userVm"); err != nil {
 		return fmt.Errorf("Error setting tags on the new instance %s: %s", name, err)
@@ -465,6 +490,27 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 		log.Printf("[DEBUG] Failed to find root disk of instance: %s", vm.Name)
 	} else {
 		d.Set("root_disk_size", l.Volumes[0].Size>>30) // B to GiB
+	}
+
+	if d.Get("data_disk_scan").(bool) {
+		p = cs.Volume.NewListVolumesParams()
+		p.SetType("DATADISK")
+		p.SetVirtualmachineid(d.Id())
+		p.SetProjectid(d.Get("project").(string))
+
+		// Get the data disks of the instance.
+		volumes, err := cs.Volume.ListVolumes(p)
+		if err != nil {
+			return err
+		}
+
+		if _, ok := d.GetOk("data_disks"); !ok {
+			dataDisks := &schema.Set{F: schema.HashString}
+			for _, v := range volumes.Volumes {
+				dataDisks.Add(v.Id)
+			}
+			d.Set("data_disks", dataDisks)
+		}
 	}
 
 	if _, ok := d.GetOk("affinity_group_ids"); ok {
@@ -553,9 +599,31 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	}
 
+	var keypairTrigger bool
+	var keypairsTrigger bool
+	var userdataTrigger bool
+
+	// Import doesn't get user_data, so just use it if is "import"
+	oldUD, _ := d.GetChange("user_data")
+	if oldUD != nil && oldUD.(string) == "import" {
+		userdataTrigger = false
+	} else {
+		userdataTrigger = d.HasChange("user_data")
+	}
+
+	// Import doesn't get keypair, so just use it if is "import"
+	oldKP, _ := d.GetChange("keypair")
+	if oldKP != nil && oldKP.(string) == "import" {
+		keypairTrigger = false
+		keypairsTrigger = false
+	} else {
+		keypairTrigger = d.HasChange("keypair")
+		keypairsTrigger = d.HasChange("keypairs")
+	}
+
 	// Attributes that require reboot to update
 	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") || d.HasChange("user_data") {
+		d.HasChange("affinity_group_names") || keypairTrigger || keypairsTrigger || userdataTrigger {
 
 		// Before we can actually make these changes, the virtual machine must be stopped
 		_, err := cs.VirtualMachine.StopVirtualMachine(
@@ -768,7 +836,29 @@ func resourceCloudStackInstanceImport(d *schema.ResourceData, meta interface{}) 
 	// We set start_vm to true as that matches the default and we assume that
 	// when you need to import an instance it means it is already running.
 	d.Set("start_vm", true)
-	return importStatePassthrough(d, meta)
+	s := strings.SplitN(d.Id(), "/", 4)
+	if len(s) >= 2 {
+		d.Set("project", s[0])
+	}
+
+	// We need to determine if we should scan for data disks, but if it doesn't exist, just leave it as the default
+	if len(s) >= 3 {
+		d.Set("data_disk_scan", s[1] == "true")
+		if len(s) >= 4 {
+			dataDisks := &schema.Set{F: schema.HashString}
+			for _, disk := range strings.Split(s[2], ",") {
+				dataDisks.Add(disk)
+			}
+			d.Set("data_disks", dataDisks)
+		}
+	}
+
+	d.Set("keypair", "import")
+	d.Set("user_data", "import")
+
+	d.SetId(s[len(s)-1])
+
+	return []*schema.ResourceData{d}, nil
 }
 
 // getUserData returns the user data as a base64 encoded string

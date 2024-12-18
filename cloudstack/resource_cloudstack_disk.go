@@ -92,6 +92,12 @@ func resourceCloudStackDisk() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"data_disk_scan": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+
 			"tags": tagsSchema(),
 
 			"reattach_on_change": {
@@ -195,9 +201,12 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 	setValueOrID(d, "project", v.Project, v.Projectid)
 	setValueOrID(d, "zone", v.Zonename, v.Zoneid)
 
-	if v.Virtualmachineid != "" {
-		d.Set("device_id", int(v.Deviceid))
-		d.Set("virtual_machine_id", v.Virtualmachineid)
+	if d.Get("data_disk_scan").(bool) {
+		d.Set("attach", v.Virtualmachineid != "") // If attached this contains a virtual machine ID
+		if v.Virtualmachineid != "" {
+			d.Set("device_id", int(v.Deviceid))
+			d.Set("virtual_machine_id", v.Virtualmachineid)
+		}
 	}
 
 	return nil
