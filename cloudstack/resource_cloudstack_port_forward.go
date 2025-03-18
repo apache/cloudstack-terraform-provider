@@ -321,7 +321,7 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 
 	if forwards.Len() > 0 {
 		d.Set("forward", forwards)
-	} else if !managed {
+	} else if managed {
 		d.SetId("")
 	}
 
