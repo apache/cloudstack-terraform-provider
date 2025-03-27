@@ -159,4 +159,15 @@ resource "cloudstack_private_gateway" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   acl_id = cloudstack_network_acl.foo.id
   depends_on = ["cloudstack_vpc.foo","cloudstack_network_acl.foo"]
+}
+
+resource "cloudstack_private_gateway" "bar" {
+  gateway = "10.1.1.253"
+  ip_address = "192.168.0.2"
+  netmask = "255.255.255.0"
+  vlan = "1"
+  vpc_id = cloudstack_vpc.foo.id
+  acl_id = cloudstack_network_acl.foo.id
+  bypass_vlan_check = true
+  depends_on = ["cloudstack_vpc.foo","cloudstack_network_acl.foo","cloudstack_private_gateway.foo"]
 }`
