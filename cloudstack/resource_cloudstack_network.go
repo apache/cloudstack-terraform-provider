@@ -153,6 +153,12 @@ func resourceCloudStackNetwork() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"bypass_vlan_check": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -217,6 +223,9 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 	if vlan, ok := d.GetOk("vlan"); ok {
 		p.SetVlan(strconv.Itoa(vlan.(int)))
 	}
+
+	// Bypass VLAN overlap check if necessary
+	p.SetBypassvlanoverlapcheck(d.Get("bypass_vlan_check").(bool))
 
 	// Check is this network needs to be created in a VPC
 	if vpcid, ok := d.GetOk("vpc_id"); ok {
