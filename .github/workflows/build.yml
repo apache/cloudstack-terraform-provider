@@ -53,6 +53,11 @@ jobs:
   build:
     needs: check
     if: ${{ needs.check.outputs.cloudstack == 'true' || github.ref == 'refs/heads/release' }}
+    permissions:
+      contents: write
+      issues: write
+      actions: write
+      pull-requests: write
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -68,3 +73,8 @@ jobs:
       - name: Test
         if: github.ref == 'refs/heads/release'
         run: make test
+      - name: Release
+        if: github.ref == 'refs/heads/release'
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
