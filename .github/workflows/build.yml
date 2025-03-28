@@ -45,15 +45,6 @@ jobs:
             filters: |
               cloudstack:
                 - 'cloudstack/**'
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: 'go.mod'
-      - name: Build
-        run: make build
-      - name: Test
-        if: github.ref == 'refs/heads/release'
-        run: make test
   build:
     needs: check
     if: ${{ needs.check.outputs.cloudstack == 'true' }}
