@@ -40,11 +40,11 @@ jobs:
     steps:
       - name: Paths
         uses: dorny/paths-filter@v3
-          id: changes
-          with:
-            filters: |
-              cloudstack:
-                - 'cloudstack/**'
+        id: changes
+        with:
+          filters: |
+            cloudstack:
+              - 'cloudstack/**'
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
