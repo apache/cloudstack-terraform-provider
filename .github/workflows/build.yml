@@ -21,11 +21,9 @@ on:
   merge_group:
     branches:
       - build
-      - release
   pull_request:
     branches:
       - build
-      - release
   push:
     branches:
       - release
@@ -54,12 +52,8 @@ jobs:
               - 'cloudstack/**'
   build:
     needs: check
-    if: ${{ needs.check.outputs.cloudstack == 'true' }}
+    if: ${{ needs.check.outputs.cloudstack == 'true' || github.ref == 'refs/heads/release' }}
     runs-on: ubuntu-22.04
-    permissions:
-      pull-requests: read
-    outputs:
-      cloudstack: ${{ steps.changes.outputs.cloudstack }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
