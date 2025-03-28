@@ -27,19 +27,38 @@ on:
       - build
       - release
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 permissions:
   contents: read
-  actions: write
 
 jobs:
+  check:
+    runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: read
+    outputs:
+      cloudstack: ${{ steps.changes.outputs.cloudstack }}
+    steps:
+      - name: Paths
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            cloudstack:
+              - 'cloudstack/**'
   build:
+    needs: check
+    if: ${{ needs.check.outputs.cloudstack == 'true' }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Paths
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            cloudstack:
+              - 'cloudstack/**'
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
