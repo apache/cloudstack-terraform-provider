@@ -40,11 +40,11 @@ jobs:
     steps:
       - name: Paths
         uses: dorny/paths-filter@v3
-          id: changes
-          with:
-            filters: |
-              cloudstack:
-                - 'cloudstack/**'
+        id: changes
+        with:
+          filters: |
+            cloudstack:
+              - 'cloudstack/**'
   build:
     needs: check
     if: ${{ needs.check.outputs.cloudstack == 'true' }}
