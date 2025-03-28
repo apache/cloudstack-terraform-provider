@@ -22,10 +22,14 @@ on:
     branches:
       - build
       - release
+    paths:
+      - cloudstack/**/*
   pull_request:
     branches:
       - build
       - release
+    paths:
+      - cloudstack/**/*
 
 permissions:
   contents: read
