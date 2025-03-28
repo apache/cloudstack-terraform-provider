@@ -41,6 +41,10 @@ jobs:
     outputs:
       cloudstack: ${{ steps.changes.outputs.cloudstack }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Paths
         uses: dorny/paths-filter@v3
         id: changes
@@ -59,6 +63,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
