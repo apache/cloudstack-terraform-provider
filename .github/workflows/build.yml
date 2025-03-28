@@ -18,7 +18,7 @@
 name: Build
 
 on:
-  [push, pull_request]:
+  pull_request:
     branches:
       - build
       - release
