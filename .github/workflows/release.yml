@@ -18,9 +18,13 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Build
     branches:
       - release
+    types: 
+      - completed
 
 permissions:
   contents: read
