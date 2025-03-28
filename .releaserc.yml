@@ -6,9 +6,6 @@ debug: false
 dryRun: false
 tagFormat: v${version} # https://semantic-release.gitbook.io/semantic-release/usage/configuration#tagformat
 
-# Global plugin options (will be passed to all plugins)
-preset: 'conventionalcommits'
-
 npmPublish: false
 
 # Plugins
