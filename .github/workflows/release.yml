@@ -18,9 +18,7 @@
 name: Release
 
 on:
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
       - release
 
@@ -29,7 +27,6 @@ permissions:
 
 jobs:
   release:
-    if: github.event.pull_request.merged
     permissions:
       contents: write
       issues: write
