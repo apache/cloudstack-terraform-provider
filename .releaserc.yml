@@ -8,7 +8,6 @@ tagFormat: v${version} # https://semantic-release.gitbook.io/semantic-release/us
 
 # Global plugin options (will be passed to all plugins)
 preset: 'conventionalcommits'
-gitlabUrl: 'https://gitlab.com/'
 
 npmPublish: false
 
@@ -25,7 +24,7 @@ plugins:
 verifyConditions:
   - '@semantic-release/changelog'
   - '@semantic-release/git'
-  - '@semantic-release/gitlab'
+  - '@semantic-release/github'
 
 # Responsible for determining the type of the next release (major, minor or patch).
 # If multiple plugins with a analyzeCommits step are defined, the release type will be
