@@ -15,16 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Build
+name: Release
 
 on:
   merge_group:
     branches:
-      - build
-      - release
-  pull_request:
-    branches:
-      - build
       - release
 
 concurrency:
@@ -32,19 +27,30 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
-  actions: write
 
 jobs:
-  build:
+  release:
+    permissions:
+      contents: write
+      issues: write
+      actions: write
+      pull-requests: write
+      id-token: write
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
         with:
-          go-version-file: 'go.mod'
-      - name: Build
-        run: make build
-      - name: Test
-        run: make test
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install dependencies
+        run: npm clean-install
+      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+        run: npm audit signatures
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
