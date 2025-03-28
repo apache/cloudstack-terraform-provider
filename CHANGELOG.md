@@ -1,10 +1,3 @@
-## [0.5.2](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.1...v0.5.2) (2025-03-28)
-
-
-### Bug Fixes
-
-* trigger release ([7ed1e51](https://github.com/Longsight/cloudstack-terraform-provider/commit/7ed1e516cd9abb29fba95dbae4d069bf990d5cfe))
-
 ## 0.4.0 (Unreleased)
 
 IMPROVEMENTS:

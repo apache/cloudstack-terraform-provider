@@ -54,3 +54,5 @@ prepare:
 # Responsible for publishing the release.
 publish:
   - path: '@semantic-release/github'
+    assets:
+      - /home/runner/go/bin/cloudstack-terraform-provider
