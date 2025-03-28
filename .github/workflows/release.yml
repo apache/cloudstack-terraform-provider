@@ -18,18 +18,16 @@
 name: Release
 
 on:
-  merge_group:
+  push:
     branches:
       - release
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 permissions:
   contents: read
 
 jobs:
   release:
+    if: github.event.pull_request.merged
     permissions:
       contents: write
       issues: write
