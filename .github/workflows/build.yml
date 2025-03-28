@@ -26,6 +26,9 @@ on:
     branches:
       - build
       - release
+  push:
+    branches:
+      - release
 
 permissions:
   contents: read
