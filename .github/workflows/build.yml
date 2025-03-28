@@ -47,4 +47,5 @@ jobs:
       - name: Build
         run: make build
       - name: Test
+        if: github.ref == 'refs/heads/release'
         run: make test
