@@ -14,9 +14,10 @@ plugins:
   - "@semantic-release/release-notes-generator"
   - "@semantic-release/changelog"
   - "@semantic-release/git"
-  - - "@semantic-release/github"
-    - assets:
-      - dist/**
+  - [
+      "@semantic-release/github",
+      {assets: [dist/**]}
+    ]
 
 
 # Responsible for verifying conditions necessary to proceed with the release:

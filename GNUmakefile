@@ -6,6 +6,9 @@ PKG_NAME=cloudstack
 default: build
 
 build: fmtcheck
+	go build -o dist/cloudstack-terraform-provider
+
+install: fmtcheck
 	go install
 
 test: fmtcheck
