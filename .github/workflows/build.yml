@@ -68,16 +68,13 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
+      - name: Prepare
+        run: mkdir ${{ github.workspace }}/dist
       - name: Build
         run: make build
       - name: Test
         if: ${{ github.ref == 'refs/heads/release' }}
         run: make test
-      - name: Prepare
-        if: ${{ github.ref == 'refs/heads/release' }}
-        run: |
-          mkdir -p ${{ github.workspace }}/dist
-          cp $(go env GOPATH)/bin/cloudstack-terraform-provider ${{ github.workspace }}/dist/cloudstack-terraform-provider
       - name: Release
         if: ${{ github.ref == 'refs/heads/release' }}
         uses: cycjimmy/semantic-release-action@v4
