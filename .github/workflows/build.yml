@@ -74,7 +74,9 @@ jobs:
         run: make build
       - name: Test
         if: ${{ github.ref == 'refs/heads/release' }}
-        run: make test
+        run: |
+          make test
+          ls -l dist/
       - name: Release
         if: ${{ github.ref == 'refs/heads/release' }}
         uses: cycjimmy/semantic-release-action@v4
