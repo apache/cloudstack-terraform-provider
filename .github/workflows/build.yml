@@ -71,10 +71,19 @@ jobs:
       - name: Build
         run: make build
       - name: Test
-        if: github.ref == 'refs/heads/release'
+        if: ${{ github.ref == 'refs/heads/release' }}
         run: make test
+      - name: Prepare
+        if: ${{ github.ref == 'refs/heads/release' }}
+        run: |
+          mkdir -p ${{ github.workspace }}/dist
+          cp $(go env GOPATH)/bin/cloudstack-terraform-provider ${{ github.workspace }}/dist/cloudstack-terraform-provider
       - name: Release
-        if: github.ref == 'refs/heads/release'
+        if: ${{ github.ref == 'refs/heads/release' }}
         uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
