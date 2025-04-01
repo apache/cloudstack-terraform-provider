@@ -86,4 +86,3 @@ jobs:
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: semantic-release:*
