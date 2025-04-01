@@ -14,10 +14,7 @@ plugins:
   - "@semantic-release/release-notes-generator"
   - "@semantic-release/changelog"
   - "@semantic-release/git"
-  - [
-      "@semantic-release/github",
-      {assets: [dist/**]}
-    ]
+  - "@semantic-release/github"
 
 
 # Responsible for verifying conditions necessary to proceed with the release:
@@ -59,3 +56,5 @@ prepare:
 # Responsible for publishing the release.
 publish:
   - path: '@semantic-release/github'
+    assets:
+      - dist/**
