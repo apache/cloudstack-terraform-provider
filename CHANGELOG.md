@@ -1,3 +1,11 @@
+## [0.5.4](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.3...v0.5.4) (2025-04-01)
+
+
+### Bug Fixes
+
+* revert to ubuntu-20.04 to get libc6-2.31 ([6baa8bb](https://github.com/Longsight/cloudstack-terraform-provider/commit/6baa8bbab77ba0f4d6a294259c0205cb9dffa340))
+* revert to ubuntu-20.04 to get libc6-2.31 ([050ca09](https://github.com/Longsight/cloudstack-terraform-provider/commit/050ca098bfdcd9fc0d67267c1d96fb5bf413b4e6))
+
 ## [0.5.3](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.2...v0.5.3) (2025-04-01)
 
 
