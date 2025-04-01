@@ -1,3 +1,17 @@
+## [0.5.5](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.4...v0.5.5) (2025-04-01)
+
+
+### Bug Fixes
+
+* revert ([3ab3b00](https://github.com/Longsight/cloudstack-terraform-provider/commit/3ab3b00943a9c68248a391574df62741a1dd36b8))
+* revert ([6ed6a6e](https://github.com/Longsight/cloudstack-terraform-provider/commit/6ed6a6e4318bedf9ae2e5efe820b74c60445e794))
+
+
+### Reverts
+
+* Revert "revert to earlier version" ([6cddb58](https://github.com/Longsight/cloudstack-terraform-provider/commit/6cddb583a4ea5803738d261f8b2bad1678f0b82a))
+* Revert "revert to earlier version" ([342c770](https://github.com/Longsight/cloudstack-terraform-provider/commit/342c770d2995a8c003a2f518011334eaea222e94))
+
 ## [0.5.4](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.3...v0.5.4) (2025-04-01)
 
 
