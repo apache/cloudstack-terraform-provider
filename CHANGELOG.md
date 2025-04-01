@@ -1,3 +1,10 @@
+## [0.5.2](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.1...v0.5.2) (2025-04-01)
+
+
+### Bug Fixes
+
+* revert to earlier version of libs ([2b0bf51](https://github.com/Longsight/cloudstack-terraform-provider/commit/2b0bf51a7c02050edbd44eec0d89e11f4adc3865))
+
 ## [0.5.1](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.0...v0.5.1) (2025-04-01)
 
 
