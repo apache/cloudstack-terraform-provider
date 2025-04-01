@@ -117,12 +117,12 @@ func resourceCloudStackVPCCreate(d *schema.ResourceData, meta interface{}) error
 
 	// Create a new parameter struct
 	p := cs.VPC.NewCreateVPCParams(
+		d.Get("cidr").(string),
 		displaytext.(string),
 		name,
 		vpcofferingid,
 		zoneid,
 	)
-	p.SetCidr(d.Get("cidr").(string))
 
 	// If there is a network domain supplied, make sure to add it to the request
 	if networkDomain, ok := d.GetOk("network_domain"); ok {
