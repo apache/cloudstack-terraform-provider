@@ -1,3 +1,80 @@
+## [0.5.5](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.4...v0.5.5) (2025-04-01)
+
+
+### Bug Fixes
+
+* revert ([3ab3b00](https://github.com/Longsight/cloudstack-terraform-provider/commit/3ab3b00943a9c68248a391574df62741a1dd36b8))
+* revert ([6ed6a6e](https://github.com/Longsight/cloudstack-terraform-provider/commit/6ed6a6e4318bedf9ae2e5efe820b74c60445e794))
+
+
+### Reverts
+
+* Revert "revert to earlier version" ([6cddb58](https://github.com/Longsight/cloudstack-terraform-provider/commit/6cddb583a4ea5803738d261f8b2bad1678f0b82a))
+* Revert "revert to earlier version" ([342c770](https://github.com/Longsight/cloudstack-terraform-provider/commit/342c770d2995a8c003a2f518011334eaea222e94))
+
+## [0.5.4](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.3...v0.5.4) (2025-04-01)
+
+
+### Bug Fixes
+
+* revert to ubuntu-20.04 to get libc6-2.31 ([6baa8bb](https://github.com/Longsight/cloudstack-terraform-provider/commit/6baa8bbab77ba0f4d6a294259c0205cb9dffa340))
+* revert to ubuntu-20.04 to get libc6-2.31 ([050ca09](https://github.com/Longsight/cloudstack-terraform-provider/commit/050ca098bfdcd9fc0d67267c1d96fb5bf413b4e6))
+
+## [0.5.3](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.2...v0.5.3) (2025-04-01)
+
+
+### Bug Fixes
+
+* build on 24.04 ([3271dde](https://github.com/Longsight/cloudstack-terraform-provider/commit/3271dde05fe01afc4bd609cf83ab4ec72b410c7a))
+* build on 24.04 ([18cde5c](https://github.com/Longsight/cloudstack-terraform-provider/commit/18cde5c89940e89da611b710009ed44454300fbe))
+
+## [0.5.2](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.1...v0.5.2) (2025-04-01)
+
+
+### Bug Fixes
+
+* revert to earlier version of libs ([2b0bf51](https://github.com/Longsight/cloudstack-terraform-provider/commit/2b0bf51a7c02050edbd44eec0d89e11f4adc3865))
+
+## [0.5.1](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.0...v0.5.1) (2025-04-01)
+
+
+### Bug Fixes
+
+* trigger release ([e780bfc](https://github.com/Longsight/cloudstack-terraform-provider/commit/e780bfcccb1848eb9df4602576da0fa1ca60182c))
+* trigger release ([189d271](https://github.com/Longsight/cloudstack-terraform-provider/commit/189d2712c362934b73898cf7320c6acb6ed11413))
+
+## [0.5.1](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.0...v0.5.1) (2025-03-31)
+
+
+### Bug Fixes
+
+* trigger release ([e780bfc](https://github.com/Longsight/cloudstack-terraform-provider/commit/e780bfcccb1848eb9df4602576da0fa1ca60182c))
+* trigger release ([189d271](https://github.com/Longsight/cloudstack-terraform-provider/commit/189d2712c362934b73898cf7320c6acb6ed11413))
+
+## [0.5.1](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.0...v0.5.1) (2025-03-31)
+
+
+### Bug Fixes
+
+* trigger release ([e780bfc](https://github.com/Longsight/cloudstack-terraform-provider/commit/e780bfcccb1848eb9df4602576da0fa1ca60182c))
+* trigger release ([189d271](https://github.com/Longsight/cloudstack-terraform-provider/commit/189d2712c362934b73898cf7320c6acb6ed11413))
+
+## [0.5.1](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.0...v0.5.1) (2025-03-31)
+
+
+### Bug Fixes
+
+* trigger release ([e780bfc](https://github.com/Longsight/cloudstack-terraform-provider/commit/e780bfcccb1848eb9df4602576da0fa1ca60182c))
+* trigger release ([189d271](https://github.com/Longsight/cloudstack-terraform-provider/commit/189d2712c362934b73898cf7320c6acb6ed11413))
+
+## [0.5.1](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.0...v0.5.1) (2025-03-28)
+
+
+### Bug Fixes
+
+* trigger release ([e780bfc](https://github.com/Longsight/cloudstack-terraform-provider/commit/e780bfcccb1848eb9df4602576da0fa1ca60182c))
+* trigger release ([189d271](https://github.com/Longsight/cloudstack-terraform-provider/commit/189d2712c362934b73898cf7320c6acb6ed11413))
+
 ## 0.4.0 (Unreleased)
 
 IMPROVEMENTS:
