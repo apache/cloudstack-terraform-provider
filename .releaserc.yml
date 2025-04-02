@@ -11,17 +11,12 @@ npmPublish: false
 # Plugins
 plugins:
   - "@semantic-release/commit-analyzer"
-  - "@semantic-release/release-notes-generator"
-  - "@semantic-release/changelog"
-  - "@semantic-release/git"
   - "@semantic-release/github"
 
 
 # Responsible for verifying conditions necessary to proceed with the release:
 # configuration is correct, authentication token are valid, etc...
 verifyConditions:
-  - '@semantic-release/changelog'
-  - '@semantic-release/git'
   - '@semantic-release/github'
 
 # Responsible for determining the type of the next release (major, minor or patch).
@@ -31,30 +26,15 @@ verifyConditions:
 analyzeCommits:
   - path: '@semantic-release/commit-analyzer'
 
-# Responsible for generating the content of the release note.
-# If multiple plugins with a generateNotes step are defined,
-# the release notes will be the result of the concatenation of each plugin output.
-generateNotes:
-  - path: '@semantic-release/release-notes-generator'
-    writerOpts:
-      groupBy: 'type'
-      commitGroupsSort: 'title'
-      commitsSort: 'header'
-    linkCompare: true
-    linkReferences: true
-
-# Responsible for preparing the release, for example creating or updating files
-# such as package.json, CHANGELOG.md, documentation or compiled assets
-# and pushing a commit.
-prepare:
-  - path: '@semantic-release/changelog'
-  - path: '@semantic-release/git'
-    message: 'RELEASE: v${nextRelease.version}'
-    assets:
-      - CHANGELOG.md
-
 # Responsible for publishing the release.
 publish:
   - path: '@semantic-release/github'
     assets:
-      - dist/**
+      - path: dist/cloudstack-terraform-provider_linux_amd64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_linux_amd64.zip
+      - path: dist/cloudstack-terraform-provider_linux_arm64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_linux_arm64.zip
+      - path: dist/cloudstack-terraform-provider_darwin_amd64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_darwin_amd64.zip
+      - path: dist/cloudstack-terraform-provider_darwin_arm64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_darwin_arm64.zip
