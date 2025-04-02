@@ -21,9 +21,11 @@ on:
   merge_group:
     branches:
       - build
+      - release
   pull_request:
     branches:
       - build
+      - release
   push:
     branches:
       - release
