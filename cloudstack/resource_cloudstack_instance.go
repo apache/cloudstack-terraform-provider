@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
@@ -38,7 +39,7 @@ func resourceCloudStackInstance() *schema.Resource {
 		Update: resourceCloudStackInstanceUpdate,
 		Delete: resourceCloudStackInstanceDelete,
 		Importer: &schema.ResourceImporter{
-			State: resourceCloudStackInstanceImport,
+			StateContext: resourceCloudStackInstanceImportContext,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -764,11 +765,11 @@ func resourceCloudStackInstanceDelete(d *schema.ResourceData, meta interface{}) 
 
 	return nil
 }
-func resourceCloudStackInstanceImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+func resourceCloudStackInstanceImportContext(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	// We set start_vm to true as that matches the default and we assume that
 	// when you need to import an instance it means it is already running.
 	d.Set("start_vm", true)
-	return importStatePassthrough(d, meta)
+	return importStatePassthroughContext(ctx, d, meta)
 }
 
 // getUserData returns the user data as a base64 encoded string

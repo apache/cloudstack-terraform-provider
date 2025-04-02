@@ -65,6 +65,7 @@ func dataSourceCloudstackVPC() *schema.Resource {
 
 			"project": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 
@@ -81,6 +82,11 @@ func dataSourceCloudstackVPC() *schema.Resource {
 func datasourceCloudStackVPCRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.VPC.NewListVPCsParams()
+
+	if err := cloudstack.WithProject(d.Get("project").(string))(cs, p); err != nil {
+		return err
+	}
+
 	csVPCs, err := cs.VPC.ListVPCs(p)
 
 	if err != nil {
