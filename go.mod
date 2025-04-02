@@ -4,7 +4,7 @@ require (
 	github.com/apache/cloudstack-go/v2 v2.17.0
 	github.com/go-ini/ini v1.67.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hashicorp/terraform-plugin-framework v1.14.0
+	github.com/hashicorp/terraform-plugin-framework v1.14.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.17.0
 	github.com/hashicorp/terraform-plugin-go v0.26.0
 	github.com/hashicorp/terraform-plugin-mux v0.18.0
