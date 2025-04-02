@@ -160,8 +160,8 @@ func setProjectid(p cloudstack.ProjectIDSetter, cs *cloudstack.CloudStackClient,
 	return nil
 }
 
-// importStatePassthrough is a generic importer with project support.
-func importStatePassthrough(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+// importStatePassthroughContext is a generic importer with project support.
+func importStatePassthroughContext(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	// Try to split the ID to extract the optional project name.
 	s := strings.SplitN(d.Id(), "/", 2)
 	if len(s) == 2 {

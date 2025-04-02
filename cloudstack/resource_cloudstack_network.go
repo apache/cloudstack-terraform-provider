@@ -57,7 +57,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 		Update: resourceCloudStackNetworkUpdate,
 		Delete: resourceCloudStackNetworkDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			StateContext: importStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{

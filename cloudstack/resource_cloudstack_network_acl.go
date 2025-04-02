@@ -34,7 +34,7 @@ func resourceCloudStackNetworkACL() *schema.Resource {
 		Read:   resourceCloudStackNetworkACLRead,
 		Delete: resourceCloudStackNetworkACLDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			StateContext: importStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
