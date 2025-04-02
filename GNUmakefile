@@ -11,7 +11,7 @@ build: fmtcheck
 	go build -o /tmp/cloudstack-terraform-provider_$(GOOS)_$(GOARCH)
 
 zip: build
-	zip dist/cloudstack-terraform-provider_$(GOOS)_$(GOARCH).zip \
+	zip -j dist/cloudstack-terraform-provider_$(GOOS)_$(GOARCH).zip \
 	  /tmp/cloudstack-terraform-provider_$(GOOS)_$(GOARCH)
 
 install: fmtcheck
