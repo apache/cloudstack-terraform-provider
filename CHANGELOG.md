@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.5...v0.6.0) (2025-04-02)
+
+
+### Features
+
+* update to context-aware funcs ([5da876e](https://github.com/Longsight/cloudstack-terraform-provider/commit/5da876ecfdb9368c2d72fa1fd3a9b906a7cbc014))
+
 ## [0.5.5](https://github.com/Longsight/cloudstack-terraform-provider/compare/v0.5.4...v0.5.5) (2025-04-01)
 
 
