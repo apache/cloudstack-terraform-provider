@@ -35,7 +35,7 @@ func resourceCloudStackKubernetesCluster() *schema.Resource {
 		Update: resourceCloudStackKubernetesClusterUpdate,
 		Delete: resourceCloudStackKubernetesClusterDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			StateContext: importStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{

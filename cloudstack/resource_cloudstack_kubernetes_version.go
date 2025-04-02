@@ -35,7 +35,7 @@ func resourceCloudStackKubernetesVersion() *schema.Resource {
 		Update: resourceCloudStackKubernetesVersionUpdate,
 		Delete: resourceCloudStackKubernetesVersionDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			StateContext: importStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{

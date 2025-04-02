@@ -35,7 +35,7 @@ func resourceCloudStackVPNCustomerGateway() *schema.Resource {
 		Update: resourceCloudStackVPNCustomerGatewayUpdate,
 		Delete: resourceCloudStackVPNCustomerGatewayDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			StateContext: importStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{

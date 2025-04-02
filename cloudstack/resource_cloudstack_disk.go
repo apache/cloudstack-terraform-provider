@@ -34,7 +34,7 @@ func resourceCloudStackDisk() *schema.Resource {
 		Update: resourceCloudStackDiskUpdate,
 		Delete: resourceCloudStackDiskDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			StateContext: importStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
