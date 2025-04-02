@@ -3,7 +3,7 @@ GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=cloudstack
 export GOOS?=$(shell uname -s | tr A-Z a-z)
-export GOARCH?=$(shell uname -m)
+export GOARCH?=$(subst x86_,amd,$(shell uname -m))
 
 default: build
 
@@ -11,7 +11,7 @@ build: fmtcheck
 	go build -o /tmp/cloudstack-terraform-provider_$(GOOS)_$(GOARCH)
 
 zip: build
-	zip dist/cloudstack-terraform-provider_$(GOOS)_$(GOARCH).zip \
+	zip -j dist/cloudstack-terraform-provider_$(GOOS)_$(GOARCH).zip \
 	  /tmp/cloudstack-terraform-provider_$(GOOS)_$(GOARCH)
 
 install: fmtcheck

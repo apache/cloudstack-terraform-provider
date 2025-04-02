@@ -52,6 +52,9 @@ jobs:
           filters: |
             cloudstack:
               - 'cloudstack/**'
+              - go.*
+              - main.go
+              - GNUmakefile
   build:
     needs: check
     if: ${{ needs.check.outputs.cloudstack == 'true' && github.ref != 'refs/heads/release' }}
