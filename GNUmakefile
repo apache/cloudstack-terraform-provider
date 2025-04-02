@@ -2,12 +2,14 @@ TEST?=$$(go list ./... | grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=cloudstack
-export GOOS?=$(shell uname -s | tr A-Z a-z)
-export GOARCH?=$(subst x86_,amd,$(shell uname -m))
+GOOS?=$(shell uname -s | tr A-Z a-z)
+GOARCH?=$(subst x86_,amd,$(shell uname -m))
 
 default: build
 
 build: fmtcheck
+	export GOOS=$(GOOS)
+	export GOARCH=$(GOARCH)
 	go build -o /tmp/cloudstack-terraform-provider_$(GOOS)_$(GOARCH)
 
 zip: build
