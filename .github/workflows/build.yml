@@ -52,13 +52,30 @@ jobs:
               - 'cloudstack/**'
   build:
     needs: check
-    if: ${{ needs.check.outputs.cloudstack == 'true' || github.ref == 'refs/heads/release' }}
+    if: ${{ needs.check.outputs.cloudstack == 'true' && github.ref != 'refs/heads/release' }}
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - name: Build
+        run: make build
+      - name: Test
+        run: |
+          make test
+  release:
+    if: ${{ github.ref == 'refs/heads/release' }}
+    runs-on: ubuntu-20.04
     permissions:
       contents: write
       issues: write
       actions: write
       pull-requests: write
-    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,15 +87,27 @@ jobs:
           go-version-file: 'go.mod'
       - name: Prepare
         run: mkdir ${{ github.workspace }}/dist
-      - name: Build
-        run: make build
-      - name: Test
-        if: ${{ github.ref == 'refs/heads/release' }}
-        run: |
-          make test
-          ls -l dist/
+      - name: Build linux_amd64
+        run: make zip
+        env:
+          GOOS: linux
+          GOARCH: amd64
+      - name: Build linux_arm64
+        run: make zip
+        env:
+          GOOS: linux
+          GOARCH: arm64
+      - name: Build darwin_amd64
+        run: make zip
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+      - name: Build darwin_arm64
+        run: make zip
+        env:
+          GOOS: darwin
+          GOARCH: arm64
       - name: Release
-        if: ${{ github.ref == 'refs/heads/release' }}
         uses: cycjimmy/semantic-release-action@v4
         with:
           extra_plugins: |

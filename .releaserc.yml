@@ -57,4 +57,11 @@ prepare:
 publish:
   - path: '@semantic-release/github'
     assets:
-      - dist/**
+      - path: dist/cloudstack-terraform-provider_linux_amd64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_linux_amd64.zip
+      - path: dist/cloudstack-terraform-provider_linux_arm64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_linux_arm64.zip
+      - path: dist/cloudstack-terraform-provider_darwin_amd64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_darwin_amd64.zip
+      - path: dist/cloudstack-terraform-provider_darwin_arm64.zip
+        name: cloudstack-terraform-provider_${nextRelease.version}_darwin_arm64.zip
