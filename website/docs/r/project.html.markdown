@@ -38,10 +38,10 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the project.
 * `display_text` - (Optional) The display text of the project. Defaults to `name` if not specified.
-* `domain` - (Optional) The domain where the project will be created.
-* `account` - (Optional) The account who will be Admin for the project. Requires `domain` to be set.
-* `accountid` - (Optional) The ID of the account owning the project.
-* `userid` - (Optional) The user ID of the account to be assigned as owner of the project (Project Admin).
+* `domain` - (Optional) The domain where the project will be created. This cannot be changed after the project is created.
+* `account` - (Optional) The account who will be Admin for the project. Requires `domain` to be set. This can be updated after the project is created.
+* `accountid` - (Optional) The ID of the account owning the project. This can be updated after the project is created.
+* `userid` - (Optional) The user ID of the account to be assigned as owner of the project (Project Admin). This can be updated after the project is created.
 
 ## Attributes Reference
 
