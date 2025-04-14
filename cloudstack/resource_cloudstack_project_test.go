@@ -188,83 +188,81 @@ func TestAccCloudStackProject_emptyDisplayText(t *testing.T) {
 	})
 }
 
-// Skipping this test as it requires valid user IDs
-// func TestAccCloudStackProject_updateUserid(t *testing.T) {
-// 	var project cloudstack.Project
+func TestAccCloudStackProject_updateUserid(t *testing.T) {
+	var project cloudstack.Project
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckCloudStackProjectDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccCloudStackProject_userid,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckCloudStackProjectExists(
-// 						"cloudstack_project.baz", &project),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.baz", "name", "terraform-test-project-userid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.baz", "display_text", "Terraform Test Project with Userid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.baz", "userid", "b0afc3ca-a99c-4fb4-98ad-8564acab10a4"),
-// 				),
-// 			},
-// 			{
-// 				Config: testAccCloudStackProject_updateUserid,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckCloudStackProjectExists(
-// 						"cloudstack_project.baz", &project),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.baz", "name", "terraform-test-project-userid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.baz", "display_text", "Terraform Test Project with Userid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.baz", "userid", "c1bfd4db-b9dc-5af6-87ad-9675dcab20b5"),
-// 				),
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackProject_userid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.baz", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.baz", "name", "terraform-test-project-userid"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.baz", "display_text", "Terraform Test Project with Userid"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.baz", "userid", "075655af-c1cb-11ee-9946-0242ac110003"),
+				),
+			},
+			{
+				Config: testAccCloudStackProject_updateUserid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.baz", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.baz", "name", "terraform-test-project-userid-updated"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.baz", "display_text", "Terraform Test Project with Userid Updated"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.baz", "userid", "075655af-c1cb-11ee-9946-0242ac110003"),
+				),
+			},
+		},
+	})
+}
 
-// Skipping this test as it requires valid account IDs
-// func TestAccCloudStackProject_updateAccountid(t *testing.T) {
-// 	var project cloudstack.Project
+func TestAccCloudStackProject_updateAccountid(t *testing.T) {
+	var project cloudstack.Project
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckCloudStackProjectDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccCloudStackProject_accountid,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckCloudStackProjectExists(
-// 						"cloudstack_project.qux", &project),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.qux", "name", "terraform-test-project-accountid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.qux", "display_text", "Terraform Test Project with Accountid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.qux", "accountid", "b0afc3ca-a99c-4fb4-98ad-8564acab10a4"),
-// 				),
-// 			},
-// 			{
-// 				Config: testAccCloudStackProject_updateAccountid,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckCloudStackProjectExists(
-// 						"cloudstack_project.qux", &project),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.qux", "name", "terraform-test-project-accountid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.qux", "display_text", "Terraform Test Project with Accountid"),
-// 					resource.TestCheckResourceAttr(
-// 						"cloudstack_project.qux", "accountid", "c1bfd4db-b9dc-5af6-87ad-9675dcab20b5"),
-// 				),
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackProject_accountid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.qux", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.qux", "name", "terraform-test-project-accountid"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.qux", "display_text", "Terraform Test Project with Accountid"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.qux", "accountid", "0756244c-c1cb-11ee-9946-0242ac110003"),
+				),
+			},
+			{
+				Config: testAccCloudStackProject_updateAccountid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.qux", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.qux", "name", "terraform-test-project-accountid-updated"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.qux", "display_text", "Terraform Test Project with Accountid Updated"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.qux", "accountid", "0756244c-c1cb-11ee-9946-0242ac110003"),
+				),
+			},
+		},
+	})
+}
 
 func testAccCheckCloudStackProjectExists(
 	n string, project *cloudstack.Project) resource.TestCheckFunc {
@@ -357,15 +355,17 @@ const testAccCloudStackProject_userid = `
 resource "cloudstack_project" "baz" {
   name = "terraform-test-project-userid"
   display_text = "Terraform Test Project with Userid"
-  userid = "b0afc3ca-a99c-4fb4-98ad-8564acab10a4"
+  userid = "075655af-c1cb-11ee-9946-0242ac110003"
+  accountid = "0756244c-c1cb-11ee-9946-0242ac110003"
   domain = "ROOT"
 }`
 
 const testAccCloudStackProject_updateUserid = `
 resource "cloudstack_project" "baz" {
-  name = "terraform-test-project-userid"
-  display_text = "Terraform Test Project with Userid"
-  userid = "c1bfd4db-b9dc-5af6-87ad-9675dcab20b5"
+  name = "terraform-test-project-userid-updated"
+  display_text = "Terraform Test Project with Userid Updated"
+  userid = "075655af-c1cb-11ee-9946-0242ac110003"
+  accountid = "0756244c-c1cb-11ee-9946-0242ac110003"
   domain = "ROOT"
 }`
 
@@ -373,15 +373,15 @@ const testAccCloudStackProject_accountid = `
 resource "cloudstack_project" "qux" {
   name = "terraform-test-project-accountid"
   display_text = "Terraform Test Project with Accountid"
-  accountid = "b0afc3ca-a99c-4fb4-98ad-8564acab10a4"
+  accountid = "0756244c-c1cb-11ee-9946-0242ac110003"
   domain = "ROOT"
 }`
 
 const testAccCloudStackProject_updateAccountid = `
 resource "cloudstack_project" "qux" {
-  name = "terraform-test-project-accountid"
-  display_text = "Terraform Test Project with Accountid"
-  accountid = "c1bfd4db-b9dc-5af6-87ad-9675dcab20b5"
+  name = "terraform-test-project-accountid-updated"
+  display_text = "Terraform Test Project with Accountid Updated"
+  accountid = "0756244c-c1cb-11ee-9946-0242ac110003"
   domain = "ROOT"
 }`
 
