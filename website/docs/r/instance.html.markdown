@@ -26,6 +26,16 @@ resource "cloudstack_instance" "web" {
 ## Argument Reference
 
 The following arguments are supported:
+* `details` - (Optional) The details of the instance using Key: Value pairs
+```hcl
+details = {
+    cpuNumber: 2,
+    cpuSpeed: 2000,
+    memory: 4096,
+    minIops: 1000,
+    maxIops: 2000
+}
+```
 
 * `name` - (Required) The name of the instance.
 
