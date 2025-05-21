@@ -47,8 +47,7 @@ func resourceCloudStackProject() *schema.Resource {
 
 			"display_text": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true, // Required for API version 4.18 and lower. TODO: Make this optional when support for API versions older than 4.18 is dropped.
 			},
 
 			"domain": {
@@ -81,12 +80,12 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta interface{}) e
 
 	// Get the name and display_text
 	name := d.Get("name").(string)
-	displaytext := name
-	if v, ok := d.GetOk("display_text"); ok {
-		displaytext = v.(string)
-	}
+	displaytext := d.Get("display_text").(string)
 
-	// The CloudStack API expects displaytext as the first parameter and name as the second
+	// The CloudStack API parameter order differs between versions:
+	// - In API 4.18 and lower: displaytext is the first parameter and name is the second
+	// - In API 4.19 and higher: name is the first parameter and displaytext is optional
+	// The CloudStack Go SDK uses the API 4.18 parameter order
 	p := cs.Project.NewCreateProjectParams(displaytext, name)
 
 	// Set the domain if provided
@@ -263,6 +262,9 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta interface{}) e
 		p := cs.Project.NewUpdateProjectParams(d.Id())
 
 		// Set the name and display_text if they have changed
+		// Note: The 'name' parameter is only available in API 4.19 and higher
+		// If you're using API 4.18 or lower, the SetName method might not work
+		// In that case, you might need to update the display_text only
 		if d.HasChange("name") {
 			p.SetName(d.Get("name").(string))
 		}

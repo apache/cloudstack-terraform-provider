@@ -388,4 +388,5 @@ resource "cloudstack_project" "qux" {
 const testAccCloudStackProject_emptyDisplayText = `
 resource "cloudstack_project" "empty" {
   name = "terraform-test-project-empty-display"
+  display_text = "terraform-test-project-empty-display"
 }`
