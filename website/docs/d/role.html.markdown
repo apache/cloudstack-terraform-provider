@@ -14,7 +14,10 @@ Use this data source to get information about a role for use in other resources.
 
 ```hcl
 data "cloudstack_role" "admin" {
-  name = "Admin"
+  filter {
+    name = "name"
+    value = "Admin"
+  }
 }
 
 resource "cloudstack_account" "example" {
@@ -32,10 +35,18 @@ resource "cloudstack_account" "example" {
 
 The following arguments are supported:
 
-* `id` - (Optional) The ID of the role.
-* `name` - (Optional) The name of the role.
+* `filter` - (Required) One or more name/value pairs to filter off of. See the example below for usage.
 
-At least one of the above arguments is required.
+## Filter Example
+
+```hcl
+data "cloudstack_role" "admin" {
+  filter {
+    name = "name"
+    value = "Admin"
+  }
+}
+```
 
 ## Attributes Reference
 

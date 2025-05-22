@@ -53,6 +53,9 @@ resource "cloudstack_role" "foo" {
 }
 
 data "cloudstack_role" "role" {
-  name = "${cloudstack_role.foo.name}"
+  filter {
+    name = "name"
+    value = "${cloudstack_role.foo.name}"
+  }
 }
 `

@@ -39,9 +39,10 @@ func resourceCloudStackRole() *schema.Resource {
 				Required: true,
 			},
 			"type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "The type of the role, valid options are: Admin, ResourceAdmin, DomainAdmin, User",
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -49,9 +50,16 @@ func resourceCloudStackRole() *schema.Resource {
 				Computed: true,
 			},
 			"is_public": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Indicates whether the role will be visible to all users (public) or only to root admins (private). Default is true.",
+			},
+			"role_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "ID of the role to be cloned from. Either role_id or type must be passed in.",
 			},
 		},
 	}
@@ -64,8 +72,17 @@ func resourceCloudStackRoleCreate(d *schema.ResourceData, meta interface{}) erro
 	// Create a new parameter struct
 	p := cs.Role.NewCreateRoleParams(name)
 
-	if roleType, ok := d.GetOk("type"); ok {
+	// Check if either role_id or type is provided
+	roleID, roleIDOk := d.GetOk("role_id")
+	roleType, roleTypeOk := d.GetOk("type")
+
+	if roleIDOk {
+		p.SetRoleid(roleID.(string))
+	} else if roleTypeOk {
 		p.SetType(roleType.(string))
+	} else {
+		// According to the API, either roleid or type must be passed in
+		return fmt.Errorf("either role_id or type must be specified")
 	}
 
 	if description, ok := d.GetOk("description"); ok {

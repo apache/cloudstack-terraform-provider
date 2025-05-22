@@ -20,8 +20,11 @@
 package cloudstack
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -33,15 +36,14 @@ func dataSourceCloudstackRole() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
+			//Computed values
 			"id": {
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
 			},
 
 			"name": {
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
 			},
 
@@ -65,24 +67,36 @@ func dataSourceCloudstackRole() *schema.Resource {
 
 func dataSourceCloudstackRoleRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+	p := cs.Role.NewListRolesParams()
 
-	var err error
+	csRoles, err := cs.Role.ListRoles(p)
+	if err != nil {
+		return fmt.Errorf("failed to list roles: %s", err)
+	}
+
+	filters := d.Get("filter")
 	var role *cloudstack.Role
 
-	if id, ok := d.GetOk("id"); ok {
-		log.Printf("[DEBUG] Getting Role by ID: %s", id.(string))
-		role, _, err = cs.Role.GetRoleByID(id.(string))
-	} else if name, ok := d.GetOk("name"); ok {
-		log.Printf("[DEBUG] Getting Role by name: %s", name.(string))
-		role, _, err = cs.Role.GetRoleByName(name.(string))
-	} else {
-		return fmt.Errorf("Either 'id' or 'name' must be specified")
+	for _, r := range csRoles.Roles {
+		match, err := applyRoleFilters(r, filters.(*schema.Set))
+		if err != nil {
+			return err
+		}
+		if match {
+			role = r
+			break
+		}
 	}
 
-	if err != nil {
-		return err
+	if role == nil {
+		return fmt.Errorf("no role is matching with the specified criteria")
 	}
+	log.Printf("[DEBUG] Selected role: %s\n", role.Name)
 
+	return roleDescriptionAttributes(d, role)
+}
+
+func roleDescriptionAttributes(d *schema.ResourceData, role *cloudstack.Role) error {
 	d.SetId(role.Id)
 	d.Set("name", role.Name)
 	d.Set("type", role.Type)
@@ -90,4 +104,56 @@ func dataSourceCloudstackRoleRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("is_public", role.Ispublic)
 
 	return nil
+}
+
+func latestRole(roles []*cloudstack.Role) (*cloudstack.Role, error) {
+	// Since the Role struct doesn't have a Created field,
+	// we'll just return the first role in the list
+	if len(roles) > 0 {
+		return roles[0], nil
+	}
+	return nil, fmt.Errorf("no roles found")
+}
+
+func applyRoleFilters(role *cloudstack.Role, filters *schema.Set) (bool, error) {
+	var roleJSON map[string]interface{}
+	k, _ := json.Marshal(role)
+	err := json.Unmarshal(k, &roleJSON)
+	if err != nil {
+		return false, err
+	}
+
+	for _, f := range filters.List() {
+		m := f.(map[string]interface{})
+		r, err := regexp.Compile(m["value"].(string))
+		if err != nil {
+			return false, fmt.Errorf("invalid regex: %s", err)
+		}
+		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
+
+		// Check if the field exists in the role JSON
+		roleField, ok := roleJSON[updatedName]
+		if !ok {
+			return false, fmt.Errorf("field %s does not exist in role", updatedName)
+		}
+
+		// Convert the field to string for regex matching
+		var roleFieldStr string
+		switch v := roleField.(type) {
+		case string:
+			roleFieldStr = v
+		case bool:
+			roleFieldStr = fmt.Sprintf("%t", v)
+		case float64:
+			roleFieldStr = fmt.Sprintf("%g", v)
+		default:
+			roleFieldStr = fmt.Sprintf("%v", v)
+		}
+
+		if !r.MatchString(roleFieldStr) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
