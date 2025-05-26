@@ -50,6 +50,7 @@ resource "cloudstack_role" "foo" {
   name = "terraform-role"
   description = "terraform test role"
   is_public = true
+  type = "User"
 }
 
 data "cloudstack_role" "role" {

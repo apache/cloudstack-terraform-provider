@@ -92,9 +92,23 @@ func testAccCheckCloudStackRoleDestroy(s *terraform.State) error {
 			return fmt.Errorf("No Role ID is set")
 		}
 
-		_, _, err := cs.Role.GetRoleByID(rs.Primary.ID)
-		if err == nil {
-			return fmt.Errorf("Role %s still exists", rs.Primary.ID)
+		// Use a defer/recover to catch the panic that might occur when trying to access l.Roles[0]
+		var err error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					// If a panic occurs, it means the role doesn't exist, which is what we want
+					err = nil
+				}
+			}()
+			r, _, e := cs.Role.GetRoleByID(rs.Primary.ID)
+			if e == nil && r != nil && r.Id == rs.Primary.ID {
+				err = fmt.Errorf("Role %s still exists", rs.Primary.ID)
+			}
+		}()
+
+		if err != nil {
+			return err
 		}
 	}
 
@@ -106,5 +120,6 @@ resource "cloudstack_role" "foo" {
   name = "terraform-role"
   description = "terraform test role"
   is_public = true
+  type = "User"
 }
 `
