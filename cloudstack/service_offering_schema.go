@@ -139,7 +139,7 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 				},
 				"root_disk_size": schema.Int64Attribute{
 					Description: "the Root disk size in GB.",
-					Required:    true,
+					Optional:    true,
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
