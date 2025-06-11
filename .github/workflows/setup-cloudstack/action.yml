@@ -16,11 +16,16 @@
 # under the License.
 
 name: Setup Cloudstack
+description: 'Sets up CloudStack environment for testing and development'
 
 inputs:
   cloudstack-version:
     description: 'Cloudstack version'
     required: true
+  debug:
+    description: 'Enable debug mode for troubleshooting'
+    required: false
+    default: 'false'
 outputs:
   CLOUDSTACK_USER_ID:
     description: 'Cloudstack user id'
@@ -49,6 +54,24 @@ runs:
             ((T+=1))
             sleep 30
         done
+    - name: Docker Troubleshooting
+      if: ${{ inputs.debug == 'true' }}
+      shell: bash
+      run: |
+        echo "=== Docker Troubleshooting Information ==="
+        echo "Running docker images to list all available images"
+        docker images
+        
+        echo "Running docker ps -a to show all containers (including stopped ones)"
+        docker ps -a
+        
+        echo "Capturing logs from all running containers"
+        for container_id in $(docker ps -q); do
+          echo "=== Logs for container $container_id ==="
+          docker logs $container_id
+        done
+        
+        echo "=== End of Docker Troubleshooting ==="
     - name: Setting up Cloudstack
       id: setup-cloudstack
       shell: bash
