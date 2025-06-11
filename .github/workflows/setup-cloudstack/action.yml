@@ -75,7 +75,7 @@ runs:
     - name: Install CMK
       shell: bash
       run: |
-        curl -sfL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.3.0/cmk.linux.x86-64 -o /usr/local/bin/cmk
+        curl -sfL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.4.0/cmk.linux.x86-64 -o /usr/local/bin/cmk
         chmod +x /usr/local/bin/cmk
     - name: Create extra resources
       shell: bash
