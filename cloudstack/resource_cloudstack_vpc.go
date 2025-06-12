@@ -117,7 +117,6 @@ func resourceCloudStackVPCCreate(d *schema.ResourceData, meta interface{}) error
 
 	// Create a new parameter struct
 	p := cs.VPC.NewCreateVPCParams(
-		d.Get("cidr").(string),
 		displaytext.(string),
 		name,
 		vpcofferingid,
