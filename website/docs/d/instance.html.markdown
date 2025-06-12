@@ -21,7 +21,8 @@ data "cloudstack_instance" "my_instance" {
   
   nic {
     ip_address="10.1.1.37"
-  }  
+  }
+}
 ```
 
 ### Argument Reference

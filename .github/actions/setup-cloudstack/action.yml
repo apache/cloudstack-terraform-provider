@@ -49,22 +49,45 @@ runs:
             ((T+=1))
             sleep 30
         done
+
+        # After loop, check if Cloudstack is up
+        if ! curl -sfSL http://localhost:8080 --output /dev/null; then
+          echo "Cloudstack did not become ready in time"
+          curl -v http://localhost:8080 || true
+          exit 22
+        fi
     - name: Setting up Cloudstack
       id: setup-cloudstack
       shell: bash
       run: |
-        docker exec $(docker container ls --format=json -l | jq -r .ID) python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
-        curl -sf --location "${CLOUDSTACK_API_URL}" \
-            --header 'Content-Type: application/x-www-form-urlencoded' \
-            --data-urlencode 'command=login' \
-            --data-urlencode 'username=admin' \
-            --data-urlencode 'password=password' \
-            --data-urlencode 'response=json' \
-            --data-urlencode 'domain=/' -j -c cookies.txt --output /dev/null
 
-        CLOUDSTACK_USER_ID=$(curl -fs "${CLOUDSTACK_API_URL}?command=listUsers&response=json" -b cookies.txt | jq -r '.listusersresponse.user[0].id')
-        CLOUDSTACK_API_KEY=$(curl -s "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.apikey')
-        CLOUDSTACK_SECRET_KEY=$(curl -fs "${CLOUDSTACK_API_URL}?command=getUserKeys&id=${CLOUDSTACK_USER_ID}&response=json" -b cookies.txt | jq -r '.getuserkeysresponse.userkeys.secretkey')
+        set -euo pipefail
+
+        echo "Deploying Data Center..."
+        docker exec $(docker container ls --format=json -l | jq -r .ID) \
+          python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
+
+        # Get the container ID of the running simulator
+        CONTAINER_ID=$(docker ps --filter "ancestor=apache/cloudstack-simulator:${{ matrix.cloudstack-version }}" --format "{{.ID}}" | head -n1)
+
+        # Install CloudMonkey
+        docker exec $CONTAINER_ID bash -c "curl -sfSL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.4.0/cmk.linux.x86-64 -o /usr/local/bin/cmk && chmod +x /usr/local/bin/cmk"
+
+        # Write the CloudMonkey config file with a profile using user/pass
+        docker exec $CONTAINER_ID mkdir -p /root/.cmk
+        docker exec $CONTAINER_ID bash -c "printf '[core]\nprofile = localcloud\n\n[localcloud]\nurl = http://localhost:8080/client/api\nusername = admin\npassword = password\ndomain = /\napikey =\nsecretkey =\ntimeout = 3600\n' > /root/.cmk/config"
+
+
+        # Use CloudMonkey with the profile to list users and extract API key/secret key
+        docker exec $CONTAINER_ID cmk -p localcloud list users --output json > users.json
+
+        # Generate API keys
+        docker exec $CONTAINER_ID cmk -p localcloud registeruserKeys id=$(jq -r '.user[0].id' users.json) > api.json
+
+        # Extract the first user's keys (assuming admin is first)
+        CLOUDSTACK_API_KEY=$(jq -r '.userkeys.apikey' api.json)
+        CLOUDSTACK_SECRET_KEY=$(jq -r '.userkeys.secretkey' api.json)
+        CLOUDSTACK_USER_ID=$(jq -r '.user[0].id' users.json)
 
         echo "::add-mask::$CLOUDSTACK_API_KEY"
         echo "::add-mask::$CLOUDSTACK_SECRET_KEY"
@@ -72,10 +95,11 @@ runs:
         echo "user_id=$CLOUDSTACK_USER_ID" >> $GITHUB_OUTPUT
         echo "api_key=$CLOUDSTACK_API_KEY" >> $GITHUB_OUTPUT
         echo "secret_key=$CLOUDSTACK_SECRET_KEY" >> $GITHUB_OUTPUT
+
     - name: Install CMK
       shell: bash
       run: |
-        curl -sfL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.3.0/cmk.linux.x86-64 -o /usr/local/bin/cmk
+        curl -sfSL https://github.com/apache/cloudstack-cloudmonkey/releases/download/6.4.0/cmk.linux.x86-64 -o /usr/local/bin/cmk
         chmod +x /usr/local/bin/cmk
     - name: Create extra resources
       shell: bash
