@@ -95,6 +95,12 @@ func resourceCloudStackFirewall() *schema.Resource {
 				},
 			},
 
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"parallelism": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -255,6 +261,10 @@ func resourceCloudStackFirewallRead(d *schema.ResourceData, meta interface{}) er
 	p := cs.Firewall.NewListFirewallRulesParams()
 	p.SetIpaddressid(d.Id())
 	p.SetListall(true)
+
+	if err := cloudstack.WithProject(d.Get("project").(string))(cs, p); err != nil {
+		return err
+	}
 
 	l, err := cs.Firewall.ListFirewallRules(p)
 	if err != nil {
