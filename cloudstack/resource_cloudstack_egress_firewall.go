@@ -413,7 +413,7 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 
 	if rules.Len() > 0 {
 		d.Set("rule", rules)
-	} else if !managed {
+	} else if managed {
 		d.SetId("")
 	}
 

@@ -375,7 +375,7 @@ func resourceCloudStackFirewallRead(d *schema.ResourceData, meta interface{}) er
 
 	if rules.Len() > 0 {
 		d.Set("rule", rules)
-	} else if !managed {
+	} else if managed {
 		d.SetId("")
 	}
 
