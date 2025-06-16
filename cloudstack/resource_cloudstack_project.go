@@ -157,7 +157,7 @@ func getProjectByID(cs *cloudstack.CloudStackClient, id string) (*cloudstack.Pro
 	}
 
 	if l.Count == 0 {
-		return nil, fmt.Errorf("Project with ID %s not found", id)
+		return nil, fmt.Errorf("project with id %s not found", id)
 	}
 
 	return l.Projects[0], nil
