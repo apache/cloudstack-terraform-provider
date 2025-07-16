@@ -21,6 +21,7 @@ resource "cloudstack_loadbalancer_rule" "default" {
   private_port  = 80
   public_port   = 80
   member_ids    = ["f8141e2f-4e7e-4c63-9362-986c908b7ea7"]
+  cidrlist      = ["12.34.56.78/30","99.99.99.99/32"]
 }
 ```
 
@@ -57,6 +58,8 @@ The following arguments are supported:
 
 * `member_ids` - (Required) List of instance IDs to assign to the load balancer
     rule. Changing this forces a new resource to be created.
+
+* `cidrlist` - (Optional) A CIDR list to allow access to the given ports.
 
 * `project` - (Optional) The name or ID of the project to deploy this
     instance to. Changing this forces a new resource to be created.
