@@ -142,7 +142,7 @@ When Docker started the container you can go to http://localhost:8080/client and
 Once the login page is shown and you can login, you need to provision a simulated data-center:
 
 ```sh
-docker exec -it cloudstack-simulator python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
+docker exec -it simulator python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
 ```
 
 If you refresh the client or login again, you will now get passed the initial welcome screen and be able to go to your account details and retrieve the API key and secret. Export those together with the URL:
@@ -200,7 +200,7 @@ Check and ensure TF provider passes builds, GA and run this for local checks:
 goreleaser release --snapshot --clean
 ```
 
-Next, create a personalised Github token:  https://github.com/settings/tokens/new?scopes=repo,write:packages
+Next, create a personalised Github token: https://github.com/settings/tokens/new?scopes=repo,write:packages
 
 ```
 export GITHUB_TOKEN="YOUR_GH_TOKEN"
