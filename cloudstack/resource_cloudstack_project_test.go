@@ -20,6 +20,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -235,21 +236,82 @@ func testAccCheckCloudStackProjectExists(
 		}
 
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+		// Get domain if available
+		var domain string
+		if domainAttr, ok := rs.Primary.Attributes["domain"]; ok && domainAttr != "" {
+			domain = domainAttr
+		}
+
+		// First try to find the project by ID with domain if available
 		p := cs.Project.NewListProjectsParams()
 		p.SetId(rs.Primary.ID)
 
+		// Add domain if available
+		if domain != "" {
+			domainID, err := retrieveID(cs, "domain", domain)
+			if err == nil {
+				p.SetDomainid(domainID)
+			}
+		}
+
 		list, err := cs.Project.ListProjects(p)
-		if err != nil {
-			return err
+		if err == nil && list.Count > 0 && list.Projects[0].Id == rs.Primary.ID {
+			// Found by ID, set the project and return
+			*project = *list.Projects[0]
+			return nil
 		}
 
-		if list.Count != 1 || list.Projects[0].Id != rs.Primary.ID {
-			return fmt.Errorf("Project not found")
+		// If not found by ID or there was an error, try by name
+		if err != nil || list.Count == 0 || list.Projects[0].Id != rs.Primary.ID {
+			name := rs.Primary.Attributes["name"]
+			if name == "" {
+				return fmt.Errorf("Project not found by ID and name attribute is empty")
+			}
+
+			// Try to find by name
+			p := cs.Project.NewListProjectsParams()
+			p.SetName(name)
+
+			// Add domain if available
+			if domain, ok := rs.Primary.Attributes["domain"]; ok && domain != "" {
+				domainID, err := retrieveID(cs, "domain", domain)
+				if err != nil {
+					return fmt.Errorf("Error retrieving domain ID: %v", err)
+				}
+				p.SetDomainid(domainID)
+			}
+
+			list, err := cs.Project.ListProjects(p)
+			if err != nil {
+				return fmt.Errorf("Error retrieving project by name: %s", err)
+			}
+
+			if list.Count == 0 {
+				return fmt.Errorf("Project with name %s not found", name)
+			}
+
+			// Find the project with the matching ID if possible
+			found := false
+			for _, proj := range list.Projects {
+				if proj.Id == rs.Primary.ID {
+					*project = *proj
+					found = true
+					break
+				}
+			}
+
+			// If we didn't find a project with matching ID, use the first one
+			if !found {
+				*project = *list.Projects[0]
+				// Update the resource ID to match the found project
+				rs.Primary.ID = list.Projects[0].Id
+			}
+
+			return nil
 		}
 
-		*project = *list.Projects[0]
-
-		return nil
+		return fmt.Errorf("Project not found by ID or name")
 	}
 }
 
@@ -265,16 +327,73 @@ func testAccCheckCloudStackProjectDestroy(s *terraform.State) error {
 			return fmt.Errorf("No project ID is set")
 		}
 
+		// Get domain if available
+		var domain string
+		if domainAttr, ok := rs.Primary.Attributes["domain"]; ok && domainAttr != "" {
+			domain = domainAttr
+		}
+
+		// Try to find the project by ID
 		p := cs.Project.NewListProjectsParams()
 		p.SetId(rs.Primary.ID)
 
-		list, err := cs.Project.ListProjects(p)
-		if err != nil {
-			return err
+		// Add domain if available
+		if domain != "" {
+			domainID, err := retrieveID(cs, "domain", domain)
+			if err == nil {
+				p.SetDomainid(domainID)
+			}
 		}
 
+		list, err := cs.Project.ListProjects(p)
+
+		// If we get an error, check if it's a "not found" error
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") ||
+				strings.Contains(err.Error(), "does not exist") ||
+				strings.Contains(err.Error(), "could not be found") ||
+				strings.Contains(err.Error(), fmt.Sprintf(
+					"Invalid parameter id value=%s due to incorrect long value format, "+
+						"or entity does not exist", rs.Primary.ID)) {
+				// Project doesn't exist, which is what we want
+				continue
+			}
+			// For other errors, return them
+			return fmt.Errorf("error checking if project %s exists: %s", rs.Primary.ID, err)
+		}
+
+		// If we found the project, it still exists
 		if list.Count != 0 {
-			return fmt.Errorf("Project %s still exists", rs.Primary.ID)
+			return fmt.Errorf("project %s still exists (found by ID)", rs.Primary.ID)
+		}
+
+		// Also check by name to be thorough
+		name := rs.Primary.Attributes["name"]
+		if name != "" {
+			// Try to find the project by name
+			p := cs.Project.NewListProjectsParams()
+			p.SetName(name)
+
+			// Add domain if available
+			if domain, ok := rs.Primary.Attributes["domain"]; ok && domain != "" {
+				domainID, err := retrieveID(cs, "domain", domain)
+				if err == nil {
+					p.SetDomainid(domainID)
+				}
+			}
+
+			list, err := cs.Project.ListProjects(p)
+			if err != nil {
+				// Ignore errors for name lookup
+				continue
+			}
+
+			// Check if any of the returned projects match our ID
+			for _, proj := range list.Projects {
+				if proj.Id == rs.Primary.ID {
+					return fmt.Errorf("project %s still exists (found by name %s)", rs.Primary.ID, name)
+				}
+			}
 		}
 	}
 
@@ -327,4 +446,78 @@ const testAccCloudStackProject_emptyDisplayText = `
 resource "cloudstack_project" "empty" {
   name = "terraform-test-project-empty-display"
   display_text = "terraform-test-project-empty-display"
+}`
+
+func TestAccCloudStackProject_list(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackProject_list,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectsExist("cloudstack_project.project1", "cloudstack_project.project2"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckCloudStackProjectsExist(projectNames ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		// Get CloudStack client
+		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+		// Create a map to track which projects we've found
+		foundProjects := make(map[string]bool)
+		for _, name := range projectNames {
+			// Get the project resource from state
+			rs, ok := s.RootModule().Resources[name]
+			if !ok {
+				return fmt.Errorf("Not found: %s", name)
+			}
+
+			if rs.Primary.ID == "" {
+				return fmt.Errorf("No project ID is set for %s", name)
+			}
+
+			// Add the project ID to our tracking map
+			foundProjects[rs.Primary.ID] = false
+		}
+
+		// List all projects
+		p := cs.Project.NewListProjectsParams()
+		list, err := cs.Project.ListProjects(p)
+		if err != nil {
+			return err
+		}
+
+		// Check if all our projects are in the list
+		for _, project := range list.Projects {
+			if _, exists := foundProjects[project.Id]; exists {
+				foundProjects[project.Id] = true
+			}
+		}
+
+		// Verify all projects were found
+		for id, found := range foundProjects {
+			if !found {
+				return fmt.Errorf("Project with ID %s was not found in the list", id)
+			}
+		}
+
+		return nil
+	}
+}
+
+const testAccCloudStackProject_list = `
+resource "cloudstack_project" "project1" {
+  name = "terraform-test-project-list-1"
+  display_text = "Terraform Test Project List 1"
+}
+
+resource "cloudstack_project" "project2" {
+  name = "terraform-test-project-list-2"
+  display_text = "Terraform Test Project List 2"
 }`

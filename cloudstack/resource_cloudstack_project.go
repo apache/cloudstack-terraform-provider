@@ -19,14 +19,15 @@
 package cloudstack
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func resourceCloudStackProject() *schema.Resource {
@@ -75,12 +76,38 @@ func resourceCloudStackProject() *schema.Resource {
 	}
 }
 
-func resourceCloudStackProjectCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the name and display_text
 	name := d.Get("name").(string)
 	displaytext := d.Get("display_text").(string)
+
+	// Get domain if provided
+	var domain string
+	if domainParam, ok := d.GetOk("domain"); ok {
+		domain = domainParam.(string)
+	}
+
+	// Check if a project with this name already exists
+	existingProject, err := getProjectByName(cs, name, domain)
+	if err == nil {
+		// Project with this name already exists
+		log.Printf("[DEBUG] Project with name %s already exists, using existing project with ID: %s", name, existingProject.Id)
+		d.SetId(existingProject.Id)
+
+		// Set the basic attributes to match the existing project
+		d.Set("name", existingProject.Name)
+		d.Set("display_text", existingProject.Displaytext)
+		d.Set("domain", existingProject.Domain)
+
+		return resourceCloudStackProjectRead(d, meta)
+	} else if !strings.Contains(err.Error(), "not found") {
+		// If we got an error other than "not found", return it
+		return fmt.Errorf("error checking for existing project: %s", err)
+	}
+
+	// Project doesn't exist, create a new one
 
 	// The CloudStack API parameter order differs between versions:
 	// - In API 4.18 and lower: displaytext is the first parameter and name is the second
@@ -89,8 +116,8 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta interface{}) e
 	p := cs.Project.NewCreateProjectParams(displaytext, name)
 
 	// Set the domain if provided
-	if domain, ok := d.GetOk("domain"); ok {
-		domainid, e := retrieveID(cs, "domain", domain.(string))
+	if domain != "" {
+		domainid, e := retrieveID(cs, "domain", domain)
 		if e != nil {
 			return e.Error()
 		}
@@ -115,21 +142,24 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[DEBUG] Creating project %s", name)
 	r, err := cs.Project.CreateProject(p)
 	if err != nil {
-		return fmt.Errorf("Error creating project %s: %s", name, err)
+		return fmt.Errorf("error creating project %s: %s", name, err)
 	}
 
 	d.SetId(r.Id)
+	log.Printf("[DEBUG] Project created with ID: %s", r.Id)
 
-	// Wait for the project to be available, but with a shorter timeout
-	// to prevent getting stuck indefinitely
-	err = resource.Retry(30*time.Second, func() *resource.RetryError {
-		project, err := getProjectByID(cs, d.Id())
+	// Wait for the project to be available
+	// Use a longer timeout to ensure project creation completes
+	ctx := context.Background()
+
+	err = retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
+		project, err := getProjectByID(cs, d.Id(), domain)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				log.Printf("[DEBUG] Project %s not found yet, retrying...", d.Id())
-				return resource.RetryableError(fmt.Errorf("Project not yet created: %s", err))
+				return retry.RetryableError(fmt.Errorf("project not yet created: %s", err))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error retrieving project: %s", err))
+			return retry.NonRetryableError(fmt.Errorf("Error retrieving project: %s", err))
 		}
 
 		log.Printf("[DEBUG] Project %s found with name %s", d.Id(), project.Name)
@@ -147,40 +177,122 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 // Helper function to get a project by ID
-func getProjectByID(cs *cloudstack.CloudStackClient, id string) (*cloudstack.Project, error) {
+func getProjectByID(cs *cloudstack.CloudStackClient, id string, domain ...string) (*cloudstack.Project, error) {
 	p := cs.Project.NewListProjectsParams()
 	p.SetId(id)
 
+	// If domain is provided, use it to narrow the search
+	if len(domain) > 0 && domain[0] != "" {
+		log.Printf("[DEBUG] Looking up project with ID: %s in domain: %s", id, domain[0])
+		domainID, err := retrieveID(cs, "domain", domain[0])
+		if err != nil {
+			log.Printf("[WARN] Error retrieving domain ID for domain %s: %v", domain[0], err)
+			// Continue without domain ID, but log the warning
+		} else {
+			p.SetDomainid(domainID)
+		}
+	} else {
+		log.Printf("[DEBUG] Looking up project with ID: %s (no domain specified)", id)
+	}
+
+	l, err := cs.Project.ListProjects(p)
+	if err != nil {
+		log.Printf("[ERROR] Error calling ListProjects with ID %s: %v", id, err)
+		return nil, err
+	}
+
+	log.Printf("[DEBUG] ListProjects returned Count: %d for ID: %s", l.Count, id)
+
+	if l.Count == 0 {
+		return nil, fmt.Errorf("project with id %s not found", id)
+	}
+
+	// Add validation to ensure the returned project ID matches the requested ID
+	if l.Projects[0].Id != id {
+		log.Printf("[WARN] Project ID mismatch - requested: %s, got: %s", id, l.Projects[0].Id)
+		// Continue anyway to see if this is the issue
+	}
+
+	log.Printf("[DEBUG] Found project with ID: %s, Name: %s", l.Projects[0].Id, l.Projects[0].Name)
+	return l.Projects[0], nil
+}
+
+// Helper function to get a project by name
+func getProjectByName(cs *cloudstack.CloudStackClient, name string, domain string) (*cloudstack.Project, error) {
+	p := cs.Project.NewListProjectsParams()
+	p.SetName(name)
+
+	// If domain is provided, use it to narrow the search
+	if domain != "" {
+		domainID, err := retrieveID(cs, "domain", domain)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving domain ID: %v", err)
+		}
+		p.SetDomainid(domainID)
+	}
+
+	log.Printf("[DEBUG] Looking up project with name: %s", name)
 	l, err := cs.Project.ListProjects(p)
 	if err != nil {
 		return nil, err
 	}
 
 	if l.Count == 0 {
-		return nil, fmt.Errorf("project with id %s not found", id)
+		return nil, fmt.Errorf("project with name %s not found", name)
 	}
 
+	// If multiple projects with the same name exist, log a warning and return the first one
+	if l.Count > 1 {
+		log.Printf("[WARN] Multiple projects found with name %s, using the first one", name)
+	}
+
+	log.Printf("[DEBUG] Found project %s with ID: %s", name, l.Projects[0].Id)
 	return l.Projects[0], nil
 }
 
-func resourceCloudStackProjectRead(d *schema.ResourceData, meta interface{}) error {
+func resourceCloudStackProjectRead(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	log.Printf("[DEBUG] Retrieving project %s", d.Id())
 
-	// Get the project details
-	project, err := getProjectByID(cs, d.Id())
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") ||
-			strings.Contains(err.Error(), fmt.Sprintf(
-				"Invalid parameter id value=%s due to incorrect long value format, "+
-					"or entity does not exist", d.Id())) {
-			log.Printf("[DEBUG] Project %s does no longer exist", d.Id())
-			d.SetId("")
-			return nil
+	// Get project name and domain for potential fallback lookup
+	name := d.Get("name").(string)
+	var domain string
+	if domainParam, ok := d.GetOk("domain"); ok {
+		domain = domainParam.(string)
+	}
+
+	// Get the project details by ID
+	project, err := getProjectByID(cs, d.Id(), domain)
+
+	// If project not found by ID and we have a name, try to find it by name
+	if err != nil && name != "" && (strings.Contains(err.Error(), "not found") ||
+		strings.Contains(err.Error(), "does not exist") ||
+		strings.Contains(err.Error(), "could not be found") ||
+		strings.Contains(err.Error(), fmt.Sprintf(
+			"Invalid parameter id value=%s due to incorrect long value format, "+
+				"or entity does not exist", d.Id()))) {
+
+		log.Printf("[DEBUG] Project %s not found by ID, trying to find by name: %s", d.Id(), name)
+		project, err = getProjectByName(cs, name, domain)
+
+		// If project not found by name either, resource doesn't exist
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				log.Printf("[DEBUG] Project with name %s not found either, marking as gone", name)
+				d.SetId("")
+				return nil
+			}
+			// For other errors during name lookup, return them
+			return fmt.Errorf("error looking up project by name: %s", err)
 		}
 
-		return err
+		// Found by name, update the ID
+		log.Printf("[DEBUG] Found project by name %s with ID: %s", name, project.Id)
+		d.SetId(project.Id)
+	} else if err != nil {
+		// For other errors during ID lookup, return them
+		return fmt.Errorf("error retrieving project %s: %s", d.Id(), err)
 	}
 
 	log.Printf("[DEBUG] Found project %s: %s", d.Id(), project.Name)
@@ -253,7 +365,7 @@ func resourceCloudStackProjectRead(d *schema.ResourceData, meta interface{}) err
 	return nil
 }
 
-func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Check if the name or display text is changed
@@ -314,26 +426,34 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 	}
 
-	// Wait for the project to be updated, but with a shorter timeout
-	err := resource.Retry(30*time.Second, func() *resource.RetryError {
-		project, err := getProjectByID(cs, d.Id())
+	// Wait for the project to be updated
+	ctx := context.Background()
+
+	// Get domain if provided
+	var domain string
+	if domainParam, ok := d.GetOk("domain"); ok {
+		domain = domainParam.(string)
+	}
+
+	err := retry.RetryContext(ctx, 2*time.Minute, func() *retry.RetryError {
+		project, err := getProjectByID(cs, d.Id(), domain)
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				log.Printf("[DEBUG] Project %s not found after update, retrying...", d.Id())
-				return resource.RetryableError(fmt.Errorf("Project not found after update: %s", err))
+				return retry.RetryableError(fmt.Errorf("project not found after update: %s", err))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error retrieving project after update: %s", err))
+			return retry.NonRetryableError(fmt.Errorf("Error retrieving project after update: %s", err))
 		}
 
 		// Check if the project has the expected values
 		if d.HasChange("name") && project.Name != d.Get("name").(string) {
 			log.Printf("[DEBUG] Project %s name not updated yet, retrying...", d.Id())
-			return resource.RetryableError(fmt.Errorf("Project name not updated yet"))
+			return retry.RetryableError(fmt.Errorf("project name not updated yet"))
 		}
 
 		if d.HasChange("display_text") && project.Displaytext != d.Get("display_text").(string) {
 			log.Printf("[DEBUG] Project %s display_text not updated yet, retrying...", d.Id())
-			return resource.RetryableError(fmt.Errorf("Project display_text not updated yet"))
+			return retry.RetryableError(fmt.Errorf("project display_text not updated yet"))
 		}
 
 		log.Printf("[DEBUG] Project %s updated successfully", d.Id())
@@ -350,24 +470,64 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta interface{}) e
 	return resourceCloudStackProjectRead(d, meta)
 }
 
-func resourceCloudStackProjectDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceCloudStackProjectDelete(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Get project name and domain for potential fallback lookup
+	name := d.Get("name").(string)
+	var domain string
+	if domainParam, ok := d.GetOk("domain"); ok {
+		domain = domainParam.(string)
+	}
+
+	// First check if the project still exists by ID
+	log.Printf("[DEBUG] Checking if project %s exists before deleting", d.Id())
+	project, err := getProjectByID(cs, d.Id(), domain)
+
+	// If project not found by ID, try to find it by name
+	if err != nil && strings.Contains(err.Error(), "not found") {
+		log.Printf("[DEBUG] Project %s not found by ID, trying to find by name: %s", d.Id(), name)
+		project, err = getProjectByName(cs, name, domain)
+
+		// If project not found by name either, we're done
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				log.Printf("[DEBUG] Project with name %s not found either, nothing to delete", name)
+				return nil
+			}
+			// For other errors during name lookup, return them
+			return fmt.Errorf("error looking up project by name: %s", err)
+		}
+
+		// Found by name, update the ID
+		log.Printf("[DEBUG] Found project by name %s with ID: %s", name, project.Id)
+		d.SetId(project.Id)
+	} else if err != nil {
+		// For other errors during ID lookup, return them
+		return fmt.Errorf("error checking project existence before delete: %s", err)
+	}
+
+	log.Printf("[DEBUG] Found project %s (%s), proceeding with delete", d.Id(), project.Name)
 
 	// Create a new parameter struct
 	p := cs.Project.NewDeleteProjectParams(d.Id())
 
-	log.Printf("[INFO] Deleting project: %s", d.Id())
-	_, err := cs.Project.DeleteProject(p)
+	log.Printf("[INFO] Deleting project: %s (%s)", d.Id(), project.Name)
+	_, err = cs.Project.DeleteProject(p)
 	if err != nil {
-		// This is a very poor way to be told the ID does no longer exist :(
-		if strings.Contains(err.Error(), fmt.Sprintf(
-			"Invalid parameter id value=%s due to incorrect long value format, "+
-				"or entity does not exist", d.Id())) {
+		// Check for various "not found" or "does not exist" error patterns
+		if strings.Contains(err.Error(), "not found") ||
+			strings.Contains(err.Error(), "does not exist") ||
+			strings.Contains(err.Error(), fmt.Sprintf(
+				"Invalid parameter id value=%s due to incorrect long value format, "+
+					"or entity does not exist", d.Id())) {
+			log.Printf("[DEBUG] Project %s no longer exists after delete attempt", d.Id())
 			return nil
 		}
 
-		return fmt.Errorf("Error deleting project %s: %s", d.Id(), err)
+		return fmt.Errorf("error deleting project %s: %s", d.Id(), err)
 	}
 
+	log.Printf("[DEBUG] Successfully deleted project: %s (%s)", d.Id(), project.Name)
 	return nil
 }
