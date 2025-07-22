@@ -43,9 +43,6 @@ var resourceTypeMap = map[string]int{
 	"memory":           9,
 	"primarystorage":   10,
 	"secondarystorage": 11,
-	"publicip":         12,
-	"eip":              13,
-	"autoscalevmgroup": 14,
 }
 
 func resourceCloudStackLimits() *schema.Resource {
@@ -61,11 +58,11 @@ func resourceCloudStackLimits() *schema.Resource {
 				ForceNew: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"instance", "ip", "volume", "snapshot", "template", "project", "network", "vpc",
-					"cpu", "memory", "primarystorage", "secondarystorage", "publicip", "eip", "autoscalevmgroup",
+					"cpu", "memory", "primarystorage", "secondarystorage",
 				}, false), // false disables case-insensitive matching
 				Description: "The type of resource to update the limits. Available types are: " +
 					"instance, ip, volume, snapshot, template, project, network, vpc, cpu, memory, " +
-					"primarystorage, secondarystorage, publicip, eip, autoscalevmgroup",
+					"primarystorage, secondarystorage",
 			},
 			"account": {
 				Type:        schema.TypeString,

@@ -207,6 +207,126 @@ func TestAccCloudStackLimits_stringType(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackLimits_ip(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_ip,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.ip_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.ip_limit", "type", "ip"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.ip_limit", "max", "25"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackLimits_template(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_template,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.template_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.template_limit", "type", "template"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.template_limit", "max", "40"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackLimits_projectType(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_projectType,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.project_type_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.project_type_limit", "type", "project"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.project_type_limit", "max", "15"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackLimits_vpc(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_vpc,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.vpc_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.vpc_limit", "type", "vpc"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.vpc_limit", "max", "10"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackLimits_memory(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_memory,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.memory_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.memory_limit", "type", "memory"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.memory_limit", "max", "8192"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackLimits_secondarystorage(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_secondarystorage,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.secondarystorage_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.secondarystorage_limit", "type", "secondarystorage"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.secondarystorage_limit", "max", "2000"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackLimits_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -284,6 +404,54 @@ const testAccCloudStackLimits_stringType = `
 resource "cloudstack_limits" "string_type" {
   type         = "network"
   max          = 30
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_ip = `
+resource "cloudstack_limits" "ip_limit" {
+  type         = "ip"
+  max          = 25
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_template = `
+resource "cloudstack_limits" "template_limit" {
+  type         = "template"
+  max          = 40
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_projectType = `
+resource "cloudstack_limits" "project_type_limit" {
+  type         = "project"
+  max          = 15
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_vpc = `
+resource "cloudstack_limits" "vpc_limit" {
+  type         = "vpc"
+  max          = 10
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_memory = `
+resource "cloudstack_limits" "memory_limit" {
+  type         = "memory"
+  max          = 8192
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_secondarystorage = `
+resource "cloudstack_limits" "secondarystorage_limit" {
+  type         = "secondarystorage"
+  max          = 2000
   domainid     = cloudstack_domain.test_domain.id
 }
 `
