@@ -72,6 +72,8 @@ func retrieveID(cs *cloudstack.CloudStackClient, name string, value string, opts
 	switch name {
 	case "disk_offering":
 		id, _, err = cs.DiskOffering.GetDiskOfferingID(value)
+	case "domain":
+		id, _, err = cs.Domain.GetDomainID(value)
 	case "kubernetes_version":
 		id, _, err = cs.Kubernetes.GetKubernetesSupportedVersionID(value)
 	case "network_offering":
