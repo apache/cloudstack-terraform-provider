@@ -129,6 +129,8 @@ func TestAccCloudStackLoadBalancerRule_forceNew(t *testing.T) {
 						"cloudstack_loadbalancer_rule.foo", "private_port", "443"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_loadbalancer_rule.foo", "protocol", "tcp-proxy"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_loadbalancer_rule.foo", "cidrlist.0", "20.0.0.0/8"),
 				),
 			},
 		},
@@ -192,6 +194,8 @@ func TestAccCloudStackLoadBalancerRule_vpcUpdate(t *testing.T) {
 						"cloudstack_loadbalancer_rule.foo", "public_port", "443"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_loadbalancer_rule.foo", "private_port", "443"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_loadbalancer_rule.foo", "cidrlist.0", "20.0.0.0/8"),
 				),
 			},
 		},
@@ -357,6 +361,7 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   private_port = 443
   protocol = "tcp-proxy"
   member_ids = [cloudstack_instance.foobar1.id]
+  cidrlist = ["20.0.0.0/8"]
 }`
 
 const testAccCloudStackLoadBalancerRule_vpc = `
@@ -451,4 +456,5 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   public_port = 443
   private_port = 443
   member_ids = [cloudstack_instance.foobar1.id, cloudstack_instance.foobar2.id]
+  cidrlist = ["20.0.0.0/8"]
 }`
