@@ -21,6 +21,7 @@ resource "cloudstack_private_gateway" "default" {
   netmask    = "255.255.255.252"
   vlan       = "200"
   vpc_id     = "76f6e8dc-07e3-4971-b2a2-8831b0cc4cb4"
+  acl_id     = "cf4f1dad-aade-4ccd-866c-0a2166e5be3d"
 }
 ```
 
