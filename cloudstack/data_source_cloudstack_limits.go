@@ -38,11 +38,11 @@ func dataSourceCloudStackLimits() *schema.Resource {
 				Optional: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"instance", "ip", "volume", "snapshot", "template", "project", "network", "vpc",
-					"cpu", "memory", "primarystorage", "secondarystorage", "publicip", "eip", "autoscalevmgroup",
+					"cpu", "memory", "primarystorage", "secondarystorage",
 				}, false), // false disables case-insensitive matching
 				Description: "The type of resource to list the limits. Available types are: " +
 					"instance, ip, volume, snapshot, template, project, network, vpc, cpu, memory, " +
-					"primarystorage, secondarystorage, publicip, eip, autoscalevmgroup",
+					"primarystorage, secondarystorage",
 			},
 			"account": {
 				Type:        schema.TypeString,

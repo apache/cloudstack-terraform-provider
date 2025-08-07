@@ -49,9 +49,6 @@ The following arguments are supported:
   * `memory`
   * `primarystorage`
   * `secondarystorage`
-  * `publicip`
-  * `eip`
-  * `autoscalevmgroup`
 * `account` - (Optional) List resources by account. Must be used with the `domainid` parameter.
 * `domainid` - (Optional) List only resources belonging to the domain specified.
 * `projectid` - (Optional) List resource limits by project.
@@ -63,7 +60,7 @@ The following attributes are exported:
 * `limits` - A list of resource limits. Each limit has the following attributes:
   * `resourcetype` - The type of resource.
   * `resourcetypename` - The name of the resource type.
-  * `max` - The maximum number of the resource.
+  * `max` - The maximum number of the resource. A value of `-1` indicates unlimited resources. A value of `0` means zero resources are allowed, though the CloudStack API may return `-1` for a limit set to `0`.
   * `account` - The account of the resource limit.
   * `domain` - The domain name of the resource limit.
   * `domainid` - The domain ID of the resource limit.

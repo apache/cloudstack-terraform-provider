@@ -79,7 +79,7 @@ func resourceCloudStackLimits() *schema.Resource {
 			"max": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Description: "Maximum resource limit. Use -1 for unlimited resource limit.",
+				Description: "Maximum resource limit. Use -1 for unlimited resource limit. A value of 0 means zero resources are allowed, though the CloudStack API may return -1 for a limit set to 0.",
 			},
 			"projectid": {
 				Type:        schema.TypeString,
@@ -118,7 +118,6 @@ func resourceCloudStackLimitsCreate(d *schema.ResourceData, meta interface{}) er
 
 	account := d.Get("account").(string)
 	domainid := d.Get("domainid").(string)
-	max := d.Get("max").(int)
 	projectid := d.Get("projectid").(string)
 
 	// Validate account and domain parameters
@@ -134,8 +133,10 @@ func resourceCloudStackLimitsCreate(d *schema.ResourceData, meta interface{}) er
 	if domainid != "" {
 		p.SetDomainid(domainid)
 	}
-	if max != 0 {
-		p.SetMax(int64(max))
+	if maxVal, ok := d.GetOk("max"); ok {
+		maxIntVal := maxVal.(int)
+		log.Printf("[DEBUG] Setting max value to %d", maxIntVal)
+		p.SetMax(int64(maxIntVal))
 	}
 	if projectid != "" {
 		p.SetProjectid(projectid)
@@ -226,7 +227,15 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 	// Update the config
 	for _, limit := range l.ResourceLimits {
 		if limit.Resourcetype == fmt.Sprintf("%d", resourcetype) {
-			d.Set("max", limit.Max)
+			log.Printf("[DEBUG] Retrieved max value from API: %d", limit.Max)
+
+			// If the user set max to 0 but the API returned -1, keep it as 0 in the state
+			if limit.Max == -1 && d.Get("max").(int) == 0 {
+				log.Printf("[DEBUG] API returned -1 for a limit set to 0, keeping it as 0 in state")
+				d.Set("max", 0)
+			} else {
+				d.Set("max", limit.Max)
+			}
 
 			// Only set the type field if it was originally specified in the configuration
 			if v, ok := d.GetOk("type"); ok {
@@ -251,7 +260,6 @@ func resourceCloudStackLimitsUpdate(d *schema.ResourceData, meta interface{}) er
 
 	account := d.Get("account").(string)
 	domainid := d.Get("domainid").(string)
-	max := d.Get("max").(int)
 	projectid := d.Get("projectid").(string)
 
 	// Create a new parameter struct
@@ -262,8 +270,10 @@ func resourceCloudStackLimitsUpdate(d *schema.ResourceData, meta interface{}) er
 	if domainid != "" {
 		p.SetDomainid(domainid)
 	}
-	if max != 0 {
-		p.SetMax(int64(max))
+	if maxVal, ok := d.GetOk("max"); ok {
+		maxIntVal := maxVal.(int)
+		log.Printf("[DEBUG] Setting max value to %d", maxIntVal)
+		p.SetMax(int64(maxIntVal))
 	}
 	if projectid != "" {
 		p.SetProjectid(projectid)

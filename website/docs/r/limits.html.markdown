@@ -58,13 +58,10 @@ The following arguments are supported:
   * `memory`
   * `primarystorage`
   * `secondarystorage`
-  * `publicip`
-  * `eip`
-  * `autoscalevmgroup`
 
 * `account` - (Optional, ForceNew) Update resource for a specified account. Must be used with the `domainid` parameter.
 * `domainid` - (Optional, ForceNew) Update resource limits for all accounts in specified domain. If used with the `account` parameter, updates resource limits for a specified account in specified domain.
-* `max` - (Optional) Maximum resource limit. Use `-1` for unlimited resource limit.
+* `max` - (Optional) Maximum resource limit. Use `-1` for unlimited resource limit. A value of `0` means zero resources are allowed, though the CloudStack API may return `-1` for a limit set to `0`.
 * `projectid` - (Optional, ForceNew) Update resource limits for project.
 
 ## Attributes Reference

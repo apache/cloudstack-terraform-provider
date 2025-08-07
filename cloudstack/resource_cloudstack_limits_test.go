@@ -307,6 +307,26 @@ func TestAccCloudStackLimits_memory(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackLimits_zero(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_zero,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.zero_limit"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.zero_limit", "type", "instance"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_limits.zero_limit", "max", "0"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackLimits_secondarystorage(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -343,7 +363,7 @@ func TestAccCloudStackLimits_import(t *testing.T) {
 				ResourceName:            "cloudstack_limits.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domainid", "type", "type", "max"},
+				ImportStateVerifyIgnore: []string{"domainid", "type", "max"},
 			},
 		},
 	})
@@ -444,6 +464,16 @@ const testAccCloudStackLimits_memory = `
 resource "cloudstack_limits" "memory_limit" {
   type         = "memory"
   max          = 8192
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_zero = `
+# Testing setting a limit to 0 (zero resources allowed)
+# Note: The CloudStack API may return -1 for a limit set to 0, but the provider maintains the 0 value in state
+resource "cloudstack_limits" "zero_limit" {
+  type         = "instance"
+  max          = 0
   domainid     = cloudstack_domain.test_domain.id
 }
 `
