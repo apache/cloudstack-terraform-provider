@@ -90,6 +90,7 @@ func Provider() *schema.Provider {
 			"cloudstack_user":             dataSourceCloudstackUser(),
 			"cloudstack_vpn_connection":   dataSourceCloudstackVPNConnection(),
 			"cloudstack_pod":              dataSourceCloudstackPod(),
+			"cloudstack_project":          dataSourceCloudstackProject(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -112,6 +113,7 @@ func Provider() *schema.Provider {
 			"cloudstack_nic":                  resourceCloudStackNIC(),
 			"cloudstack_port_forward":         resourceCloudStackPortForward(),
 			"cloudstack_private_gateway":      resourceCloudStackPrivateGateway(),
+			"cloudstack_project":              resourceCloudStackProject(),
 			"cloudstack_secondary_ipaddress":  resourceCloudStackSecondaryIPAddress(),
 			"cloudstack_security_group":       resourceCloudStackSecurityGroup(),
 			"cloudstack_security_group_rule":  resourceCloudStackSecurityGroupRule(),
