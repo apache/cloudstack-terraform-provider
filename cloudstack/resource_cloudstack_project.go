@@ -85,26 +85,30 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 
 	// Get domain if provided
 	var domain string
+	domainSet := false
 	if domainParam, ok := d.GetOk("domain"); ok {
 		domain = domainParam.(string)
+		domainSet = true
 	}
 
-	// Check if a project with this name already exists
-	existingProject, err := getProjectByName(cs, name, domain)
-	if err == nil {
-		// Project with this name already exists
-		log.Printf("[DEBUG] Project with name %s already exists, using existing project with ID: %s", name, existingProject.Id)
-		d.SetId(existingProject.Id)
+	// Only check for an existing project if domain is set
+	if domainSet {
+		existingProject, err := getProjectByName(cs, name, domain)
+		if err == nil {
+			// Project with this name and domain already exists
+			log.Printf("[DEBUG] Project with name %s and domain %s already exists, using existing project with ID: %s", name, domain, existingProject.Id)
+			d.SetId(existingProject.Id)
 
-		// Set the basic attributes to match the existing project
-		d.Set("name", existingProject.Name)
-		d.Set("display_text", existingProject.Displaytext)
-		d.Set("domain", existingProject.Domain)
+			// Set the basic attributes to match the existing project
+			d.Set("name", existingProject.Name)
+			d.Set("display_text", existingProject.Displaytext)
+			d.Set("domain", existingProject.Domain)
 
-		return resourceCloudStackProjectRead(d, meta)
-	} else if !strings.Contains(err.Error(), "not found") {
-		// If we got an error other than "not found", return it
-		return fmt.Errorf("error checking for existing project: %s", err)
+			return resourceCloudStackProjectRead(d, meta)
+		} else if !strings.Contains(err.Error(), "not found") {
+			// If we got an error other than "not found", return it
+			return fmt.Errorf("error checking for existing project: %s", err)
+		}
 	}
 
 	// Project doesn't exist, create a new one
