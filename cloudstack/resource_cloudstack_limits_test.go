@@ -378,7 +378,7 @@ resource "cloudstack_domain" "test_domain" {
 
 const testAccCloudStackLimits_domain_limit = `
 resource "cloudstack_limits" "domain_limit" {
-  type 		   = "volume"
+  type         = "volume"
   max          = 50
   domainid     = cloudstack_domain.test_domain.id
 }
