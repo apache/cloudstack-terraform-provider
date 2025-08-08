@@ -90,6 +90,7 @@ func Provider() *schema.Provider {
 			"cloudstack_user":             dataSourceCloudstackUser(),
 			"cloudstack_vpn_connection":   dataSourceCloudstackVPNConnection(),
 			"cloudstack_pod":              dataSourceCloudstackPod(),
+			"cloudstack_role":             dataSourceCloudstackRole(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -131,6 +132,7 @@ func Provider() *schema.Provider {
 			"cloudstack_account":              resourceCloudStackAccount(),
 			"cloudstack_user":                 resourceCloudStackUser(),
 			"cloudstack_domain":               resourceCloudStackDomain(),
+			"cloudstack_role":                 resourceCloudStackRole(),
 		},
 
 		ConfigureFunc: providerConfigure,
