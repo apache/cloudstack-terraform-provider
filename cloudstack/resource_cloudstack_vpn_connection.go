@@ -46,6 +46,13 @@ func resourceCloudStackVPNConnection() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -74,7 +81,10 @@ func resourceCloudStackVPNConnectionRead(d *schema.ResourceData, meta interface{
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the VPN Connection details
-	v, count, err := cs.VPN.GetVpnConnectionByID(d.Id())
+	v, count, err := cs.VPN.GetVpnConnectionByID(
+		d.Id(),
+		cloudstack.WithProject(d.Get("project").(string)),
+	  )
 	if err != nil {
 		if count == 0 {
 			log.Printf("[DEBUG] VPN Connection does no longer exist")

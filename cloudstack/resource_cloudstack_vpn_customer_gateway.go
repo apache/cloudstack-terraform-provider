@@ -143,8 +143,11 @@ func resourceCloudStackVPNCustomerGatewayRead(d *schema.ResourceData, meta inter
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the VPN Customer Gateway details
-	v, count, err := cs.VPN.GetVpnCustomerGatewayByID(d.Id())
-	if err != nil {
+	v, count, err := cs.VPN.GetVpnCustomerGatewayByID(
+		d.Id(),
+		cloudstack.WithProject(d.Get("project").(string)),
+	  )
+	  if err != nil {
 		if count == 0 {
 			log.Printf(
 				"[DEBUG] VPN Customer Gateway %s does no longer exist", d.Get("name").(string))
