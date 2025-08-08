@@ -64,6 +64,14 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+				ConflictsWith: []string{"network_ids"},
+			},
+
+			"network_ids": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"network_id"},
 			},
 
 			"ip_address": {
@@ -305,6 +313,14 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	if zone.Networktype == "Advanced" {
 		// Set the default network ID
 		p.SetNetworkids([]string{d.Get("network_id").(string)})
+	}
+
+	if networks, ok := d.GetOk("network_ids"); ok {
+		var networkIds []string
+		for _, nw := range networks.([]interface{}) {
+			networkIds = append(networkIds, fmt.Sprintf("%v", nw))
+		}
+		p.SetNetworkids(networkIds);
 	}
 
 	// If there is a ipaddres supplied, add it to the parameter struct
