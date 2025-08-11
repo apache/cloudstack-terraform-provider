@@ -123,7 +123,7 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 	if domain != "" {
 		domainid, e := retrieveID(cs, "domain", domain)
 		if e != nil {
-			return e
+			return fmt.Errorf("error retrieving domain ID: %v", e)
 		}
 		p.SetDomainid(domainid)
 	}
