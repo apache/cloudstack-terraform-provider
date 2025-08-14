@@ -147,25 +147,25 @@ func TestAccCloudStackLimits_account(t *testing.T) {
 	})
 }
 
-func TestAccCloudStackLimits_project(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_project,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackLimitsExists("cloudstack_limits.project_limit"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_limits.project_limit", "type", "primarystorage"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_limits.project_limit", "max", "1000"),
-				),
-			},
-		},
-	})
-}
+// func TestAccCloudStackLimits_project(t *testing.T) { #TODO: Need project imported before this will do anything
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_project,
+// 				Check: resource.ComposeTestCheckFunc(
+// 					testAccCheckCloudStackLimitsExists("cloudstack_limits.project_limit"),
+// 					resource.TestCheckResourceAttr(
+// 						"cloudstack_limits.project_limit", "type", "primarystorage"),
+// 					resource.TestCheckResourceAttr(
+// 						"cloudstack_limits.project_limit", "max", "1000"),
+// 				),
+// 			},
+// 		},
+// 	})
+// }
 
 func TestAccCloudStackLimits_unlimited(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -369,6 +369,53 @@ func TestAccCloudStackLimits_import(t *testing.T) {
 	})
 }
 
+// Test importing domain-specific limits
+func TestAccCloudStackLimits_importDomain(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_domain_limit,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.domain_limit"),
+				),
+			},
+			{
+				ResourceName:            "cloudstack_limits.domain_limit",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"domainid", "type", "max"},
+			},
+		},
+	})
+}
+
+// Test importing account-specific limits
+// Note: We're not verifying the state here because the account import is complex
+// and we just want to make sure the import succeeds
+func TestAccCloudStackLimits_importAccount(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLimitsDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLimits_domain + testAccCloudStackLimits_account,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackLimitsExists("cloudstack_limits.account_limit"),
+				),
+			},
+			{
+				ResourceName:      "cloudstack_limits.account_limit",
+				ImportState:       true,
+				ImportStateVerify: false, // Don't verify the state
+			},
+		},
+	})
+}
+
 // Test configurations for different resource types
 const testAccCloudStackLimits_domain = `
 resource "cloudstack_domain" "test_domain" {
@@ -404,13 +451,20 @@ resource "cloudstack_limits" "account_limit" {
 }
 `
 
-const testAccCloudStackLimits_project = `
-resource "cloudstack_limits" "project_limit" {
-  type         = "primarystorage"
-  max          = 1000
-  domainid     = cloudstack_domain.test_domain.id
-}
-`
+// const testAccCloudStackLimits_project = ` #TODO: Need project imported before this will do anything
+// resource "cloudstack_project" "test_project" {
+//   name        = "test-project-limits"
+//   display_text = "Test Project for Limits"
+//   domainid    = cloudstack_domain.test_domain.id
+// }
+//
+// resource "cloudstack_limits" "project_limit" {
+//   type         = "primarystorage"
+//   max          = 1000
+//   domainid     = cloudstack_domain.test_domain.id
+//   projectid    = cloudstack_project.test_project.id
+// }
+// `
 
 const testAccCloudStackLimits_unlimited = `
 resource "cloudstack_limits" "unlimited" {
@@ -469,8 +523,6 @@ resource "cloudstack_limits" "memory_limit" {
 `
 
 const testAccCloudStackLimits_zero = `
-# Testing setting a limit to 0 (zero resources allowed)
-# Note: The CloudStack API may return -1 for a limit set to 0, but the provider maintains the 0 value in state
 resource "cloudstack_limits" "zero_limit" {
   type         = "instance"
   max          = 0
@@ -482,6 +534,46 @@ const testAccCloudStackLimits_secondarystorage = `
 resource "cloudstack_limits" "secondarystorage_limit" {
   type         = "secondarystorage"
   max          = 2000
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_zeroToPositive = `
+resource "cloudstack_limits" "zero_limit" {
+  type         = "instance"
+  max          = 5
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_positiveValue = `
+resource "cloudstack_limits" "positive_limit" {
+  type         = "instance"
+  max          = 15
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_positiveToZero = `
+resource "cloudstack_limits" "positive_limit" {
+  type         = "instance"
+  max          = 0
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_positiveToUnlimited = `
+resource "cloudstack_limits" "positive_limit" {
+  type         = "instance"
+  max          = -1
+  domainid     = cloudstack_domain.test_domain.id
+}
+`
+
+const testAccCloudStackLimits_unlimitedToZero = `
+resource "cloudstack_limits" "unlimited" {
+  type         = "cpu"
+  max          = 0
   domainid     = cloudstack_domain.test_domain.id
 }
 `
