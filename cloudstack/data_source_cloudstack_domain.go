@@ -20,52 +20,42 @@
 package cloudstack
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceCloudStackDomain() *schema.Resource {
+func dataSourceCloudStackDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceCloudStackDomainCreate,
-		Read:   resourceCloudStackDomainRead,
-		Update: resourceCloudStackDomainUpdate,
-		Delete: resourceCloudStackDomainDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
+		Read: dataSourceCloudStackDomainRead,
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Name of the domain",
-			},
+			"filter": dataSourceFiltersSchema(),
 
+			// Computed attributes
 			"domain_id": {
 				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "Domain UUID, required for adding domain from another Region",
+				Computed:    true,
+				Description: "The ID of the domain",
+			},
+
+			"name": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The name of the domain",
 			},
 
 			"network_domain": {
 				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Network domain for networks in the domain",
+				Computed:    true,
+				Description: "The network domain",
 			},
 
-			"parent_domain_id": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "Parent domain ID. If no parent domain is specified, the ROOT domain is assumed",
-			},
-
-			// Computed attributes
 			"level": {
 				Type:        schema.TypeInt,
 				Computed:    true,
@@ -76,6 +66,12 @@ func resourceCloudStackDomain() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "The path of the domain",
+			},
+
+			"parent_domain_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The domain ID of the parent domain",
 			},
 
 			"parent_domain_name": {
@@ -246,58 +242,43 @@ func resourceCloudStackDomain() *schema.Resource {
 	}
 }
 
-func resourceCloudStackDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func dataSourceCloudStackDomainRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	name := d.Get("name").(string)
+	p := cs.Domain.NewListDomainsParams()
 
-	// Create new domain params with name (required)
-	p := cs.Domain.NewCreateDomainParams(name)
-
-	// Set optional parameters
-	if domainID, ok := d.GetOk("domain_id"); ok {
-		p.SetDomainid(domainID.(string))
-	}
-
-	if networkDomain, ok := d.GetOk("network_domain"); ok {
-		p.SetNetworkdomain(networkDomain.(string))
-	}
-
-	if parentDomainID, ok := d.GetOk("parent_domain_id"); ok {
-		p.SetParentdomainid(parentDomainID.(string))
-	}
-
-	log.Printf("[DEBUG] Creating CloudStack domain: %s", name)
-	domain, err := cs.Domain.CreateDomain(p)
+	csDomains, err := cs.Domain.ListDomains(p)
 	if err != nil {
-		return fmt.Errorf("Error creating CloudStack domain %s: %s", name, err)
+		return fmt.Errorf("Failed to list domains: %s", err)
 	}
 
-	log.Printf("[DEBUG] CloudStack domain %s successfully created with ID: %s", name, domain.Id)
-	d.SetId(domain.Id)
+	filters := d.Get("filter")
+	var domains []*cloudstack.Domain
 
-	return resourceCloudStackDomainRead(d, meta)
+	for _, domain := range csDomains.Domains {
+		match, err := applyDomainFilters(domain, filters.(*schema.Set))
+		if err != nil {
+			return err
+		}
+		if match {
+			domains = append(domains, domain)
+		}
+	}
+
+	if len(domains) == 0 {
+		return fmt.Errorf("No domain is matching with the specified regex")
+	}
+
+	// Return the first matching domain
+	domain := domains[0]
+	log.Printf("[DEBUG] Selected domain: %s\n", domain.Name)
+
+	return domainDescriptionAttributes(d, domain)
 }
 
-func resourceCloudStackDomainRead(d *schema.ResourceData, meta interface{}) error {
-	cs := meta.(*cloudstack.CloudStackClient)
-
-	log.Printf("[DEBUG] Reading CloudStack domain: %s", d.Id())
-
-	// Get domain by ID
-	domain, count, err := cs.Domain.GetDomainByID(d.Id())
-	if err != nil {
-		if count == 0 {
-			log.Printf("[DEBUG] CloudStack domain %s not found", d.Id())
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("Error reading CloudStack domain %s: %s", d.Id(), err)
-	}
-
-	log.Printf("[DEBUG] CloudStack domain %s found: %s", d.Id(), domain.Name)
-
-	// Set basic attributes
+func domainDescriptionAttributes(d *schema.ResourceData, domain *cloudstack.Domain) error {
+	d.SetId(domain.Id)
+	d.Set("domain_id", domain.Id)
 	d.Set("name", domain.Name)
 	d.Set("network_domain", domain.Networkdomain)
 	d.Set("level", domain.Level)
@@ -340,63 +321,34 @@ func resourceCloudStackDomainRead(d *schema.ResourceData, meta interface{}) erro
 	return nil
 }
 
-func resourceCloudStackDomainUpdate(d *schema.ResourceData, meta interface{}) error {
-	cs := meta.(*cloudstack.CloudStackClient)
-
-	// Create update params with domain ID
-	p := cs.Domain.NewUpdateDomainParams(d.Id())
-
-	// Check for changes in updatable fields
-	if d.HasChange("name") {
-		p.SetName(d.Get("name").(string))
+func applyDomainFilters(domain *cloudstack.Domain, filters *schema.Set) (bool, error) {
+	var domainJSON map[string]interface{}
+	t, _ := json.Marshal(domain)
+	err := json.Unmarshal(t, &domainJSON)
+	if err != nil {
+		return false, err
 	}
 
-	if d.HasChange("network_domain") {
-		networkDomain := d.Get("network_domain").(string)
-		if networkDomain == "" {
-			// Empty string will update domain with NULL value
-			p.SetNetworkdomain("")
+	for _, f := range filters.List() {
+		m := f.(map[string]interface{})
+
+		r, err := regexp.Compile(m["value"].(string))
+		if err != nil {
+			return false, fmt.Errorf("Invalid regex: %s", err)
+		}
+		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
+
+		// Check if the field exists in the JSON structure
+		if domainField, exists := domainJSON[updatedName]; exists {
+			if domainFieldStr, ok := domainField.(string); ok {
+				if !r.MatchString(domainFieldStr) {
+					return false, nil
+				}
+			}
 		} else {
-			p.SetNetworkdomain(networkDomain)
+			return false, fmt.Errorf("Field %s does not exist in domain", updatedName)
 		}
 	}
 
-	name := d.Get("name").(string)
-	log.Printf("[DEBUG] Updating CloudStack domain: %s", name)
-
-	_, err := cs.Domain.UpdateDomain(p)
-	if err != nil {
-		return fmt.Errorf("Error updating CloudStack domain %s: %s", name, err)
-	}
-
-	log.Printf("[DEBUG] CloudStack domain %s successfully updated", name)
-
-	return resourceCloudStackDomainRead(d, meta)
-}
-
-func resourceCloudStackDomainDelete(d *schema.ResourceData, meta interface{}) error {
-	cs := meta.(*cloudstack.CloudStackClient)
-
-	// Create delete params with domain ID
-	p := cs.Domain.NewDeleteDomainParams(d.Id())
-
-	// Set cleanup to true to clean up all domain resources (child domains, accounts)
-	p.SetCleanup(true)
-
-	name := d.Get("name").(string)
-	log.Printf("[DEBUG] Deleting CloudStack domain: %s", name)
-
-	_, err := cs.Domain.DeleteDomain(p)
-	if err != nil {
-		// Handle case where domain might already be deleted
-		if strings.Contains(err.Error(), "does not exist") {
-			log.Printf("[DEBUG] CloudStack domain %s already deleted", name)
-			return nil
-		}
-		return fmt.Errorf("Error deleting CloudStack domain %s: %s", name, err)
-	}
-
-	log.Printf("[DEBUG] CloudStack domain %s successfully deleted", name)
-
-	return nil
+	return true, nil
 }

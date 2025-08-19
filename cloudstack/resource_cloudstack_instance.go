@@ -176,8 +176,9 @@ func resourceCloudStackInstance() *schema.Resource {
 			},
 
 			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"user_data_id"},
 				StateFunc: func(v interface{}) string {
 					switch v.(type) {
 					case string:
@@ -187,6 +188,12 @@ func resourceCloudStackInstance() *schema.Resource {
 						return ""
 					}
 				},
+			},
+
+			"user_data_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"user_data"},
 			},
 
 			"details": {
@@ -397,6 +404,10 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetUserdata(ud)
 	}
 
+	if userDataId, ok := d.GetOk("user_data_id"); ok {
+		p.SetUserdataid(userDataId.(string))
+	}
+
 	// Create the new instance
 	r, err := cs.VirtualMachine.DeployVirtualMachine(p)
 	if err != nil {
@@ -555,7 +566,7 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	// Attributes that require reboot to update
 	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") || d.HasChange("user_data") {
+		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") || d.HasChange("user_data") || d.HasChange("user_data_id") {
 
 		// Before we can actually make these changes, the virtual machine must be stopped
 		_, err := cs.VirtualMachine.StopVirtualMachine(
@@ -706,6 +717,19 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return fmt.Errorf(
 					"Error updating user_data for instance %s: %s", name, err)
+			}
+		}
+
+		// Check if the user data ID has changed and if so, update the user data ID
+		if d.HasChange("user_data_id") {
+			log.Printf("[DEBUG] user_data_id changed for %s, starting update", name)
+
+			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+			p.SetUserdataid(d.Get("user_data_id").(string))
+			_, err = cs.VirtualMachine.UpdateVirtualMachine(p)
+			if err != nil {
+				return fmt.Errorf(
+					"Error updating user_data_id for instance %s: %s", name, err)
 			}
 		}
 

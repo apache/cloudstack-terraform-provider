@@ -295,6 +295,25 @@ func TestAccCloudStackInstance_userData(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_userDataId(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackInstance_userDataId,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists("cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttrPair("cloudstack_instance.foobar", "user_data_id", "cloudstack_user_data.test", "id"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackInstanceExists(
 	n string, instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -575,4 +594,33 @@ echo <<EOF
 ${random_bytes.string.base64}
 EOF
 EOFTF
+}`
+
+const testAccCloudStackInstance_userDataId = `
+resource "cloudstack_user_data" "test" {
+  name      = "terraform-test-userdata"
+  user_data = <<-EOF
+    #!/bin/bash
+    echo "Hello from registered UserData!"
+    yum update -y
+  EOF
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name             = "terraform-test"
+  display_name     = "terraform-test"
+  service_offering = "Small Instance"
+  network_id       = cloudstack_network.foo.id
+  template         = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone             = cloudstack_network.foo.zone
+  expunge          = true
+  user_data_id     = cloudstack_user_data.test.id
 }`

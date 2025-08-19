@@ -80,6 +80,10 @@ The following arguments are supported:
 
 * `user_data` - (Optional) The user data to provide when launching the
     instance. This can be either plain text or base64 encoded text.
+    Cannot be used together with `user_data_id`.
+
+* `user_data_id` - (Optional) The ID of a registered UserData resource
+    to use for this instance. Cannot be used together with `user_data`.
 
 * `keypair` - (Optional) The name of the SSH key pair that will be used to
     access this instance. (Mutual exclusive with keypairs)

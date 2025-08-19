@@ -65,26 +65,55 @@ func dataSourceCloudstackUser() *schema.Resource {
 func datasourceCloudStackUserRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.User.NewListUsersParams()
-	csUsers, err := cs.User.ListUsers(p)
 
-	if err != nil {
-		return fmt.Errorf("Failed to list users: %s", err)
+	// Build server-side filters where possible to reduce result set
+	filters := d.Get("filter").(*schema.Set)
+	for _, f := range filters.List() {
+		m := f.(map[string]interface{})
+		name := strings.ToLower(m["name"].(string))
+		val := m["value"].(string)
+		switch name {
+		case "domainid":
+			p.SetDomainid(val)
+		case "account":
+			p.SetAccount(val)
+		case "username":
+			p.SetUsername(val)
+		}
 	}
 
-	filters := d.Get("filter")
 	var users []*cloudstack.User
-
-	for _, u := range csUsers.Users {
-		match, err := applyUserFilters(u, filters.(*schema.Set))
+	var lastErr error
+	// Small retry to handle eventual consistency right after account creation
+	for attempt := 0; attempt < 10; attempt++ {
+		csUsers, err := cs.User.ListUsers(p)
 		if err != nil {
-			return err
+			lastErr = err
+			time.Sleep(2 * time.Second)
+			continue
 		}
-		if match {
-			users = append(users, u)
+
+		users = nil
+		for _, u := range csUsers.Users {
+			match, err := applyUserFilters(u, filters)
+			if err != nil {
+				return err
+			}
+			if match {
+				users = append(users, u)
+			}
 		}
+
+		if len(users) > 0 {
+			break
+		}
+		time.Sleep(2 * time.Second)
 	}
 
 	if len(users) == 0 {
+		if lastErr != nil {
+			return fmt.Errorf("Failed to list users: %s", lastErr)
+		}
 		return fmt.Errorf("No user is matching with the specified regex")
 	}
 	//return the latest user from the list of filtered userss according

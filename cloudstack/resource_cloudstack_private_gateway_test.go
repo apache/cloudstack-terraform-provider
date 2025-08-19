@@ -158,5 +158,6 @@ resource "cloudstack_private_gateway" "foo" {
   vlan = "1"
   vpc_id = cloudstack_vpc.foo.id
   acl_id = cloudstack_network_acl.foo.id
+  bypass_vlan_overlap_check = false
   depends_on = ["cloudstack_vpc.foo","cloudstack_network_acl.foo"]
 }`
