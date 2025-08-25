@@ -645,7 +645,8 @@ func verifyNetworkACLParams(d *schema.ResourceData) error {
 
 func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
 	if ruleId, ok := rule["rule_id"]; ok && ruleId != nil {
-		if rId, ok := ruleId.(int); ok && rId > 0 {
+		if rId, ok := ruleId.(int); ok && rId != 0 {
+			// Validate only if rule_id is explicitly set (non-zero)
 			if rId < 1 || rId > 65535 {
 				return fmt.Errorf(
 					"%q must be between %d and %d inclusive, got: %d", "rule_id", 1, 65535, rId)
