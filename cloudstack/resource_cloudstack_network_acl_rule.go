@@ -57,6 +57,12 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"rule_id": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+
 						"action": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -98,6 +104,11 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							Default:  "ingress",
+						},
+
+						"description": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 
 						"uuids": {
@@ -198,6 +209,11 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 	// Create a new parameter struct
 	p := cs.NetworkACL.NewCreateNetworkACLParams(rule["protocol"].(string))
 
+	// If a rule ID is specified, set it
+	if ruleId, ok := rule["rule_id"].(int); ok && ruleId > 0 {
+		p.SetNumber(ruleId)
+	}
+
 	// Set the acl ID
 	p.SetAclid(d.Id())
 
@@ -213,6 +229,11 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 
 	// Set the traffic type
 	p.SetTraffictype(rule["traffic_type"].(string))
+
+	// Set the description
+	if desc, ok := rule["description"].(string); ok && desc != "" {
+		p.SetReason(desc)
+	}
 
 	// If the protocol is ICMP set the needed ICMP parameters
 	if rule["protocol"].(string) == "icmp" {
@@ -623,6 +644,15 @@ func verifyNetworkACLParams(d *schema.ResourceData) error {
 }
 
 func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
+	if ruleId, ok := rule["rule_id"]; ok && ruleId != nil {
+		if rId, ok := ruleId.(int); ok && rId > 0 {
+			if rId < 1 || rId > 65535 {
+				return fmt.Errorf(
+					"%q must be between %d and %d inclusive, got: %d", "rule_id", 1, 65535, rId)
+			}
+		}
+	}
+
 	action := rule["action"].(string)
 	if action != "allow" && action != "deny" {
 		return fmt.Errorf("Parameter action only accepts 'allow' or 'deny' as values")
