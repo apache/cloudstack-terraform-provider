@@ -73,9 +73,21 @@ func resourceCloudStackPortForward() *schema.Resource {
 							Required: true,
 						},
 
+						"private_end_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+
 						"public_port": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+
+						"public_end_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
 						},
 
 						"virtual_machine_id": {
@@ -175,6 +187,12 @@ func createPortForward(d *schema.ResourceData, meta interface{}, forward map[str
 	// Create a new parameter struct
 	p := cs.Firewall.NewCreatePortForwardingRuleParams(d.Id(), forward["private_port"].(int),
 		forward["protocol"].(string), forward["public_port"].(int), vm.Id)
+	if val, ok := forward["private_end_port"]; ok && val != nil && val.(int) != 0 {
+		p.SetPrivateendport(val.(int))
+	}
+	if val, ok := forward["public_end_port"]; ok && val != nil && val.(int) != 0 {
+		p.SetPublicendport(val.(int))
+	}
 
 	if vmGuestIP, ok := forward["vm_guest_ip"]; ok && vmGuestIP.(string) != "" {
 		p.SetVmguestip(vmGuestIP.(string))
@@ -288,6 +306,21 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 			forward["protocol"] = f.Protocol
 			forward["private_port"] = privPort
 			forward["public_port"] = pubPort
+			// Only set end ports if they differ from start ports (indicating a range)
+			if f.Privateendport != "" && f.Privateendport != f.Privateport {
+				privEndPort, err := strconv.Atoi(f.Privateendport)
+				if err != nil {
+					return err
+				}
+				forward["private_end_port"] = privEndPort
+			}
+			if f.Publicendport != "" && f.Publicendport != f.Publicport {
+				pubEndPort, err := strconv.Atoi(f.Publicendport)
+				if err != nil {
+					return err
+				}
+				forward["public_end_port"] = pubEndPort
+			}
 			forward["virtual_machine_id"] = f.Virtualmachineid
 
 			// This one is a bit tricky. We only want to update this optional value
