@@ -106,7 +106,7 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 
 	}
 
-	// Check if the display text is changed and if so, update the virtual machine
+	// Check if the display text is changed and if so, update the network offering
 	if d.HasChange("display_text") {
 		log.Printf("[DEBUG] Display text changed for %s, starting update", name)
 
@@ -114,7 +114,7 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
 		// Set the new display text
-		p.SetName(d.Get("display_text").(string))
+		p.SetDisplaytext(d.Get("display_text").(string))
 
 		// Update the display text
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
@@ -125,34 +125,34 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 
 	}
 
-	// Check if the guest ip type is changed and if so, update the virtual machine
-	if d.HasChange("guest_ip_type") {
-		log.Printf("[DEBUG] Guest ip type changed for %s, starting update", name)
+	// Check if maxconnections is changed and if so, update the network offering
+	if d.HasChange("max_connections") {
+		log.Printf("[DEBUG] Max connections changed for %s, starting update", name)
 
 		// Create a new parameter struct
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
-		// Set the new guest ip type
-		p.SetName(d.Get("guest_ip_type").(string))
+		// Set the new max connections
+		p.SetMaxconnections(d.Get("max_connections").(int))
 
-		// Update the guest ip type
+		// Update the max connections
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
 		if err != nil {
 			return fmt.Errorf(
-				"Error updating the guest ip type for network offering %s: %s", name, err)
+				"Error updating the max connections for network offering %s: %s", name, err)
 		}
 
 	}
 
-	// Check if the traffic type is changed and if so, update the virtual machine
-	if d.HasChange("traffic_type") {
-		log.Printf("[DEBUG] Traffic type changed for %s, starting update", name)
+	// Check if the domain id is changed and if so, update the network offering
+	if d.HasChange("domain_id") {
+		log.Printf("[DEBUG] Domain id changed for %s, starting update", name)
 
 		// Create a new parameter struct
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
-		// Set the new traffic type
-		p.SetName(d.Get("traffic_type").(string))
+		// Set the new domain id
+		p.SetDomainid(d.Get("domain_id").(string))
 
 		// Update the traffic type
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
