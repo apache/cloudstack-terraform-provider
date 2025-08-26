@@ -61,6 +61,7 @@ func resourceCloudStackNIC() *schema.Resource {
 			"dhcp_options": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
