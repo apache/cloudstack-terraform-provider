@@ -94,7 +94,7 @@ func TestAccCloudStackNIC_macaddress(t *testing.T) {
 						"cloudstack_instance.foobar", "cloudstack_nic.foo", &nic),
 					testAccCheckCloudStackNICMacAddress(&nic),
 					resource.TestCheckResourceAttr(
-						"cloudstack_nic.foo", "mac_address", "02:1A:4B:3C:5D:6E"),
+						"cloudstack_nic.foo", "mac_address", "02:1a:4b:3c:5d:6e"),
 				),
 			},
 		},
@@ -176,7 +176,7 @@ func testAccCheckCloudStackNICMacAddress(
 			return fmt.Errorf("Bad network name: %s", nic.Networkname)
 		}
 
-		if nic.Macaddress != "02:1A:4B:3C:5D:6E" {
+		if nic.Macaddress != "02:1a:4b:3c:5d:6e" {
 			return fmt.Errorf("Bad MAC address: %s", nic.Macaddress)
 		}
 
@@ -301,5 +301,5 @@ resource "cloudstack_instance" "foobar" {
 resource "cloudstack_nic" "foo" {
   network_id = cloudstack_network.bar.id
   virtual_machine_id = cloudstack_instance.foobar.id
-  mac_address = "02:1A:4B:3C:5D:6E"
+  mac_address = "02:1a:4b:3c:5d:6e"
 }`
