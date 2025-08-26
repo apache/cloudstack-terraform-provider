@@ -43,7 +43,7 @@ The following arguments are supported:
 
 * `override_disk_offering` - (Optional) The name or ID of the disk offering for the virtual
    machine to be used for root volume instead of the disk offering mapped in service offering.
-   In case of virtual machine deploying from ISO, then the diskOffering specified for root
+   In case of virtual machine deploying from ISO, then the disk offering specified for root
    volume is ignored and uses this override disk offering.
 
 * `host_id` -  (Optional)  destination Host ID to deploy the VM to - parameter available
