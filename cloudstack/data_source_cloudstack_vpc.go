@@ -37,11 +37,6 @@ func dataSourceCloudstackVPC() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
-			"projectid": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
 			//Computed values
 			"name": {
 				Type:     schema.TypeString,
@@ -71,6 +66,7 @@ func dataSourceCloudstackVPC() *schema.Resource {
 			"project": {
 				Type:     schema.TypeString,
 				Computed: true,
+				Optional: true,
 			},
 
 			"zone_name": {
@@ -86,9 +82,12 @@ func dataSourceCloudstackVPC() *schema.Resource {
 func datasourceCloudStackVPCRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.VPC.NewListVPCsParams()
-	if d.Get("projectid") != "" {
-		p.SetProjectid(d.Get("projectid").(string))
+
+	// If there is a project supplied, we retrieve and set the project id
+	if err := setProjectid(p, cs, d); err != nil {
+		return err
 	}
+
 	csVPCs, err := cs.VPC.ListVPCs(p)
 
 	if err != nil {
