@@ -384,7 +384,11 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 	if _, ok := d.GetOk("routing_mode"); ok {
 		d.Set("routing_mode", n.Routingmode)
 	}
-	if _, ok := d.GetOk("max_connections"); ok {
+	// Set max_connections if it was specified in the configuration
+	// Note: CloudStack may return 0 even when a value was set, so we preserve the configured value
+	if configuredMaxConn := d.Get("max_connections").(int); configuredMaxConn != 0 {
+		d.Set("max_connections", configuredMaxConn)
+	} else if n.Maxconnections != 0 {
 		d.Set("max_connections", n.Maxconnections)
 	}
 
