@@ -37,6 +37,109 @@ func TestAccNetworkOfferingDataSource_basic(t *testing.T) {
 				Config: testNetworkOfferingDataSourceConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
+					resource.TestCheckResourceAttrPair(datasourceName, "display_text", resourceName, "display_text"),
+					resource.TestCheckResourceAttrPair(datasourceName, "guest_ip_type", resourceName, "guest_ip_type"),
+					resource.TestCheckResourceAttrPair(datasourceName, "traffic_type", resourceName, "traffic_type"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNetworkOfferingDataSource_withAdditionalParams(t *testing.T) {
+	resourceName := "cloudstack_network_offering.net-off-resource"
+	datasourceName := "data.cloudstack_network_offering.net-off-data-source"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testNetworkOfferingDataSourceConfig_withAdditionalParams,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
+					resource.TestCheckResourceAttrPair(datasourceName, "display_text", resourceName, "display_text"),
+					resource.TestCheckResourceAttrPair(datasourceName, "guest_ip_type", resourceName, "guest_ip_type"),
+					resource.TestCheckResourceAttrPair(datasourceName, "traffic_type", resourceName, "traffic_type"),
+					resource.TestCheckResourceAttrPair(datasourceName, "network_rate", resourceName, "network_rate"),
+					resource.TestCheckResourceAttrPair(datasourceName, "conserve_mode", resourceName, "conserve_mode"),
+					resource.TestCheckResourceAttrPair(datasourceName, "for_vpc", resourceName, "for_vpc"),
+					resource.TestCheckResourceAttrPair(datasourceName, "specify_vlan", resourceName, "specify_vlan"),
+					resource.TestCheckResourceAttrPair(datasourceName, "specify_ip_ranges", resourceName, "specify_ip_ranges"),
+					resource.TestCheckResourceAttrPair(datasourceName, "network_mode", resourceName, "network_mode"),
+					resource.TestCheckResourceAttrPair(datasourceName, "enable", resourceName, "enable"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNetworkOfferingDataSource_withServices(t *testing.T) {
+	resourceName := "cloudstack_network_offering.net-off-resource"
+	datasourceName := "data.cloudstack_network_offering.net-off-data-source"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testNetworkOfferingDataSourceConfig_withServices,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
+					resource.TestCheckResourceAttrPair(datasourceName, "supported_services.#", resourceName, "supported_services.#"),
+					resource.TestCheckResourceAttrPair(datasourceName, "service_provider_list.%", resourceName, "service_provider_list.%"),
+					resource.TestCheckResourceAttrPair(datasourceName, "service_provider_list.Dhcp", resourceName, "service_provider_list.Dhcp"),
+					resource.TestCheckResourceAttrPair(datasourceName, "service_provider_list.Dns", resourceName, "service_provider_list.Dns"),
+					resource.TestCheckResourceAttrPair(datasourceName, "enable", resourceName, "enable"),
+					resource.TestCheckResourceAttrPair(datasourceName, "max_connections", resourceName, "max_connections"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNetworkOfferingDataSource_forVPC(t *testing.T) {
+	resourceName := "cloudstack_network_offering.net-off-resource"
+	datasourceName := "data.cloudstack_network_offering.net-off-data-source"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testNetworkOfferingDataSourceConfig_forVPC,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
+					resource.TestCheckResourceAttrPair(datasourceName, "for_vpc", resourceName, "for_vpc"),
+					resource.TestCheckResourceAttrPair(datasourceName, "routing_mode", resourceName, "routing_mode"),
+					resource.TestCheckResourceAttrPair(datasourceName, "internet_protocol", resourceName, "internet_protocol"),
+					resource.TestCheckResourceAttr(datasourceName, "for_vpc", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccNetworkOfferingDataSource_allOptionalParams(t *testing.T) {
+	resourceName := "cloudstack_network_offering.net-off-resource"
+	datasourceName := "data.cloudstack_network_offering.net-off-data-source"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testNetworkOfferingDataSourceConfig_allOptionalParams,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
+					resource.TestCheckResourceAttrPair(datasourceName, "display_text", resourceName, "display_text"),
+					resource.TestCheckResourceAttrPair(datasourceName, "network_mode", resourceName, "network_mode"),
+					resource.TestCheckResourceAttrPair(datasourceName, "for_nsx", resourceName, "for_nsx"),
+					resource.TestCheckResourceAttrPair(datasourceName, "specify_as_number", resourceName, "specify_as_number"),
+					resource.TestCheckResourceAttrPair(datasourceName, "internet_protocol", resourceName, "internet_protocol"),
+					resource.TestCheckResourceAttrPair(datasourceName, "routing_mode", resourceName, "routing_mode"),
+					resource.TestCheckResourceAttr(datasourceName, "enable", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "for_nsx", "false"),
 				),
 			},
 		},
@@ -62,3 +165,138 @@ resource "cloudstack_network_offering" "net-off-resource"{
 	]
   }
   `
+
+const testNetworkOfferingDataSourceConfig_withAdditionalParams = `
+resource "cloudstack_network_offering" "net-off-resource"{
+  name              = "TestNetworkDisplayAdvanced01"
+  display_text      = "TestNetworkDisplayAdvanced01"
+  guest_ip_type     = "Isolated"
+  traffic_type      = "Guest"
+  network_rate      = 100
+  network_mode      = "NATTED"
+  conserve_mode     = true
+  enable            = true
+  for_vpc           = false
+  specify_vlan      = true
+  specify_ip_ranges = true
+  supported_services = ["Dhcp", "Dns", "Firewall", "Lb", "SourceNat"]
+  service_provider_list = {
+    Dhcp      = "VirtualRouter"
+    Dns       = "VirtualRouter"
+    Firewall  = "VirtualRouter"
+    Lb        = "VirtualRouter"
+    SourceNat = "VirtualRouter"
+  }
+}
+
+data "cloudstack_network_offering" "net-off-data-source"{
+  filter{
+    name = "name"
+    value = "TestNetworkDisplayAdvanced01"
+  }
+  depends_on = [
+    cloudstack_network_offering.net-off-resource
+  ]
+}
+`
+
+const testNetworkOfferingDataSourceConfig_withServices = `
+resource "cloudstack_network_offering" "net-off-resource"{
+  name              = "TestNetworkServices01"
+  display_text      = "TestNetworkServices01"
+  guest_ip_type     = "Isolated"
+  traffic_type      = "Guest"
+  enable            = true
+  max_connections   = 256
+  supported_services = ["Dhcp", "Dns", "Firewall", "Lb", "SourceNat", "StaticNat", "PortForwarding"]
+  service_provider_list = {
+    Dhcp           = "VirtualRouter"
+    Dns            = "VirtualRouter"
+    Firewall       = "VirtualRouter"
+    Lb             = "VirtualRouter"
+    SourceNat      = "VirtualRouter"
+    StaticNat      = "VirtualRouter"
+    PortForwarding = "VirtualRouter"
+  }
+}
+
+data "cloudstack_network_offering" "net-off-data-source"{
+  filter{
+    name = "name"
+    value = "TestNetworkServices01"
+  }
+  depends_on = [
+    cloudstack_network_offering.net-off-resource
+  ]
+}
+`
+
+const testNetworkOfferingDataSourceConfig_forVPC = `
+resource "cloudstack_network_offering" "net-off-resource"{
+  name              = "TestNetworkVPC01"
+  display_text      = "TestNetworkVPC01"
+  guest_ip_type     = "Isolated"
+  traffic_type      = "Guest"
+  for_vpc           = true
+  routing_mode      = "Static"
+  internet_protocol = "IPv4"
+  conserve_mode     = false
+  supported_services = ["Dhcp", "Dns", "NetworkACL", "StaticNat", "PortForwarding"]
+  service_provider_list = {
+    Dhcp           = "VpcVirtualRouter"
+    Dns            = "VpcVirtualRouter"
+    NetworkACL     = "VpcVirtualRouter"
+    StaticNat      = "VpcVirtualRouter"
+    PortForwarding = "VpcVirtualRouter"
+  }
+}
+
+data "cloudstack_network_offering" "net-off-data-source"{
+  filter{
+    name = "name"
+    value = "TestNetworkVPC01"
+  }
+  depends_on = [
+    cloudstack_network_offering.net-off-resource
+  ]
+}
+`
+
+const testNetworkOfferingDataSourceConfig_allOptionalParams = `
+resource "cloudstack_network_offering" "net-off-resource"{
+  name              = "TestNetworkDisplayAll01"
+  display_text      = "TestNetworkDisplayAll01"
+  guest_ip_type     = "Isolated"
+  traffic_type      = "Guest"
+  network_rate      = 200
+  network_mode      = "NATTED"
+  conserve_mode     = true
+  enable            = true
+  for_vpc           = false
+  for_nsx           = false
+  specify_vlan      = true
+  specify_ip_ranges = true
+  specify_as_number = false
+  internet_protocol = "IPv4"
+  routing_mode      = "Static"
+  max_connections   = 1000
+  supported_services = ["Dhcp", "Dns", "Firewall", "Lb", "SourceNat"]
+  service_provider_list = {
+    Dhcp      = "VirtualRouter"
+    Dns       = "VirtualRouter"
+    Firewall  = "VirtualRouter"
+    Lb        = "VirtualRouter"
+    SourceNat = "VirtualRouter"
+  }
+}
+
+data "cloudstack_network_offering" "net-off-data-source"{
+  filter{
+    name = "name"
+    value = "TestNetworkDisplayAll01"
+  }
+  depends_on = [
+    cloudstack_network_offering.net-off-resource
+  ]
+}
+`
