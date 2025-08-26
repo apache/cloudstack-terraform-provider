@@ -139,6 +139,7 @@ func resourceCloudStackNICRead(d *schema.ResourceData, meta interface{}) error {
 			d.Set("ip_address", n.Ipaddress)
 			d.Set("network_id", n.Networkid)
 			d.Set("virtual_machine_id", vm.Id)
+			d.Set("mac_address", n.Macaddress)
 			found = true
 			break
 		}
