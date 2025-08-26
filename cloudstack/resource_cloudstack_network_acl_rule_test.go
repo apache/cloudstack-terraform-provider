@@ -86,7 +86,7 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.#", "3"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.0.number", "10"),
+						"cloudstack_network_acl_rule.foo", "rule.0.rule_number", "10"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.action", "allow"),
 					resource.TestCheckResourceAttr(
@@ -102,9 +102,9 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.0.reason", "Allow all traffic"),
+						"cloudstack_network_acl_rule.foo", "rule.0.description", "Allow all traffic"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.1.number", "20"),
+						"cloudstack_network_acl_rule.foo", "rule.1.rule_number", "20"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.action", "allow"),
 					resource.TestCheckResourceAttr(
