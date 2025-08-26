@@ -57,7 +57,7 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"rule_id": {
+						"rule_number": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							Computed: true,
@@ -210,7 +210,7 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 	p := cs.NetworkACL.NewCreateNetworkACLParams(rule["protocol"].(string))
 
 	// If a rule ID is specified, set it
-	if ruleId, ok := rule["rule_id"].(int); ok && ruleId > 0 {
+	if ruleId, ok := rule["rule_number"].(int); ok && ruleId > 0 {
 		p.SetNumber(ruleId)
 	}
 
@@ -644,12 +644,12 @@ func verifyNetworkACLParams(d *schema.ResourceData) error {
 }
 
 func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
-	if ruleId, ok := rule["rule_id"]; ok && ruleId != nil {
-		if rId, ok := ruleId.(int); ok && rId != 0 {
-			// Validate only if rule_id is explicitly set (non-zero)
+	if ruleNum, ok := rule["rule_number"]; ok && ruleNum != nil {
+		if rId, ok := ruleNum.(int); ok && rId != 0 {
+			// Validate only if rule_number is explicitly set (non-zero)
 			if rId < 1 || rId > 65535 {
 				return fmt.Errorf(
-					"%q must be between %d and %d inclusive, got: %d", "rule_id", 1, 65535, rId)
+					"%q must be between %d and %d inclusive, got: %d", "rule_number", 1, 65535, rId)
 			}
 		}
 	}
