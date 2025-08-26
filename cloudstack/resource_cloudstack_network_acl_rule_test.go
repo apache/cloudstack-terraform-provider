@@ -86,6 +86,8 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.#", "3"),
 					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.0.number", "10"),
+					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.action", "allow"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.cidr_list.0", "172.16.100.0/24"),
@@ -100,6 +102,10 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.0.reason", "Allow all traffic"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.number", "20"),
+					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.action", "allow"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.cidr_list.#", "1"),
@@ -111,6 +117,10 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 						"cloudstack_network_acl_rule.foo", "rule.1.icmp_type", "-1"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.traffic_type", "ingress"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.description", "Allow ICMP traffic"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.2.description", "Allow HTTP and HTTPS"),
 				),
 			},
 
@@ -298,7 +308,6 @@ resource "cloudstack_network_acl_rule" "foo" {
   }
 
   rule {
-  	rule_number = 10
   	action = "deny"
 	cidr_list = ["172.18.100.0/24", "172.18.101.0/24"]
     protocol = "icmp"
@@ -309,7 +318,6 @@ resource "cloudstack_network_acl_rule" "foo" {
   }
 
   rule {
-	rule_number = 20
 	action = "allow"
     cidr_list = ["172.18.100.0/24"]
     protocol = "tcp"
