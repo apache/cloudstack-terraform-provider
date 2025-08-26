@@ -349,21 +349,47 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("display_text", n.Displaytext)
 	d.Set("guest_ip_type", n.Guestiptype)
 	d.Set("traffic_type", n.Traffictype)
-	d.Set("network_rate", n.Networkrate)
-	d.Set("network_mode", n.Networkmode)
-	d.Set("conserve_mode", n.Conservemode)
-	d.Set("enable", n.State == "Enabled")
-	d.Set("for_vpc", n.Forvpc)
-	d.Set("for_nsx", n.Fornsx)
-	d.Set("specify_vlan", n.Specifyvlan)
-	d.Set("specify_ip_ranges", n.Specifyipranges)
-	d.Set("specify_as_number", n.Specifyasnumber)
-	d.Set("internet_protocol", n.Internetprotocol)
-	d.Set("routing_mode", n.Routingmode)
-	d.Set("max_connections", n.Maxconnections)
 
-	// Set supported services
-	if len(n.Service) > 0 {
+	// Only set optional attributes if they were specified in the configuration
+	if _, ok := d.GetOk("network_rate"); ok {
+		d.Set("network_rate", n.Networkrate)
+	}
+	if _, ok := d.GetOk("network_mode"); ok {
+		d.Set("network_mode", n.Networkmode)
+	}
+	if _, ok := d.GetOk("conserve_mode"); ok {
+		d.Set("conserve_mode", n.Conservemode)
+	}
+	if _, ok := d.GetOk("enable"); ok {
+		d.Set("enable", n.State == "Enabled")
+	}
+	if _, ok := d.GetOk("for_vpc"); ok {
+		d.Set("for_vpc", n.Forvpc)
+	}
+	if _, ok := d.GetOk("for_nsx"); ok {
+		d.Set("for_nsx", n.Fornsx)
+	}
+	if _, ok := d.GetOk("specify_vlan"); ok {
+		d.Set("specify_vlan", n.Specifyvlan)
+	}
+	if _, ok := d.GetOk("specify_ip_ranges"); ok {
+		d.Set("specify_ip_ranges", n.Specifyipranges)
+	}
+	if _, ok := d.GetOk("specify_as_number"); ok {
+		d.Set("specify_as_number", n.Specifyasnumber)
+	}
+	if _, ok := d.GetOk("internet_protocol"); ok {
+		d.Set("internet_protocol", n.Internetprotocol)
+	}
+	if _, ok := d.GetOk("routing_mode"); ok {
+		d.Set("routing_mode", n.Routingmode)
+	}
+	if _, ok := d.GetOk("max_connections"); ok {
+		d.Set("max_connections", n.Maxconnections)
+	}
+
+	// Set supported services if specified
+	if _, ok := d.GetOk("supported_services"); ok && len(n.Service) > 0 {
 		services := make([]string, len(n.Service))
 		for i, service := range n.Service {
 			services[i] = service.Name
@@ -371,8 +397,8 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("supported_services", services)
 	}
 
-	// Set service provider list
-	if len(n.Service) > 0 {
+	// Set service provider list if specified
+	if _, ok := d.GetOk("service_provider_list"); ok && len(n.Service) > 0 {
 		serviceProviders := make(map[string]string)
 		for _, service := range n.Service {
 			if len(service.Provider) > 0 {
