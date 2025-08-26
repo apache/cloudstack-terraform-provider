@@ -58,11 +58,6 @@ func resourceCloudStackNIC() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"dhcp_options": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				ForceNew: true,
-			},
 		},
 	}
 }
@@ -84,15 +79,6 @@ func resourceCloudStackNICCreate(d *schema.ResourceData, meta interface{}) error
 	// If there is a macaddress supplied, add it to the parameter struct
 	if macaddress, ok := d.GetOk("mac_address"); ok {
 		p.SetMacaddress(macaddress.(string))
-	}
-
-	// If there are dhcp options supplied, add them to the parameter struct
-	if dhcpOptions, ok := d.GetOk("dhcp_options"); ok {
-		dhcpOpts := make(map[string]string)
-		for k, v := range dhcpOptions.(map[string]interface{}) {
-			dhcpOpts[k] = v.(string)
-		}
-		p.SetDhcpoptions(dhcpOpts)
 	}
 
 	// Create and attach the new NIC
