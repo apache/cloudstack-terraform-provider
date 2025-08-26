@@ -65,7 +65,6 @@ func TestAccNetworkOfferingDataSource_withAdditionalParams(t *testing.T) {
 					resource.TestCheckResourceAttrPair(datasourceName, "conserve_mode", resourceName, "conserve_mode"),
 					resource.TestCheckResourceAttrPair(datasourceName, "for_vpc", resourceName, "for_vpc"),
 					resource.TestCheckResourceAttrPair(datasourceName, "specify_vlan", resourceName, "specify_vlan"),
-					resource.TestCheckResourceAttrPair(datasourceName, "specify_ip_ranges", resourceName, "specify_ip_ranges"),
 					resource.TestCheckResourceAttrPair(datasourceName, "network_mode", resourceName, "network_mode"),
 					resource.TestCheckResourceAttrPair(datasourceName, "enable", resourceName, "enable"),
 				),
@@ -178,7 +177,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   enable            = true
   for_vpc           = false
   specify_vlan      = true
-  specify_ip_ranges = true
   supported_services = ["Dhcp", "Dns", "Firewall", "Lb", "SourceNat"]
   service_provider_list = {
     Dhcp      = "VirtualRouter"
@@ -275,7 +273,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   for_vpc           = false
   for_nsx           = false
   specify_vlan      = true
-  specify_ip_ranges = true
   specify_as_number = false
   internet_protocol = "IPv4"
   routing_mode      = "Static"
