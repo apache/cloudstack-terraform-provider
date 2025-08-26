@@ -349,6 +349,38 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("display_text", n.Displaytext)
 	d.Set("guest_ip_type", n.Guestiptype)
 	d.Set("traffic_type", n.Traffictype)
+	d.Set("network_rate", n.Networkrate)
+	d.Set("network_mode", n.Networkmode)
+	d.Set("conserve_mode", n.Conservemode)
+	d.Set("enable", n.State == "Enabled")
+	d.Set("for_vpc", n.Forvpc)
+	d.Set("for_nsx", n.Fornsx)
+	d.Set("specify_vlan", n.Specifyvlan)
+	d.Set("specify_ip_ranges", n.Specifyipranges)
+	d.Set("specify_as_number", n.Specifyasnumber)
+	d.Set("internet_protocol", n.Internetprotocol)
+	d.Set("routing_mode", n.Routingmode)
+	d.Set("max_connections", n.Maxconnections)
+
+	// Set supported services
+	if len(n.Service) > 0 {
+		services := make([]string, len(n.Service))
+		for i, service := range n.Service {
+			services[i] = service.Name
+		}
+		d.Set("supported_services", services)
+	}
+
+	// Set service provider list
+	if len(n.Service) > 0 {
+		serviceProviders := make(map[string]string)
+		for _, service := range n.Service {
+			if len(service.Provider) > 0 {
+				serviceProviders[service.Name] = service.Provider[0].Name
+			}
+		}
+		d.Set("service_provider_list", serviceProviders)
+	}
 
 	return nil
 }

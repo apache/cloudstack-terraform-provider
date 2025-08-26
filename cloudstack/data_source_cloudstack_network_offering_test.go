@@ -239,7 +239,7 @@ resource "cloudstack_network_offering" "net-off-resource"{
   routing_mode      = "Static"
   internet_protocol = "IPv4"
   conserve_mode     = false
-  supported_services = ["Dhcp", "Dns", "NetworkACL", "StaticNat", "PortForwarding"]
+  supported_services = ["Dhcp", "Dns", "NetworkACL", "SourceNat", "StaticNat", "PortForwarding"]
   service_provider_list = {
     Dhcp           = "VpcVirtualRouter"
     Dns            = "VpcVirtualRouter"
