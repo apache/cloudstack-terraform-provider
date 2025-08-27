@@ -128,13 +128,13 @@ docker pull apache/cloudstack-simulator
 
 or pull it with a particular build tag
 
-docker pull apache/cloudstack-simulator:4.19.0.0
+docker pull apache/cloudstack-simulator:4.20.1.0
 
 docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator
 
 or
 
-docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.19.0.0
+docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.20.1.0
 ```
 
 When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
@@ -157,6 +157,12 @@ In order for all the tests to pass, you will need to create a new (empty) projec
 
 ```sh
 $ make testacc
+```
+
+To execute specific test:
+
+```sh
+$ make testacc TESTARGS='-run ^TestAccCloudStackNetworkACLRule_update$'
 ```
 
 ## Sample Terraform configuration when testing locally
