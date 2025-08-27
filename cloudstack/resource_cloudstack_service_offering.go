@@ -139,7 +139,6 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Description: "Storage tags to associate with the service offering",
 				Type:        schema.TypeString,
 				Optional:    true,
-				ForceNew:    true,
 			},
 		},
 	}
