@@ -350,7 +350,6 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("guest_ip_type", n.Guestiptype)
 	d.Set("traffic_type", n.Traffictype)
 
-	// Only set optional attributes if they were specified in the configuration
 	if _, ok := d.GetOk("network_rate"); ok {
 		d.Set("network_rate", n.Networkrate)
 	}
@@ -384,15 +383,14 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 	if _, ok := d.GetOk("routing_mode"); ok {
 		d.Set("routing_mode", n.Routingmode)
 	}
-	// Set max_connections if it was specified in the configuration
-	// Note: CloudStack may return 0 even when a value was set, so we preserve the configured value
-	if configuredMaxConn := d.Get("max_connections").(int); configuredMaxConn != 0 {
-		d.Set("max_connections", configuredMaxConn)
-	} else if n.Maxconnections != 0 {
-		d.Set("max_connections", n.Maxconnections)
+	if _, ok := d.GetOk("max_connections"); ok {
+		log.Printf("[DEBUG] Max connections configured: %d, CloudStack returned: %d", d.Get("max_connections").(int), n.Maxconnections)
+
+		if n.Maxconnections > 0 {
+			d.Set("max_connections", n.Maxconnections)
+		}
 	}
 
-	// Set supported services if specified
 	if _, ok := d.GetOk("supported_services"); ok && len(n.Service) > 0 {
 		services := make([]string, len(n.Service))
 		for i, service := range n.Service {
@@ -401,7 +399,6 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("supported_services", services)
 	}
 
-	// Set service provider list if specified
 	if _, ok := d.GetOk("service_provider_list"); ok && len(n.Service) > 0 {
 		serviceProviders := make(map[string]string)
 		for _, service := range n.Service {

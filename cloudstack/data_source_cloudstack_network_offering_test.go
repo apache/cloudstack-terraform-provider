@@ -205,7 +205,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   guest_ip_type     = "Isolated"
   traffic_type      = "Guest"
   enable            = true
-  max_connections   = 256
   supported_services = ["Dhcp", "Dns", "Firewall", "Lb", "SourceNat", "StaticNat", "PortForwarding"]
   service_provider_list = {
     Dhcp           = "VirtualRouter"

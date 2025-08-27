@@ -149,7 +149,12 @@ func datasourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interf
 	}
 	log.Printf("[DEBUG] Selected network offerings: %s\n", networkOffering.Displaytext)
 
-	return networkOfferingDescriptionAttributes(d, networkOffering)
+	fullNetworkOffering, _, err := cs.NetworkOffering.GetNetworkOfferingByName(networkOffering.Name)
+	if err != nil {
+		return fmt.Errorf("Error retrieving full network offering details: %s", err)
+	}
+
+	return networkOfferingDescriptionAttributes(d, fullNetworkOffering)
 }
 
 func networkOfferingDescriptionAttributes(d *schema.ResourceData, networkOffering *cloudstack.NetworkOffering) error {
@@ -169,7 +174,10 @@ func networkOfferingDescriptionAttributes(d *schema.ResourceData, networkOfferin
 	d.Set("specify_as_number", networkOffering.Specifyasnumber)
 	d.Set("internet_protocol", networkOffering.Internetprotocol)
 	d.Set("routing_mode", networkOffering.Routingmode)
-	d.Set("max_connections", networkOffering.Maxconnections)
+
+	if networkOffering.Maxconnections > 0 {
+		d.Set("max_connections", networkOffering.Maxconnections)
+	}
 
 	// Set supported services
 	if len(networkOffering.Service) > 0 {
