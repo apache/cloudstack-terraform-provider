@@ -354,7 +354,11 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("network_rate", n.Networkrate)
 	}
 	if _, ok := d.GetOk("network_mode"); ok {
-		d.Set("network_mode", n.Networkmode)
+		// Only set if CloudStack supports and returns this field (4.20.0+)
+		// Older versions may not support network_mode
+		if n.Networkmode != "" {
+			d.Set("network_mode", n.Networkmode)
+		}
 	}
 	if _, ok := d.GetOk("conserve_mode"); ok {
 		d.Set("conserve_mode", n.Conservemode)
@@ -381,7 +385,11 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("internet_protocol", n.Internetprotocol)
 	}
 	if _, ok := d.GetOk("routing_mode"); ok {
-		d.Set("routing_mode", n.Routingmode)
+		// Only set if CloudStack supports and returns this field (4.20.0+)
+		// Older versions may not support routing_mode
+		if n.Routingmode != "" {
+			d.Set("routing_mode", n.Routingmode)
+		}
 	}
 	if _, ok := d.GetOk("max_connections"); ok {
 		log.Printf("[DEBUG] Max connections configured: %d, CloudStack returned: %d", d.Get("max_connections").(int), n.Maxconnections)

@@ -164,7 +164,12 @@ func networkOfferingDescriptionAttributes(d *schema.ResourceData, networkOfferin
 	d.Set("guest_ip_type", networkOffering.Guestiptype)
 	d.Set("traffic_type", networkOffering.Traffictype)
 	d.Set("network_rate", networkOffering.Networkrate)
-	d.Set("network_mode", networkOffering.Networkmode)
+
+	// Only set if CloudStack supports these fields (4.20.0+)
+	if networkOffering.Networkmode != "" {
+		d.Set("network_mode", networkOffering.Networkmode)
+	}
+
 	d.Set("conserve_mode", networkOffering.Conservemode)
 	d.Set("enable", networkOffering.State == "Enabled")
 	d.Set("for_vpc", networkOffering.Forvpc)
@@ -173,7 +178,11 @@ func networkOfferingDescriptionAttributes(d *schema.ResourceData, networkOfferin
 	d.Set("specify_ip_ranges", networkOffering.Specifyipranges)
 	d.Set("specify_as_number", networkOffering.Specifyasnumber)
 	d.Set("internet_protocol", networkOffering.Internetprotocol)
-	d.Set("routing_mode", networkOffering.Routingmode)
+
+	// Only set if CloudStack supports this field (4.20.0+)
+	if networkOffering.Routingmode != "" {
+		d.Set("routing_mode", networkOffering.Routingmode)
+	}
 
 	if networkOffering.Maxconnections > 0 {
 		d.Set("max_connections", networkOffering.Maxconnections)
