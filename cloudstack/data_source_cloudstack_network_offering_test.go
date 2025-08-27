@@ -132,11 +132,9 @@ func TestAccNetworkOfferingDataSource_allOptionalParams(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
 					resource.TestCheckResourceAttrPair(datasourceName, "display_text", resourceName, "display_text"),
-					resource.TestCheckResourceAttrPair(datasourceName, "network_mode", resourceName, "network_mode"),
 					resource.TestCheckResourceAttrPair(datasourceName, "for_nsx", resourceName, "for_nsx"),
 					resource.TestCheckResourceAttrPair(datasourceName, "specify_as_number", resourceName, "specify_as_number"),
 					resource.TestCheckResourceAttrPair(datasourceName, "internet_protocol", resourceName, "internet_protocol"),
-					resource.TestCheckResourceAttrPair(datasourceName, "routing_mode", resourceName, "routing_mode"),
 					resource.TestCheckResourceAttr(datasourceName, "enable", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "for_nsx", "false"),
 				),
@@ -266,7 +264,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   guest_ip_type     = "Isolated"
   traffic_type      = "Guest"
   network_rate      = 200
-  network_mode      = "NATTED"
   conserve_mode     = true
   enable            = true
   for_vpc           = false
@@ -274,7 +271,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   specify_vlan      = true
   specify_as_number = false
   internet_protocol = "IPv4"
-  routing_mode      = "Static"
   max_connections   = 1000
   supported_services = ["Dhcp", "Dns", "Firewall", "Lb", "SourceNat"]
   service_provider_list = {
