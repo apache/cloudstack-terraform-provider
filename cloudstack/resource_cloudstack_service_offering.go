@@ -22,6 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -97,6 +98,49 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 					return
 				},
 			},
+			"customized": {
+				Description: "Whether service offering allows custom CPU/memory or not",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     false,
+			},
+			"min_cpu_number": {
+				Description: "Minimum number of CPU cores allowed",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"max_cpu_number": {
+				Description: "Maximum number of CPU cores allowed",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"min_memory": {
+				Description: "Minimum memory allowed (MB)",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"max_memory": {
+				Description: "Maximum memory allowed (MB)",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"encrypt_root": {
+				Description: "Encrypt the root disk for VMs using this service offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"storage_tags": {
+				Description: "Storage tags to associate with the service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
 		},
 	}
 }
@@ -134,6 +178,34 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("storage_type"); ok {
 		p.SetStoragetype(v.(string))
+	}
+
+	if v, ok := d.GetOk("customized"); ok {
+		p.SetCustomized(v.(bool))
+	}
+
+	if v, ok := d.GetOk("min_cpu_number"); ok {
+		p.SetMincpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_cpu_number"); ok {
+		p.SetMaxcpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("min_memory"); ok {
+		p.SetMinmemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_memory"); ok {
+		p.SetMaxmemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("encrypt_root"); ok {
+		p.SetEncryptroot(v.(bool))
+	}
+
+	if v, ok := d.GetOk("storage_tags"); ok {
+		p.SetTags(v.(string))
 	}
 
 	log.Printf("[DEBUG] Creating Service Offering %s", name)
@@ -177,6 +249,53 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 		"memory":        s.Memory,
 		"offer_ha":      s.Offerha,
 		"storage_type":  s.Storagetype,
+		"customized":    s.Iscustomized,
+		"min_cpu_number": func() interface{} {
+			if s.Serviceofferingdetails == nil {
+				return nil
+			}
+			if v, ok := s.Serviceofferingdetails["mincpunumber"]; ok {
+				if i, err := strconv.Atoi(v); err == nil {
+					return i
+				}
+			}
+			return nil
+		}(),
+		"max_cpu_number": func() interface{} {
+			if s.Serviceofferingdetails == nil {
+				return nil
+			}
+			if v, ok := s.Serviceofferingdetails["maxcpunumber"]; ok {
+				if i, err := strconv.Atoi(v); err == nil {
+					return i
+				}
+			}
+			return nil
+		}(),
+		"min_memory": func() interface{} {
+			if s.Serviceofferingdetails == nil {
+				return nil
+			}
+			if v, ok := s.Serviceofferingdetails["minmemory"]; ok {
+				if i, err := strconv.Atoi(v); err == nil {
+					return i
+				}
+			}
+			return nil
+		}(),
+		"max_memory": func() interface{} {
+			if s.Serviceofferingdetails == nil {
+				return nil
+			}
+			if v, ok := s.Serviceofferingdetails["maxmemory"]; ok {
+				if i, err := strconv.Atoi(v); err == nil {
+					return i
+				}
+			}
+			return nil
+		}(),
+		"encrypt_root": s.Encryptroot,
+		"storage_tags": s.Storagetags,
 	}
 
 	for k, v := range fields {
@@ -243,6 +362,24 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return fmt.Errorf(
 				"Error updating the host tags for service offering %s: %s", name, err)
+		}
+
+	}
+
+	if d.HasChange("tags") {
+		log.Printf("[DEBUG] Tags changed for %s, starting update", name)
+
+		// Create a new parameter struct
+		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
+
+		// Set the new tags
+		p.SetStoragetags(d.Get("tags").(string))
+
+		// Update the host tags
+		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the storage tags for service offering %s: %s", name, err)
 		}
 
 	}
