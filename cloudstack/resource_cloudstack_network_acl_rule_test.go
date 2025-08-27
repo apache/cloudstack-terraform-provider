@@ -38,6 +38,7 @@ func TestAccCloudStackNetworkACLRule_basic(t *testing.T) {
 			{
 				Config: testAccCloudStackNetworkACLRule_basic,
 				Check: resource.ComposeTestCheckFunc(
+
 					testAccCheckCloudStackNetworkACLRulesExist("cloudstack_network_acl.foo"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.#", "3"),
@@ -56,6 +57,10 @@ func TestAccCloudStackNetworkACLRule_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.0.description", "Allow HTTP and HTTPS"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.rule_number", "20"),
+					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.action", "allow"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.cidr_list.#", "1"),
@@ -67,6 +72,12 @@ func TestAccCloudStackNetworkACLRule_basic(t *testing.T) {
 						"cloudstack_network_acl_rule.foo", "rule.1.icmp_type", "-1"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.traffic_type", "ingress"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.description", "Allow ICMP traffic"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.2.rule_number", "10"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.2.description", "Allow all traffic"),
 				),
 			},
 		},
@@ -86,8 +97,6 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.#", "3"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.0.rule_number", "10"),
-					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.action", "allow"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.cidr_list.0", "172.16.100.0/24"),
@@ -102,8 +111,6 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.0.description", "Allow all traffic"),
-					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.rule_number", "20"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.action", "allow"),
@@ -117,10 +124,6 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 						"cloudstack_network_acl_rule.foo", "rule.1.icmp_type", "-1"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.traffic_type", "ingress"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.1.description", "Allow ICMP traffic"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.2.description", "Allow HTTP and HTTPS"),
 				),
 			},
 
