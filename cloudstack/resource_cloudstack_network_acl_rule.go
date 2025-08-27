@@ -210,8 +210,8 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 	p := cs.NetworkACL.NewCreateNetworkACLParams(rule["protocol"].(string))
 
 	// If a rule ID is specified, set it
-	if ruleId, ok := rule["rule_number"].(int); ok && ruleId > 0 {
-		p.SetNumber(ruleId)
+	if ruleNum, ok := rule["rule_number"].(int); ok && ruleNum > 0 {
+		p.SetNumber(ruleNum)
 	}
 
 	// Set the acl ID
@@ -645,11 +645,11 @@ func verifyNetworkACLParams(d *schema.ResourceData) error {
 
 func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
 	if ruleNum, ok := rule["rule_number"]; ok && ruleNum != nil {
-		if rId, ok := ruleNum.(int); ok && rId != 0 {
+		if number, ok := ruleNum.(int); ok && number != 0 {
 			// Validate only if rule_number is explicitly set (non-zero)
-			if rId < 1 || rId > 65535 {
+			if number < 1 || number > 65535 {
 				return fmt.Errorf(
-					"%q must be between %d and %d inclusive, got: %d", "rule_number", 1, 65535, rId)
+					"%q must be between %d and %d inclusive, got: %d", "rule_number", 1, 65535, number)
 			}
 		}
 	}
