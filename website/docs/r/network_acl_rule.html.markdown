@@ -48,7 +48,7 @@ The following arguments are supported:
 
 The `rule` block supports:
 
-* `rule_number` - (Optional) The number of the ACL item, its ordering.
+* `rule_number` - (Optional) The number of the ACL item used to order the ACL rules. The ACL rule with the lowest number has the highest priority. If not specified, the ACL item will be created with a number one greater than the highest numbered rule.
 
 * `action` - (Optional) The action for the rule. Valid options are: `allow` and
     `deny` (defaults allow).
