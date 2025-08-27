@@ -365,14 +365,14 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 
 	}
 
-	if d.HasChange("tags") {
+	if d.HasChange("storage_tags") {
 		log.Printf("[DEBUG] Tags changed for %s, starting update", name)
 
 		// Create a new parameter struct
 		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
 
 		// Set the new tags
-		p.SetStoragetags(d.Get("tags").(string))
+		p.SetStoragetags(d.Get("storage_tags").(string))
 
 		// Update the host tags
 		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
