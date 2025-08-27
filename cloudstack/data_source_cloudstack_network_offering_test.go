@@ -65,7 +65,6 @@ func TestAccNetworkOfferingDataSource_withAdditionalParams(t *testing.T) {
 					resource.TestCheckResourceAttrPair(datasourceName, "conserve_mode", resourceName, "conserve_mode"),
 					resource.TestCheckResourceAttrPair(datasourceName, "for_vpc", resourceName, "for_vpc"),
 					resource.TestCheckResourceAttrPair(datasourceName, "specify_vlan", resourceName, "specify_vlan"),
-					resource.TestCheckResourceAttrPair(datasourceName, "network_mode", resourceName, "network_mode"),
 					resource.TestCheckResourceAttrPair(datasourceName, "enable", resourceName, "enable"),
 				),
 			},
@@ -110,7 +109,6 @@ func TestAccNetworkOfferingDataSource_forVPC(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
 					resource.TestCheckResourceAttrPair(datasourceName, "for_vpc", resourceName, "for_vpc"),
-					resource.TestCheckResourceAttrPair(datasourceName, "routing_mode", resourceName, "routing_mode"),
 					resource.TestCheckResourceAttrPair(datasourceName, "internet_protocol", resourceName, "internet_protocol"),
 					resource.TestCheckResourceAttr(datasourceName, "for_vpc", "true"),
 				),
@@ -170,7 +168,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   guest_ip_type     = "Isolated"
   traffic_type      = "Guest"
   network_rate      = 100
-  network_mode      = "NATTED"
   conserve_mode     = true
   enable            = true
   for_vpc           = false
@@ -233,7 +230,6 @@ resource "cloudstack_network_offering" "net-off-resource"{
   guest_ip_type     = "Isolated"
   traffic_type      = "Guest"
   for_vpc           = true
-  routing_mode      = "Static"
   internet_protocol = "IPv4"
   conserve_mode     = false
   supported_services = ["Dhcp", "Dns", "NetworkACL", "SourceNat", "StaticNat", "PortForwarding"]
