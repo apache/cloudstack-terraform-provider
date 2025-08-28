@@ -103,7 +103,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				ForceNew:    true,
-				Default:     false,
+				Computed:    true,
 			},
 			"min_cpu_number": {
 				Description: "Minimum number of CPU cores allowed",
@@ -151,12 +151,15 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 
 	// Create a new parameter struct
 	p := cs.ServiceOffering.NewCreateServiceOfferingParams(display_text, name)
-	if v, ok := d.GetOk("cpu_number"); ok {
-		p.SetCpunumber(v.(int))
+
+	cpuNumber, cpuNumberOk := d.GetOk("cpu_number")
+	if cpuNumberOk {
+		p.SetCpunumber(cpuNumber.(int))
 	}
 
-	if v, ok := d.GetOk("cpu_speed"); ok {
-		p.SetCpuspeed(v.(int))
+	cpuSpeed, cpuSpeedOk := d.GetOk("cpu_speed")
+	if cpuSpeedOk {
+		p.SetCpuspeed(cpuSpeed.(int))
 	}
 
 	if v, ok := d.GetOk("host_tags"); ok {
@@ -167,8 +170,9 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetLimitcpuuse(v.(bool))
 	}
 
-	if v, ok := d.GetOk("memory"); ok {
-		p.SetMemory(v.(int))
+	memory, memoryOk := d.GetOk("memory")
+	if memoryOk {
+		p.SetMemory(memory.(int))
 	}
 
 	if v, ok := d.GetOk("offer_ha"); ok {
@@ -179,9 +183,14 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetStoragetype(v.(string))
 	}
 
+	customized := false
 	if v, ok := d.GetOk("customized"); ok {
-		p.SetCustomized(v.(bool))
+		customized = v.(bool)
 	}
+	if !cpuNumberOk && !cpuSpeedOk && !memoryOk {
+		customized = true
+	}
+	p.SetCustomized(customized)
 
 	if v, ok := d.GetOk("min_cpu_number"); ok {
 		p.SetMincpunumber(v.(int))
@@ -239,62 +248,22 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.SetId(s.Id)
 
 	fields := map[string]interface{}{
-		"name":          s.Name,
-		"display_text":  s.Displaytext,
-		"cpu_number":    s.Cpunumber,
-		"cpu_speed":     s.Cpuspeed,
-		"host_tags":     s.Hosttags,
-		"limit_cpu_use": s.Limitcpuuse,
-		"memory":        s.Memory,
-		"offer_ha":      s.Offerha,
-		"storage_type":  s.Storagetype,
-		"customized":    s.Iscustomized,
-		"min_cpu_number": func() interface{} {
-			if s.Serviceofferingdetails == nil {
-				return nil
-			}
-			if v, ok := s.Serviceofferingdetails["mincpunumber"]; ok {
-				if i, err := strconv.Atoi(v); err == nil {
-					return i
-				}
-			}
-			return nil
-		}(),
-		"max_cpu_number": func() interface{} {
-			if s.Serviceofferingdetails == nil {
-				return nil
-			}
-			if v, ok := s.Serviceofferingdetails["maxcpunumber"]; ok {
-				if i, err := strconv.Atoi(v); err == nil {
-					return i
-				}
-			}
-			return nil
-		}(),
-		"min_memory": func() interface{} {
-			if s.Serviceofferingdetails == nil {
-				return nil
-			}
-			if v, ok := s.Serviceofferingdetails["minmemory"]; ok {
-				if i, err := strconv.Atoi(v); err == nil {
-					return i
-				}
-			}
-			return nil
-		}(),
-		"max_memory": func() interface{} {
-			if s.Serviceofferingdetails == nil {
-				return nil
-			}
-			if v, ok := s.Serviceofferingdetails["maxmemory"]; ok {
-				if i, err := strconv.Atoi(v); err == nil {
-					return i
-				}
-			}
-			return nil
-		}(),
-		"encrypt_root": s.Encryptroot,
-		"storage_tags": s.Storagetags,
+		"name":           s.Name,
+		"display_text":   s.Displaytext,
+		"cpu_number":     s.Cpunumber,
+		"cpu_speed":      s.Cpuspeed,
+		"host_tags":      s.Hosttags,
+		"limit_cpu_use":  s.Limitcpuuse,
+		"memory":         s.Memory,
+		"offer_ha":       s.Offerha,
+		"storage_type":   s.Storagetype,
+		"customized":     s.Iscustomized,
+		"min_cpu_number": getIntFromDetails(s.Serviceofferingdetails, "mincpunumber"),
+		"max_cpu_number": getIntFromDetails(s.Serviceofferingdetails, "maxcpunumber"),
+		"min_memory":     getIntFromDetails(s.Serviceofferingdetails, "minmemory"),
+		"max_memory":     getIntFromDetails(s.Serviceofferingdetails, "maxmemory"),
+		"encrypt_root":   s.Encryptroot,
+		"storage_tags":   s.Storagetags,
 	}
 
 	for k, v := range fields {
@@ -397,5 +366,18 @@ func resourceCloudStackServiceOfferingDelete(d *schema.ResourceData, meta interf
 		return fmt.Errorf("Error deleting Service Offering: %s", err)
 	}
 
+	return nil
+}
+
+// getIntFromDetails extracts an integer value from the service offering details map.
+func getIntFromDetails(details map[string]string, key string) interface{} {
+	if details == nil {
+		return nil
+	}
+	if val, ok := details[key]; ok {
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+		}
+	}
 	return nil
 }
