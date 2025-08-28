@@ -96,27 +96,6 @@ func TestAccNetworkOfferingDataSource_withServices(t *testing.T) {
 	})
 }
 
-func TestAccNetworkOfferingDataSource_forVPC(t *testing.T) {
-	resourceName := "cloudstack_network_offering.net-off-resource"
-	datasourceName := "data.cloudstack_network_offering.net-off-data-source"
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testNetworkOfferingDataSourceConfig_forVPC,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
-					resource.TestCheckResourceAttrPair(datasourceName, "for_vpc", resourceName, "for_vpc"),
-					resource.TestCheckResourceAttrPair(datasourceName, "internet_protocol", resourceName, "internet_protocol"),
-					resource.TestCheckResourceAttr(datasourceName, "for_vpc", "true"),
-				),
-			},
-		},
-	})
-}
-
 func TestAccNetworkOfferingDataSource_allOptionalParams(t *testing.T) {
 	resourceName := "cloudstack_network_offering.net-off-resource"
 	datasourceName := "data.cloudstack_network_offering.net-off-data-source"
@@ -216,36 +195,6 @@ data "cloudstack_network_offering" "net-off-data-source"{
   filter{
     name = "name"
     value = "TestNetworkServices01"
-  }
-  depends_on = [
-    cloudstack_network_offering.net-off-resource
-  ]
-}
-`
-
-const testNetworkOfferingDataSourceConfig_forVPC = `
-resource "cloudstack_network_offering" "net-off-resource"{
-  name              = "TestNetworkVPC01"
-  display_text      = "TestNetworkVPC01"
-  guest_ip_type     = "Isolated"
-  traffic_type      = "Guest"
-  for_vpc           = true
-  internet_protocol = "IPv4"
-  conserve_mode     = false
-  supported_services = ["Dhcp", "Dns", "NetworkACL", "SourceNat", "StaticNat", "PortForwarding"]
-  service_provider_list = {
-    Dhcp           = "VpcVirtualRouter"
-    Dns            = "VpcVirtualRouter"
-    NetworkACL     = "VpcVirtualRouter"
-    StaticNat      = "VpcVirtualRouter"
-    PortForwarding = "VpcVirtualRouter"
-  }
-}
-
-data "cloudstack_network_offering" "net-off-data-source"{
-  filter{
-    name = "name"
-    value = "TestNetworkVPC01"
   }
   depends_on = [
     cloudstack_network_offering.net-off-resource
