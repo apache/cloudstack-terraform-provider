@@ -1,0 +1,9 @@
+CHANGELOG.md
+CONTRIBUTING.md
+go.sum
+rat-report.txt
+apache-rat-0.16.1
+.gitignore
+.rat-excludes
+.terraform-registry
+website
