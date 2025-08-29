@@ -735,6 +735,11 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		p.SetDetails(vmDetails)
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the details for instance %s: %s", vmDetails, err)
+		}
 	}
 
 	return resourceCloudStackInstanceRead(d, meta)
