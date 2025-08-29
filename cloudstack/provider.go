@@ -95,8 +95,12 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"cloudstack_affinity_group":       resourceCloudStackAffinityGroup(),
 			"cloudstack_attach_volume":        resourceCloudStackAttachVolume(),
+			"cloudstack_autoscale_policy":     resourceCloudStackAutoScalePolicy(),
+			"cloudstack_autoscale_vm_group":   resourceCloudStackAutoScaleVMGroup(),
 			"cloudstack_autoscale_vm_profile": resourceCloudStackAutoScaleVMProfile(),
+			"cloudstack_condition":            resourceCloudStackCondition(),
 			"cloudstack_configuration":        resourceCloudStackConfiguration(),
+			"cloudstack_counter":              resourceCloudStackCounter(),
 			"cloudstack_disk":                 resourceCloudStackDisk(),
 			"cloudstack_egress_firewall":      resourceCloudStackEgressFirewall(),
 			"cloudstack_firewall":             resourceCloudStackFirewall(),

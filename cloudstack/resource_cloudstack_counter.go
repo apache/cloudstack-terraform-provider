@@ -53,7 +53,7 @@ func resourceCloudStackCounter() *schema.Resource {
 				Description: "Value of the counter e.g. oid in case of snmp",
 				ForceNew:    true,
 			},
-			"provider": {
+			"counter_provider": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "Provider of the counter",
@@ -69,7 +69,7 @@ func resourceCloudStackCounterCreate(d *schema.ResourceData, meta interface{}) e
 	name := d.Get("name").(string)
 	source := d.Get("source").(string)
 	value := d.Get("value").(string)
-	provider := d.Get("provider").(string)
+	provider := d.Get("counter_provider").(string)
 
 	p := cs.AutoScale.NewCreateCounterParams(name, provider, source, value)
 
@@ -106,7 +106,7 @@ func resourceCloudStackCounterRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("name", counter.Name)
 	d.Set("source", counter.Source)
 	d.Set("value", counter.Value)
-	d.Set("provider", counter.Provider)
+	d.Set("counter_provider", counter.Provider)
 
 	return nil
 }
