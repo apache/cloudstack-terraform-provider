@@ -54,6 +54,64 @@ func dataSourceCloudstackNetworkOffering() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"network_rate": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"network_mode": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"conserve_mode": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"enable": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"for_vpc": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"for_nsx": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"specify_vlan": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"specify_ip_ranges": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"specify_as_number": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"internet_protocol": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"routing_mode": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"max_connections": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"supported_services": {
+				Type:     schema.TypeSet,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"service_provider_list": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -91,7 +149,12 @@ func datasourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interf
 	}
 	log.Printf("[DEBUG] Selected network offerings: %s\n", networkOffering.Displaytext)
 
-	return networkOfferingDescriptionAttributes(d, networkOffering)
+	fullNetworkOffering, _, err := cs.NetworkOffering.GetNetworkOfferingByName(networkOffering.Name)
+	if err != nil {
+		return fmt.Errorf("Error retrieving full network offering details: %s", err)
+	}
+
+	return networkOfferingDescriptionAttributes(d, fullNetworkOffering)
 }
 
 func networkOfferingDescriptionAttributes(d *schema.ResourceData, networkOffering *cloudstack.NetworkOffering) error {
@@ -100,6 +163,50 @@ func networkOfferingDescriptionAttributes(d *schema.ResourceData, networkOfferin
 	d.Set("display_text", networkOffering.Displaytext)
 	d.Set("guest_ip_type", networkOffering.Guestiptype)
 	d.Set("traffic_type", networkOffering.Traffictype)
+	d.Set("network_rate", networkOffering.Networkrate)
+
+	// Only set if CloudStack supports these fields (4.20.0+)
+	if networkOffering.Networkmode != "" {
+		d.Set("network_mode", networkOffering.Networkmode)
+	}
+
+	d.Set("conserve_mode", networkOffering.Conservemode)
+	d.Set("enable", networkOffering.State == "Enabled")
+	d.Set("for_vpc", networkOffering.Forvpc)
+	d.Set("for_nsx", networkOffering.Fornsx)
+	d.Set("specify_vlan", networkOffering.Specifyvlan)
+	d.Set("specify_ip_ranges", networkOffering.Specifyipranges)
+	d.Set("specify_as_number", networkOffering.Specifyasnumber)
+	d.Set("internet_protocol", networkOffering.Internetprotocol)
+
+	// Only set if CloudStack supports this field (4.20.0+)
+	if networkOffering.Routingmode != "" {
+		d.Set("routing_mode", networkOffering.Routingmode)
+	}
+
+	if networkOffering.Maxconnections > 0 {
+		d.Set("max_connections", networkOffering.Maxconnections)
+	}
+
+	// Set supported services
+	if len(networkOffering.Service) > 0 {
+		services := make([]string, len(networkOffering.Service))
+		for i, service := range networkOffering.Service {
+			services[i] = service.Name
+		}
+		d.Set("supported_services", services)
+	}
+
+	// Set service provider list
+	if len(networkOffering.Service) > 0 {
+		serviceProviders := make(map[string]string)
+		for _, service := range networkOffering.Service {
+			if len(service.Provider) > 0 {
+				serviceProviders[service.Name] = service.Provider[0].Name
+			}
+		}
+		d.Set("service_provider_list", serviceProviders)
+	}
 
 	return nil
 }
