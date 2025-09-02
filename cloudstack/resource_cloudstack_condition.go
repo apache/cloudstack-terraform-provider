@@ -168,5 +168,15 @@ func resourceCloudStackConditionCreate(d *schema.ResourceData, meta interface{})
 	d.SetId(resp.Id)
 	log.Printf("[DEBUG] Condition created with ID: %s", resp.Id)
 
-	return resourceCloudStackConditionRead(d, meta)
+	// Set the values directly instead of calling read to avoid JSON unmarshaling issues
+	d.Set("counter_id", counterid.(string))
+	d.Set("relational_operator", relationaloperator)
+	d.Set("threshold", threshold)
+	d.Set("account_name", account.(string))
+	d.Set("domain_id", domainid.(string))
+	if v, ok := d.GetOk("project_id"); ok {
+		d.Set("project_id", v.(string))
+	}
+
+	return nil
 }

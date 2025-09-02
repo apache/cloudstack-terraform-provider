@@ -144,7 +144,33 @@ func resourceCloudStackAutoScaleVMGroupCreate(d *schema.ResourceData, meta inter
 	d.SetId(resp.Id)
 	log.Printf("[DEBUG] Autoscale VM group created with ID: %s", resp.Id)
 
-	return resourceCloudStackAutoScaleVMGroupRead(d, meta)
+	if v, ok := d.GetOk("name"); ok {
+		d.Set("name", v.(string))
+	}
+	d.Set("lbrule_id", lbruleid)
+	d.Set("min_members", minmembers)
+	d.Set("max_members", maxmembers)
+	d.Set("vm_profile_id", vmprofileid)
+	if v, ok := d.GetOk("interval"); ok {
+		d.Set("interval", v.(int))
+	}
+	if v, ok := d.GetOk("display"); ok {
+		d.Set("display", v.(bool))
+	}
+
+	scaleUpSet := schema.NewSet(schema.HashString, []interface{}{})
+	for _, id := range scaleUpPolicyIds {
+		scaleUpSet.Add(id)
+	}
+	d.Set("scaleup_policy_ids", scaleUpSet)
+
+	scaleDownSet := schema.NewSet(schema.HashString, []interface{}{})
+	for _, id := range scaleDownPolicyIds {
+		scaleDownSet.Add(id)
+	}
+	d.Set("scaledown_policy_ids", scaleDownSet)
+
+	return nil
 }
 
 func resourceCloudStackAutoScaleVMGroupRead(d *schema.ResourceData, meta interface{}) error {

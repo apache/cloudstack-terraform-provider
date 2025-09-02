@@ -125,8 +125,19 @@ func resourceCloudStackAutoScalePolicyRead(d *schema.ResourceData, meta interfac
 	d.Set("quiet_time", policy.Quiettime)
 
 	conditionIds := schema.NewSet(schema.HashString, []interface{}{})
-	for _, conditionId := range policy.Conditions {
-		conditionIds.Add(conditionId)
+	for _, condition := range policy.Conditions {
+		var conditionInterface interface{} = condition
+		switch v := conditionInterface.(type) {
+		case string:
+			conditionIds.Add(v)
+		case map[string]interface{}:
+			if id, ok := v["id"].(string); ok {
+				conditionIds.Add(id)
+			}
+		default:
+			log.Printf("[DEBUG] Unexpected condition type: %T, value: %+v", condition, condition)
+			conditionIds.Add(fmt.Sprintf("%v", condition))
+		}
 	}
 	d.Set("condition_ids", conditionIds)
 
