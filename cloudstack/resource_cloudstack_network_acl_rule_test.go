@@ -38,6 +38,7 @@ func TestAccCloudStackNetworkACLRule_basic(t *testing.T) {
 			{
 				Config: testAccCloudStackNetworkACLRule_basic,
 				Check: resource.ComposeTestCheckFunc(
+
 					testAccCheckCloudStackNetworkACLRulesExist("cloudstack_network_acl.foo"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.#", "3"),
@@ -56,6 +57,10 @@ func TestAccCloudStackNetworkACLRule_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.traffic_type", "ingress"),
 					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.0.description", "Allow HTTP and HTTPS"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.rule_number", "20"),
+					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.action", "allow"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.cidr_list.#", "1"),
@@ -67,6 +72,12 @@ func TestAccCloudStackNetworkACLRule_basic(t *testing.T) {
 						"cloudstack_network_acl_rule.foo", "rule.1.icmp_type", "-1"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.traffic_type", "ingress"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.description", "Allow ICMP traffic"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.2.rule_number", "10"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.2.description", "Allow all traffic"),
 				),
 			},
 		},
@@ -99,6 +110,8 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 						"cloudstack_network_acl_rule.foo", "rule.0.ports.0", "443"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.traffic_type", "ingress"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl_rule.foo", "rule.1.rule_number", "20"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.action", "allow"),
 					resource.TestCheckResourceAttr(
@@ -245,19 +258,23 @@ resource "cloudstack_network_acl_rule" "foo" {
   acl_id = cloudstack_network_acl.foo.id
 
   rule {
+  	rule_number = 10
   	action = "allow"
     cidr_list = ["172.18.100.0/24"]
     protocol = "all"
     traffic_type = "ingress"
+	description = "Allow all traffic"
   }
 
   rule {
+  	rule_number = 20
   	action = "allow"
     cidr_list = ["172.18.100.0/24"]
     protocol = "icmp"
     icmp_type = "-1"
     icmp_code = "-1"
     traffic_type = "ingress"
+	description = "Allow ICMP traffic"
   }
 
   rule {
@@ -265,6 +282,7 @@ resource "cloudstack_network_acl_rule" "foo" {
     protocol = "tcp"
     ports = ["80", "443"]
     traffic_type = "ingress"
+	description = "Allow HTTP and HTTPS"
   }
 }`
 
@@ -294,15 +312,16 @@ resource "cloudstack_network_acl_rule" "foo" {
 
   rule {
   	action = "deny"
-		cidr_list = ["172.18.100.0/24", "172.18.101.0/24"]
+	cidr_list = ["172.18.100.0/24", "172.18.101.0/24"]
     protocol = "icmp"
     icmp_type = "-1"
     icmp_code = "-1"
     traffic_type = "ingress"
+	description = "Deny ICMP traffic"
   }
 
   rule {
-	  action = "allow"
+	action = "allow"
     cidr_list = ["172.18.100.0/24"]
     protocol = "tcp"
     ports = ["80", "443"]
@@ -310,10 +329,11 @@ resource "cloudstack_network_acl_rule" "foo" {
   }
 
   rule {
-	  action = "deny"
+	action = "deny"
     cidr_list = ["10.0.0.0/24"]
     protocol = "tcp"
     ports = ["80", "1000-2000"]
     traffic_type = "egress"
+	description = "Deny specific TCP ports"
   }
 }`

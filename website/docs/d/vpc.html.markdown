@@ -14,6 +14,7 @@ Use this datasource to get information about a vpc for use in other resources.
 
 ```hcl
 data "cloudstack_vpc" "vpc-data-source"{
+    project = "project-1"
     filter{
     name = "name"
     value= "test-vpc"
@@ -27,6 +28,7 @@ data "cloudstack_vpc" "vpc-data-source"{
 ### Argument Reference
 
 * `filter` - (Required) One or more name/value pairs to filter off of. You can apply filters on any exported attributes.
+* `project` - (Optional) The name or ID of the project the vpc belongs to.
 
 ## Attributes Reference
 

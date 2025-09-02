@@ -47,9 +47,15 @@ The `forward` block supports:
 * `protocol` - (Required) The name of the protocol to allow. Valid options are:
     `tcp` and `udp`.
 
-* `private_port` - (Required) The private port to forward to.
+* `private_port` - (Required) The starting port of port forwarding rule's private port range.
 
-* `public_port` - (Required) The public port to forward from.
+* `private_end_port` - (Optional) The ending port of port forwarding rule's private port range.
+    If not specified, the private port will be used as the end port.
+
+* `public_port` - (Required) The starting port of port forwarding rule's public port range.
+
+* `public_end_port` - (Optional) The ending port of port forwarding rule's public port range.
+    If not specified, the public port will be used as the end port.
 
 * `virtual_machine_id` - (Required) The ID of the virtual machine to forward to.
 

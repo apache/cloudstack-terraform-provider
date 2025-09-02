@@ -34,6 +34,18 @@ The following arguments are supported:
 * `service_offering` - (Required) The name or ID of the service offering used
     for this instance.
 
+* `disk_offering` - (Optional) The name or ID of the disk offering for the virtual machine.
+   If the template is of ISO format, the disk offering is for the root disk volume.
+   Otherwise this parameter is used to indicate the offering for the data disk volume.
+   If the template parameter passed is from a Template object, the disk offering refers
+   to a DATA Disk Volume created. If the template parameter passed is from an ISO object,
+   the disk offering refers to a ROOT Disk Volume created.
+
+* `override_disk_offering` - (Optional) The name or ID of the disk offering for the virtual
+   machine to be used for root volume instead of the disk offering mapped in service offering.
+   In case of virtual machine deploying from ISO, then the disk offering specified for root
+   volume is ignored and uses this override disk offering.
+
 * `host_id` -  (Optional)  destination Host ID to deploy the VM to - parameter available
    for root admin only
 
