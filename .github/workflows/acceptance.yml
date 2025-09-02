@@ -97,7 +97,7 @@ jobs:
         id: setup-cloudstack
         with:
           cloudstack-version: ${{ matrix.cloudstack-version }}
-      - uses: opentofu/setup-opentofu@v1
+      - uses: opentofu/setup-opentofu@000eeb8522f0572907c393e8151076c205fdba1b # v1.0.6
         with:
           tofu_version: ${{ matrix.opentofu-version }}
       - name: Run acceptance test

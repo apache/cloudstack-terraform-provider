@@ -22,6 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -97,6 +98,48 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 					return
 				},
 			},
+			"customized": {
+				Description: "Whether service offering allows custom CPU/memory or not",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Computed:    true,
+			},
+			"min_cpu_number": {
+				Description: "Minimum number of CPU cores allowed",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"max_cpu_number": {
+				Description: "Maximum number of CPU cores allowed",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"min_memory": {
+				Description: "Minimum memory allowed (MB)",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"max_memory": {
+				Description: "Maximum memory allowed (MB)",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"encrypt_root": {
+				Description: "Encrypt the root disk for VMs using this service offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"storage_tags": {
+				Description: "Storage tags to associate with the service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
 		},
 	}
 }
@@ -108,12 +151,15 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 
 	// Create a new parameter struct
 	p := cs.ServiceOffering.NewCreateServiceOfferingParams(display_text, name)
-	if v, ok := d.GetOk("cpu_number"); ok {
-		p.SetCpunumber(v.(int))
+
+	cpuNumber, cpuNumberOk := d.GetOk("cpu_number")
+	if cpuNumberOk {
+		p.SetCpunumber(cpuNumber.(int))
 	}
 
-	if v, ok := d.GetOk("cpu_speed"); ok {
-		p.SetCpuspeed(v.(int))
+	cpuSpeed, cpuSpeedOk := d.GetOk("cpu_speed")
+	if cpuSpeedOk {
+		p.SetCpuspeed(cpuSpeed.(int))
 	}
 
 	if v, ok := d.GetOk("host_tags"); ok {
@@ -124,8 +170,9 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetLimitcpuuse(v.(bool))
 	}
 
-	if v, ok := d.GetOk("memory"); ok {
-		p.SetMemory(v.(int))
+	memory, memoryOk := d.GetOk("memory")
+	if memoryOk {
+		p.SetMemory(memory.(int))
 	}
 
 	if v, ok := d.GetOk("offer_ha"); ok {
@@ -134,6 +181,39 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("storage_type"); ok {
 		p.SetStoragetype(v.(string))
+	}
+
+	customized := false
+	if v, ok := d.GetOk("customized"); ok {
+		customized = v.(bool)
+	}
+	if !cpuNumberOk && !cpuSpeedOk && !memoryOk {
+		customized = true
+	}
+	p.SetCustomized(customized)
+
+	if v, ok := d.GetOk("min_cpu_number"); ok {
+		p.SetMincpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_cpu_number"); ok {
+		p.SetMaxcpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("min_memory"); ok {
+		p.SetMinmemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_memory"); ok {
+		p.SetMaxmemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("encrypt_root"); ok {
+		p.SetEncryptroot(v.(bool))
+	}
+
+	if v, ok := d.GetOk("storage_tags"); ok {
+		p.SetTags(v.(string))
 	}
 
 	log.Printf("[DEBUG] Creating Service Offering %s", name)
@@ -168,15 +248,22 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.SetId(s.Id)
 
 	fields := map[string]interface{}{
-		"name":          s.Name,
-		"display_text":  s.Displaytext,
-		"cpu_number":    s.Cpunumber,
-		"cpu_speed":     s.Cpuspeed,
-		"host_tags":     s.Hosttags,
-		"limit_cpu_use": s.Limitcpuuse,
-		"memory":        s.Memory,
-		"offer_ha":      s.Offerha,
-		"storage_type":  s.Storagetype,
+		"name":           s.Name,
+		"display_text":   s.Displaytext,
+		"cpu_number":     s.Cpunumber,
+		"cpu_speed":      s.Cpuspeed,
+		"host_tags":      s.Hosttags,
+		"limit_cpu_use":  s.Limitcpuuse,
+		"memory":         s.Memory,
+		"offer_ha":       s.Offerha,
+		"storage_type":   s.Storagetype,
+		"customized":     s.Iscustomized,
+		"min_cpu_number": getIntFromDetails(s.Serviceofferingdetails, "mincpunumber"),
+		"max_cpu_number": getIntFromDetails(s.Serviceofferingdetails, "maxcpunumber"),
+		"min_memory":     getIntFromDetails(s.Serviceofferingdetails, "minmemory"),
+		"max_memory":     getIntFromDetails(s.Serviceofferingdetails, "maxmemory"),
+		"encrypt_root":   s.Encryptroot,
+		"storage_tags":   s.Storagetags,
 	}
 
 	for k, v := range fields {
@@ -247,6 +334,24 @@ func resourceCloudStackServiceOfferingUpdate(d *schema.ResourceData, meta interf
 
 	}
 
+	if d.HasChange("storage_tags") {
+		log.Printf("[DEBUG] Tags changed for %s, starting update", name)
+
+		// Create a new parameter struct
+		p := cs.ServiceOffering.NewUpdateServiceOfferingParams(d.Id())
+
+		// Set the new tags
+		p.SetStoragetags(d.Get("storage_tags").(string))
+
+		// Update the host tags
+		_, err := cs.ServiceOffering.UpdateServiceOffering(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the storage tags for service offering %s: %s", name, err)
+		}
+
+	}
+
 	return resourceCloudStackServiceOfferingRead(d, meta)
 }
 
@@ -261,5 +366,18 @@ func resourceCloudStackServiceOfferingDelete(d *schema.ResourceData, meta interf
 		return fmt.Errorf("Error deleting Service Offering: %s", err)
 	}
 
+	return nil
+}
+
+// getIntFromDetails extracts an integer value from the service offering details map.
+func getIntFromDetails(details map[string]string, key string) interface{} {
+	if details == nil {
+		return nil
+	}
+	if val, ok := details[key]; ok {
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+		}
+	}
 	return nil
 }

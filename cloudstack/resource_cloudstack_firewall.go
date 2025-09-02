@@ -45,6 +45,13 @@ func resourceCloudStackFirewall() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"managed": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -255,6 +262,11 @@ func resourceCloudStackFirewallRead(d *schema.ResourceData, meta interface{}) er
 	p := cs.Firewall.NewListFirewallRulesParams()
 	p.SetIpaddressid(d.Id())
 	p.SetListall(true)
+
+	// If there is a project supplied, we retrieve and set the project id
+	if err := setProjectid(p, cs, d); err != nil {
+		return err
+	}
 
 	l, err := cs.Firewall.ListFirewallRules(p)
 	if err != nil {
