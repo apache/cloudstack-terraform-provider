@@ -106,15 +106,6 @@ func roleDescriptionAttributes(d *schema.ResourceData, role *cloudstack.Role) er
 	return nil
 }
 
-func latestRole(roles []*cloudstack.Role) (*cloudstack.Role, error) {
-	// Since the Role struct doesn't have a Created field,
-	// we'll just return the first role in the list
-	if len(roles) > 0 {
-		return roles[0], nil
-	}
-	return nil, fmt.Errorf("no roles found")
-}
-
 func applyRoleFilters(role *cloudstack.Role, filters *schema.Set) (bool, error) {
 	var roleJSON map[string]interface{}
 	k, _ := json.Marshal(role)
