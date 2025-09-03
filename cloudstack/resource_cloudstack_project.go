@@ -46,7 +46,7 @@ func resourceCloudStackProject() *schema.Resource {
 				Required: true,
 			},
 
-			"display_text": {
+			"displaytext": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -79,9 +79,9 @@ func resourceCloudStackProject() *schema.Resource {
 func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Get the name and display_text
+	// Get the name and displaytext
 	name := d.Get("name").(string)
-	displaytext := d.Get("display_text").(string)
+	displaytext := d.Get("displaytext").(string)
 
 	// Get domain if provided
 	var domain string
@@ -101,7 +101,7 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 
 			// Set the basic attributes to match the existing project
 			d.Set("name", existingProject.Name)
-			d.Set("display_text", existingProject.Displaytext)
+			d.Set("displaytext", existingProject.Displaytext)
 			d.Set("domain", existingProject.Domain)
 
 			return resourceCloudStackProjectRead(d, meta)
@@ -218,6 +218,32 @@ func getProjectByID(cs *cloudstack.CloudStackClient, id string, domain ...string
 	return l.Projects[0], nil
 }
 
+// Helper function to get an account name by account ID
+func getAccountNameByID(cs *cloudstack.CloudStackClient, accountID string) (string, error) {
+	// Create parameters for listing accounts
+	p := cs.Account.NewListAccountsParams()
+	p.SetId(accountID)
+
+	// Call the API to list accounts with the specified ID
+	accounts, err := cs.Account.ListAccounts(p)
+	if err != nil {
+		return "", fmt.Errorf("error retrieving account with ID %s: %s", accountID, err)
+	}
+
+	// Check if we found the account
+	if accounts.Count == 0 {
+		return "", fmt.Errorf("account with ID %s not found", accountID)
+	}
+
+	// Return the account name
+	account := accounts.Accounts[0]
+	if account.Name == "" {
+		return "", fmt.Errorf("account with ID %s has no name", accountID)
+	}
+
+	return account.Name, nil
+}
+
 // Helper function to get a project by name
 func getProjectByName(cs *cloudstack.CloudStackClient, name string, domain string) (*cloudstack.Project, error) {
 	p := cs.Project.NewListProjectsParams()
@@ -300,7 +326,7 @@ func resourceCloudStackProjectRead(d *schema.ResourceData, meta any) error {
 
 	// Set the basic attributes
 	d.Set("name", project.Name)
-	d.Set("display_text", project.Displaytext)
+	d.Set("displaytext", project.Displaytext)
 	d.Set("domain", project.Domain)
 
 	// Handle owner information more safely
@@ -369,21 +395,21 @@ func resourceCloudStackProjectRead(d *schema.ResourceData, meta any) error {
 func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Check if the name or display text is changed
-	if d.HasChange("name") || d.HasChange("display_text") {
+	// Check if the name or displaytext is changed
+	if d.HasChange("name") || d.HasChange("displaytext") {
 		// Create a new parameter struct
 		p := cs.Project.NewUpdateProjectParams(d.Id())
 
-		// Set the name and display_text if they have changed
-		// Note: The 'name' parameter is only available in API 4.19 and higher
-		// If you're using API 4.18 or lower, the SetName method might not work
-		// In that case, you might need to update the display_text only
+		// Set the name and displaytext if they have changed
+		// Note: The 'name' parameter is only available in CloudStack API 4.19+ and in cloudstack-go SDK v2.11.0+.
+		// If you're using API 4.18 or lower, or an older SDK, the SetName method might not work.
+		// In that case, you might need to update the displaytext only.
 		if d.HasChange("name") {
 			p.SetName(d.Get("name").(string))
 		}
 
-		if d.HasChange("display_text") {
-			p.SetDisplaytext(d.Get("display_text").(string))
+		if d.HasChange("displaytext") {
+			p.SetDisplaytext(d.Get("displaytext").(string))
 		}
 
 		log.Printf("[DEBUG] Updating project %s", d.Id())
@@ -411,13 +437,24 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 			p.SetUserid(d.Get("userid").(string))
 		}
 
-		// Note: accountid is not directly supported by the UpdateProject API,
-		// but we can use the account parameter instead if accountid has changed
+		// Note: The UpdateProject API does not accept 'accountid' directly.
+		// If 'accountid' has changed but 'account' has not, we perform a lookup to get the account name
+		// corresponding to the new 'accountid' and set it using the 'account' parameter instead.
+		// This is necessary because the API only allows updating the owner via the account name, not the account ID.
+		// Only perform the lookup if "account" itself hasn't changed, to avoid conflicting updates.
 		if d.HasChange("accountid") && !d.HasChange("account") {
 			// If accountid has changed but account hasn't, we need to look up the account name
-			// This is a placeholder - in a real implementation, you would need to look up
-			// the account name from the accountid
-			log.Printf("[WARN] Updating accountid is not directly supported by the API. Please use account instead.")
+			// from the accountid and use it in the account parameter
+			accountid := d.Get("accountid").(string)
+			if accountid != "" {
+				accountName, err := getAccountNameByID(cs, accountid)
+				if err != nil {
+					log.Printf("[WARN] Failed to look up account name for accountid %s: %s. Skipping account update as account name could not be determined.", accountid, err)
+				} else {
+					log.Printf("[DEBUG] Found account name '%s' for accountid %s, using account parameter", accountName, accountid)
+					p.SetAccount(accountName)
+				}
+			}
 		}
 
 		log.Printf("[DEBUG] Updating project owner %s", d.Id())
@@ -452,9 +489,9 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 			return retry.RetryableError(fmt.Errorf("project name not updated yet"))
 		}
 
-		if d.HasChange("display_text") && project.Displaytext != d.Get("display_text").(string) {
-			log.Printf("[DEBUG] Project %s display_text not updated yet, retrying...", d.Id())
-			return retry.RetryableError(fmt.Errorf("project display_text not updated yet"))
+		if d.HasChange("displaytext") && project.Displaytext != d.Get("displaytext").(string) {
+			log.Printf("[DEBUG] Project %s displaytext not updated yet, retrying...", d.Id())
+			return retry.RetryableError(fmt.Errorf("project displaytext not updated yet"))
 		}
 
 		log.Printf("[DEBUG] Project %s updated successfully", d.Id())
@@ -512,9 +549,7 @@ func resourceCloudStackProjectDelete(d *schema.ResourceData, meta any) error {
 
 	// Create a new parameter struct
 	p := cs.Project.NewDeleteProjectParams(d.Id())
-
-	log.Printf("[INFO] Deleting project: %s (%s)", d.Id(), project.Name)
-	_, err = cs.Project.DeleteProject(p)
+	result, err := cs.Project.DeleteProject(p)
 	if err != nil {
 		// Check for various "not found" or "does not exist" error patterns
 		if strings.Contains(err.Error(), "not found") ||
@@ -527,6 +562,9 @@ func resourceCloudStackProjectDelete(d *schema.ResourceData, meta any) error {
 		}
 
 		return fmt.Errorf("error deleting project %s: %s", d.Id(), err)
+	}
+	if result == nil {
+		log.Printf("[WARN] DeleteProject returned nil result for project: %s (%s)", d.Id(), project.Name)
 	}
 
 	log.Printf("[DEBUG] Successfully deleted project: %s (%s)", d.Id(), project.Name)

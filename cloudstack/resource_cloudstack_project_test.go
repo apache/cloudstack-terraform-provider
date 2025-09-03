@@ -44,7 +44,7 @@ func TestAccCloudStackProject_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.foo", "name", "terraform-test-project"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.foo", "display_text", "Terraform Test Project"),
+						"cloudstack_project.foo", "displaytext", "Terraform Test Project"),
 				),
 			},
 		},
@@ -67,7 +67,7 @@ func TestAccCloudStackProject_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.foo", "name", "terraform-test-project"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.foo", "display_text", "Terraform Test Project"),
+						"cloudstack_project.foo", "displaytext", "Terraform Test Project"),
 				),
 			},
 			{
@@ -78,7 +78,7 @@ func TestAccCloudStackProject_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.foo", "name", "terraform-test-project-updated"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.foo", "display_text", "Terraform Test Project Updated"),
+						"cloudstack_project.foo", "displaytext", "Terraform Test Project Updated"),
 				),
 			},
 		},
@@ -119,7 +119,7 @@ func TestAccCloudStackProject_account(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.bar", "name", "terraform-test-project-account"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.bar", "display_text", "Terraform Test Project with Account"),
+						"cloudstack_project.bar", "displaytext", "Terraform Test Project with Account"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.bar", "account", "admin"),
 				),
@@ -144,7 +144,7 @@ func TestAccCloudStackProject_updateAccount(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.bar", "name", "terraform-test-project-account"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.bar", "display_text", "Terraform Test Project with Account"),
+						"cloudstack_project.bar", "displaytext", "Terraform Test Project with Account"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.bar", "account", "admin"),
 				),
@@ -157,7 +157,7 @@ func TestAccCloudStackProject_updateAccount(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.bar", "name", "terraform-test-project-account"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.bar", "display_text", "Terraform Test Project with Account"),
+						"cloudstack_project.bar", "displaytext", "Terraform Test Project with Account"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.bar", "account", "admin"),
 				),
@@ -182,7 +182,7 @@ func TestAccCloudStackProject_emptyDisplayText(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.empty", "name", "terraform-test-project-empty-display"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.empty", "display_text", "terraform-test-project-empty-display"),
+						"cloudstack_project.empty", "displaytext", "terraform-test-project-empty-display"),
 				),
 			},
 		},
@@ -205,7 +205,7 @@ func TestAccCloudStackProject_updateUserid(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.baz", "name", "terraform-test-project-userid"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.baz", "display_text", "Terraform Test Project with Userid"),
+						"cloudstack_project.baz", "displaytext", "Terraform Test Project with Userid"),
 				),
 			},
 			{
@@ -216,7 +216,7 @@ func TestAccCloudStackProject_updateUserid(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_project.baz", "name", "terraform-test-project-userid-updated"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_project.baz", "display_text", "Terraform Test Project with Userid Updated"),
+						"cloudstack_project.baz", "displaytext", "Terraform Test Project with Userid Updated"),
 				),
 			},
 		},
@@ -403,19 +403,19 @@ func testAccCheckCloudStackProjectDestroy(s *terraform.State) error {
 const testAccCloudStackProject_basic = `
 resource "cloudstack_project" "foo" {
   name = "terraform-test-project"
-  display_text = "Terraform Test Project"
+  displaytext = "Terraform Test Project"
 }`
 
 const testAccCloudStackProject_update = `
 resource "cloudstack_project" "foo" {
   name = "terraform-test-project-updated"
-  display_text = "Terraform Test Project Updated"
+  displaytext = "Terraform Test Project Updated"
 }`
 
 const testAccCloudStackProject_account = `
 resource "cloudstack_project" "bar" {
   name = "terraform-test-project-account"
-  display_text = "Terraform Test Project with Account"
+  displaytext = "Terraform Test Project with Account"
   account = "admin"
   domain = "ROOT"
 }`
@@ -423,7 +423,7 @@ resource "cloudstack_project" "bar" {
 const testAccCloudStackProject_updateAccount = `
 resource "cloudstack_project" "bar" {
   name = "terraform-test-project-account"
-  display_text = "Terraform Test Project with Account"
+  displaytext = "Terraform Test Project with Account"
   account = "admin"
   domain = "ROOT"
 }`
@@ -431,22 +431,60 @@ resource "cloudstack_project" "bar" {
 const testAccCloudStackProject_userid = `
 resource "cloudstack_project" "baz" {
   name = "terraform-test-project-userid"
-  display_text = "Terraform Test Project with Userid"
+  displaytext = "Terraform Test Project with Userid"
   domain = "ROOT"
 }`
 
 const testAccCloudStackProject_updateUserid = `
 resource "cloudstack_project" "baz" {
   name = "terraform-test-project-userid-updated"
-  display_text = "Terraform Test Project with Userid Updated"
+  displaytext = "Terraform Test Project with Userid Updated"
   domain = "ROOT"
 }`
 
 const testAccCloudStackProject_emptyDisplayText = `
 resource "cloudstack_project" "empty" {
   name = "terraform-test-project-empty-display"
-  display_text = "terraform-test-project-empty-display"
+  displaytext = "terraform-test-project-empty-display"
 }`
+
+func TestAccCloudStackProject_updateAccountid(t *testing.T) {
+	var project cloudstack.Project
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackProject_accountid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.accountid_test", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.accountid_test", "name", "terraform-test-project-accountid"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.accountid_test", "displaytext", "Terraform Test Project with Accountid"),
+					resource.TestCheckResourceAttrSet(
+						"cloudstack_project.accountid_test", "accountid"),
+				),
+			},
+			{
+				Config: testAccCloudStackProject_updateAccountid,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.accountid_test", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.accountid_test", "name", "terraform-test-project-accountid"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.accountid_test", "displaytext", "Terraform Test Project with Accountid"),
+					resource.TestCheckResourceAttrSet(
+						"cloudstack_project.accountid_test", "accountid"),
+				),
+			},
+		},
+	})
+}
 
 func TestAccCloudStackProject_list(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -511,13 +549,29 @@ func testAccCheckCloudStackProjectsExist(projectNames ...string) resource.TestCh
 	}
 }
 
+const testAccCloudStackProject_accountid = `
+resource "cloudstack_project" "accountid_test" {
+  name = "terraform-test-project-accountid"
+  displaytext = "Terraform Test Project with Accountid"
+  accountid = "1"
+  domain = "ROOT"
+}`
+
+const testAccCloudStackProject_updateAccountid = `
+resource "cloudstack_project" "accountid_test" {
+  name = "terraform-test-project-accountid"
+  displaytext = "Terraform Test Project with Accountid"
+  accountid = "2"
+  domain = "ROOT"
+}`
+
 const testAccCloudStackProject_list = `
 resource "cloudstack_project" "project1" {
   name = "terraform-test-project-list-1"
-  display_text = "Terraform Test Project List 1"
+  displaytext = "Terraform Test Project List 1"
 }
 
 resource "cloudstack_project" "project2" {
   name = "terraform-test-project-list-2"
-  display_text = "Terraform Test Project List 2"
+  displaytext = "Terraform Test Project List 2"
 }`
