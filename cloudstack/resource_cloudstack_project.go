@@ -114,10 +114,7 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 
 	// Project doesn't exist, create a new one
 
-	// The CloudStack API parameter order differs between versions:
-	// - In API 4.18 and lower: displaytext is the first parameter and name is the second
-	// - In API 4.19 and higher: name is the first parameter and displaytext is optional
-	// The CloudStack Go SDK uses the API 4.18 parameter order
+	// The CloudStack Go SDK expects parameters in the API 4.18 order: displaytext, name.
 	p := cs.Project.NewCreateProjectParams(displaytext, name)
 
 	// Set the domain if provided
