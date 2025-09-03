@@ -48,7 +48,8 @@ func resourceCloudStackProject() *schema.Resource {
 
 			"display_text": {
 				Type:     schema.TypeString,
-				Required: true, // Required for API version 4.18 and lower. TODO: Make this optional when support for API versions older than 4.18 is dropped.
+				Required: true, // Required for API version 4.18 and lower.
+				// TODO: Make this optional when support for API versions older than 4.18 is dropped.
 			},
 
 			"domain": {
