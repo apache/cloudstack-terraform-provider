@@ -90,6 +90,7 @@ func Provider() *schema.Provider {
 			"cloudstack_user":             dataSourceCloudstackUser(),
 			"cloudstack_vpn_connection":   dataSourceCloudstackVPNConnection(),
 			"cloudstack_pod":              dataSourceCloudstackPod(),
+			"cloudstack_domain":           dataSourceCloudstackDomain(),
 			"cloudstack_physicalnetwork":  dataSourceCloudStackPhysicalNetwork(),
 		},
 
