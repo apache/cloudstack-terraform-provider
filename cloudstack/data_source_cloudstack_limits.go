@@ -47,9 +47,9 @@ func dataSourceCloudStackLimits() *schema.Resource {
 			"account": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "List resources by account. Must be used with the domainid parameter.",
+				Description: "List resources by account. Must be used with the domain_id parameter.",
 			},
-			"domainid": {
+			"domain_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "List only resources belonging to the domain specified.",
@@ -80,7 +80,7 @@ func dataSourceCloudStackLimits() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"domainid": {
+						"domain_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -123,7 +123,7 @@ func dataSourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) er
 		p.SetAccount(v.(string))
 	}
 
-	if v, ok := d.GetOk("domainid"); ok {
+	if v, ok := d.GetOk("domain_id"); ok {
 		p.SetDomainid(v.(string))
 	}
 
@@ -196,7 +196,7 @@ func generateDataSourceID(d *schema.ResourceData) string {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
 
-	if v, ok := d.GetOk("domainid"); ok {
+	if v, ok := d.GetOk("domain_id"); ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
 

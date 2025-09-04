@@ -95,7 +95,7 @@ const testAccCloudStackLimits_basic = `
 resource "cloudstack_limits" "foo" {
   type         = "instance"
   max          = 10
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -103,7 +103,7 @@ const testAccCloudStackLimits_update = `
 resource "cloudstack_limits" "foo" {
   type         = "instance"
   max          = 20
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -363,7 +363,7 @@ func TestAccCloudStackLimits_import(t *testing.T) {
 				ResourceName:            "cloudstack_limits.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domainid", "type", "max"},
+				ImportStateVerifyIgnore: []string{"domain_id", "type", "max", "configured_max"},
 			},
 		},
 	})
@@ -386,7 +386,7 @@ func TestAccCloudStackLimits_importDomain(t *testing.T) {
 				ResourceName:            "cloudstack_limits.domain_limit",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domainid", "type", "max"},
+				ImportStateVerifyIgnore: []string{"domain_id", "type", "max", "configured_max"},
 			},
 		},
 	})
@@ -427,7 +427,7 @@ const testAccCloudStackLimits_domain_limit = `
 resource "cloudstack_limits" "domain_limit" {
   type         = "volume"
   max          = 50
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -447,21 +447,21 @@ resource "cloudstack_limits" "account_limit" {
   type         = "snapshot"
   max          = 100
   account      = cloudstack_account.test_account.username
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
 // const testAccCloudStackLimits_project = ` #TODO: Need project imported before this will do anything
 // resource "cloudstack_project" "test_project" {
-//   name        = "test-project-limits"
+//   name         = "test-project-limits"
 //   display_text = "Test Project for Limits"
-//   domainid    = cloudstack_domain.test_domain.id
+//   domain_id    = cloudstack_domain.test_domain.id
 // }
 //
 // resource "cloudstack_limits" "project_limit" {
 //   type         = "primarystorage"
 //   max          = 1000
-//   domainid     = cloudstack_domain.test_domain.id
+//   domain_id    = cloudstack_domain.test_domain.id
 //   projectid    = cloudstack_project.test_project.id
 // }
 // `
@@ -470,7 +470,7 @@ const testAccCloudStackLimits_unlimited = `
 resource "cloudstack_limits" "unlimited" {
   type         = "cpu"
   max          = -1
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -478,7 +478,7 @@ const testAccCloudStackLimits_stringType = `
 resource "cloudstack_limits" "string_type" {
   type         = "network"
   max          = 30
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -486,7 +486,7 @@ const testAccCloudStackLimits_ip = `
 resource "cloudstack_limits" "ip_limit" {
   type         = "ip"
   max          = 25
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -494,7 +494,7 @@ const testAccCloudStackLimits_template = `
 resource "cloudstack_limits" "template_limit" {
   type         = "template"
   max          = 40
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -502,7 +502,7 @@ const testAccCloudStackLimits_projectType = `
 resource "cloudstack_limits" "project_type_limit" {
   type         = "project"
   max          = 15
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -510,7 +510,7 @@ const testAccCloudStackLimits_vpc = `
 resource "cloudstack_limits" "vpc_limit" {
   type         = "vpc"
   max          = 10
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -518,7 +518,7 @@ const testAccCloudStackLimits_memory = `
 resource "cloudstack_limits" "memory_limit" {
   type         = "memory"
   max          = 8192
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -526,7 +526,7 @@ const testAccCloudStackLimits_zero = `
 resource "cloudstack_limits" "zero_limit" {
   type         = "instance"
   max          = 0
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -534,7 +534,7 @@ const testAccCloudStackLimits_secondarystorage = `
 resource "cloudstack_limits" "secondarystorage_limit" {
   type         = "secondarystorage"
   max          = 2000
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -542,7 +542,7 @@ const testAccCloudStackLimits_zeroToPositive = `
 resource "cloudstack_limits" "zero_limit" {
   type         = "instance"
   max          = 5
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -550,7 +550,7 @@ const testAccCloudStackLimits_positiveValue = `
 resource "cloudstack_limits" "positive_limit" {
   type         = "instance"
   max          = 15
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -558,7 +558,7 @@ const testAccCloudStackLimits_positiveToZero = `
 resource "cloudstack_limits" "positive_limit" {
   type         = "instance"
   max          = 0
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -566,7 +566,7 @@ const testAccCloudStackLimits_positiveToUnlimited = `
 resource "cloudstack_limits" "positive_limit" {
   type         = "instance"
   max          = -1
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `
 
@@ -574,6 +574,6 @@ const testAccCloudStackLimits_unlimitedToZero = `
 resource "cloudstack_limits" "unlimited" {
   type         = "cpu"
   max          = 0
-  domainid     = cloudstack_domain.test_domain.id
+  domain_id    = cloudstack_domain.test_domain.id
 }
 `

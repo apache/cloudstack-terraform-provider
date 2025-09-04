@@ -69,9 +69,9 @@ func resourceCloudStackLimits() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Update resource for a specified account. Must be used with the domainid parameter.",
+				Description: "Update resource for a specified account. Must be used with the domain_id parameter.",
 			},
-			"domainid": {
+			"domain_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
@@ -81,6 +81,11 @@ func resourceCloudStackLimits() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "Maximum resource limit. Use -1 for unlimited resource limit. A value of 0 means zero resources are allowed, though the CloudStack API may return -1 for a limit set to 0.",
+			},
+			"configured_max": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Internal field to track the originally configured max value to distinguish between 0 and -1 when CloudStack returns -1.",
 			},
 			"projectid": {
 				Type:        schema.TypeString,
@@ -98,16 +103,16 @@ func resourceCloudStackLimits() *schema.Resource {
 // resourceCloudStackLimitsImport parses composite import IDs and sets resource fields accordingly.
 func resourceCloudStackLimitsImport(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	// Expected formats:
-	// - type-account-accountname-domainid (for account-specific limits)
+	// - type-account-accountname-domain_id (for account-specific limits)
 	// - type-project-projectid (for project-specific limits)
-	// - type-domain-domainid (for domain-specific limits)
+	// - type-domain-domain_id (for domain-specific limits)
 
 	log.Printf("[DEBUG] Importing resource with ID: %s", d.Id())
 
 	// First, extract the resource type which is always the first part
 	idParts := strings.SplitN(d.Id(), "-", 2)
 	if len(idParts) < 2 {
-		return nil, fmt.Errorf("unexpected import ID format (%q), expected type-account-accountname-domainid, type-domain-domainid, or type-project-projectid", d.Id())
+		return nil, fmt.Errorf("unexpected import ID format (%q), expected type-account-accountname-domain_id, type-domain-domain_id, or type-project-projectid", d.Id())
 	}
 
 	// Parse the resource type
@@ -199,12 +204,12 @@ func resourceCloudStackLimitsCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	account := d.Get("account").(string)
-	domainid := d.Get("domainid").(string)
+	domain_id := d.Get("domain_id").(string)
 	projectid := d.Get("projectid").(string)
 
 	// Validate account and domain parameters
-	if account != "" && domainid == "" {
-		return fmt.Errorf("domainid is required when account is specified")
+	if account != "" && domain_id == "" {
+		return fmt.Errorf("domain_id is required when account is specified")
 	}
 
 	// Create a new parameter struct
@@ -212,13 +217,23 @@ func resourceCloudStackLimitsCreate(d *schema.ResourceData, meta interface{}) er
 	if account != "" {
 		p.SetAccount(account)
 	}
-	if domainid != "" {
-		p.SetDomainid(domainid)
+	if domain_id != "" {
+		p.SetDomainid(domain_id)
 	}
-	if maxVal, ok := d.GetOk("max"); ok {
+	// Check for max value - need to handle zero values explicitly
+	maxVal := d.Get("max")
+	if maxVal != nil {
 		maxIntVal := maxVal.(int)
 		log.Printf("[DEBUG] Setting max value to %d", maxIntVal)
 		p.SetMax(int64(maxIntVal))
+
+		// Store the original configured value for later reference
+		// This helps the Read function distinguish between 0 and -1 when CloudStack returns -1
+		if err := d.Set("configured_max", maxIntVal); err != nil {
+			return fmt.Errorf("error storing configured max value: %w", err)
+		}
+	} else {
+		log.Printf("[DEBUG] No max value found in configuration during Create")
 	}
 	if projectid != "" {
 		p.SetProjectid(projectid)
@@ -232,24 +247,24 @@ func resourceCloudStackLimitsCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	// Generate a unique ID based on the parameters
-	id := generateResourceID(resourcetype, account, domainid, projectid)
+	id := generateResourceID(resourcetype, account, domain_id, projectid)
 	d.SetId(id)
 
 	return resourceCloudStackLimitsRead(d, meta)
 }
 
 // generateResourceID creates a unique ID for the resource based on its parameters
-func generateResourceID(resourcetype int, account, domainid, projectid string) string {
+func generateResourceID(resourcetype int, account, domain_id, projectid string) string {
 	if projectid != "" {
 		return fmt.Sprintf("%d-project-%s", resourcetype, projectid)
 	}
 
-	if account != "" && domainid != "" {
-		return fmt.Sprintf("%d-account-%s-%s", resourcetype, account, domainid)
+	if account != "" && domain_id != "" {
+		return fmt.Sprintf("%d-account-%s-%s", resourcetype, account, domain_id)
 	}
 
-	if domainid != "" {
-		return fmt.Sprintf("%d-domain-%s", resourcetype, domainid)
+	if domain_id != "" {
+		return fmt.Sprintf("%d-domain-%s", resourcetype, domain_id)
 	}
 
 	return fmt.Sprintf("%d", resourcetype)
@@ -269,7 +284,9 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 				// Find the string representation for this numeric type
 				for typeStr, typeVal := range resourceTypeMap {
 					if typeVal == rt {
-						d.Set("type", typeStr)
+						if err := d.Set("type", typeStr); err != nil {
+							return fmt.Errorf("error setting type: %s", err)
+						}
 						break
 					}
 				}
@@ -277,15 +294,23 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 				// Handle different ID formats
 				if len(idParts) >= 3 {
 					if idParts[1] == "domain" {
-						// Format: resourcetype-domain-domainid
-						d.Set("domainid", idParts[2])
+						// Format: resourcetype-domain-domain_id
+						if err := d.Set("domain_id", idParts[2]); err != nil {
+							return fmt.Errorf("error setting domain_id: %s", err)
+						}
 					} else if idParts[1] == "project" {
 						// Format: resourcetype-project-projectid
-						d.Set("projectid", idParts[2])
+						if err := d.Set("projectid", idParts[2]); err != nil {
+							return fmt.Errorf("error setting projectid: %s", err)
+						}
 					} else if idParts[1] == "account" && len(idParts) >= 4 {
-						// Format: resourcetype-account-account-domainid
-						d.Set("account", idParts[2])
-						d.Set("domainid", idParts[3])
+						// Format: resourcetype-account-account-domain_id
+						if err := d.Set("account", idParts[2]); err != nil {
+							return fmt.Errorf("error setting account: %s", err)
+						}
+						if err := d.Set("domain_id", idParts[3]); err != nil {
+							return fmt.Errorf("error setting domain_id: %s", err)
+						}
 					}
 				}
 			}
@@ -293,7 +318,7 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	account := d.Get("account").(string)
-	domainid := d.Get("domainid").(string)
+	domain_id := d.Get("domain_id").(string)
 	projectid := d.Get("projectid").(string)
 
 	// Create a new parameter struct
@@ -302,8 +327,8 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 	if account != "" {
 		p.SetAccount(account)
 	}
-	if domainid != "" {
-		p.SetDomainid(domainid)
+	if domain_id != "" {
+		p.SetDomainid(domain_id)
 	}
 	if projectid != "" {
 		p.SetProjectid(projectid)
@@ -321,38 +346,45 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 		return nil
 	}
 
-	// Update the config
-	for _, limit := range l.ResourceLimits {
-		if limit.Resourcetype == fmt.Sprintf("%d", resourcetype) {
-			log.Printf("[DEBUG] Retrieved max value from API: %d", limit.Max)
+	// Get the first (and should be only) limit from the results
+	limit := l.ResourceLimits[0]
 
-			// Handle CloudStack's convention where -1 signifies unlimited and 0 signifies zero
-			if limit.Max == -1 {
-				// For the zero limit test case, we need to preserve the 0 value
-				// We'll check if the resource was created with max=0
-				if d.Get("max").(int) == 0 {
-					log.Printf("[DEBUG] API returned -1 for a limit set to 0, keeping it as 0 in state")
-					d.Set("max", 0)
-				} else {
-					// Otherwise, use -1 to represent unlimited
-					d.Set("max", limit.Max)
-				}
-			} else {
-				// For any other value, use it directly
-				d.Set("max", limit.Max)
+	// Handle the max value - CloudStack may return -1 for both unlimited and zero limits
+	// We need to preserve the original value from the configuration when possible
+	log.Printf("[DEBUG] CloudStack returned max value: %d", limit.Max)
+	if limit.Max == -1 {
+		// CloudStack returns -1 for both unlimited and zero limits
+		// Check if we have the originally configured value stored
+		if configuredMax, hasConfiguredMax := d.GetOk("configured_max"); hasConfiguredMax {
+			configuredValue := configuredMax.(int)
+			log.Printf("[DEBUG] Found configured max value: %d, using it", configuredValue)
+			// Use the originally configured value (0 for zero limit, -1 for unlimited)
+			if err := d.Set("max", configuredValue); err != nil {
+				return fmt.Errorf("error setting max to configured value %d: %w", configuredValue, err)
 			}
-
-			// Only set the type field if it was originally specified in the configuration
-			if v, ok := d.GetOk("type"); ok {
-				// Preserve the original case of the type parameter
-				d.Set("type", v.(string))
+		} else {
+			log.Printf("[DEBUG] No configured max value found, treating -1 as unlimited")
+			// If no configured value is stored, treat -1 as unlimited
+			if err := d.Set("max", -1); err != nil {
+				return fmt.Errorf("error setting max to unlimited (-1): %w", err)
 			}
-
-			return nil
+		}
+	} else {
+		log.Printf("[DEBUG] Using positive max value from API: %d", limit.Max)
+		// For any positive value, use it directly from the API
+		if err := d.Set("max", int(limit.Max)); err != nil {
+			return fmt.Errorf("error setting max: %w", err)
 		}
 	}
 
-	return fmt.Errorf("resource limit not found")
+	// Preserve original type configuration if it exists
+	if typeValue, ok := d.GetOk("type"); ok {
+		if err := d.Set("type", typeValue.(string)); err != nil {
+			return fmt.Errorf("error setting type: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func resourceCloudStackLimitsUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -364,7 +396,7 @@ func resourceCloudStackLimitsUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	account := d.Get("account").(string)
-	domainid := d.Get("domainid").(string)
+	domain_id := d.Get("domain_id").(string)
 	projectid := d.Get("projectid").(string)
 
 	// Create a new parameter struct
@@ -372,13 +404,20 @@ func resourceCloudStackLimitsUpdate(d *schema.ResourceData, meta interface{}) er
 	if account != "" {
 		p.SetAccount(account)
 	}
-	if domainid != "" {
-		p.SetDomainid(domainid)
+	if domain_id != "" {
+		p.SetDomainid(domain_id)
 	}
 	if maxVal, ok := d.GetOk("max"); ok {
 		maxIntVal := maxVal.(int)
 		log.Printf("[DEBUG] Setting max value to %d", maxIntVal)
 		p.SetMax(int64(maxIntVal))
+
+		// Store the original configured value for later reference
+		// This helps the Read function distinguish between 0 and -1 when CloudStack returns -1
+		log.Printf("[DEBUG] Storing configured max value in update: %d", maxIntVal)
+		if err := d.Set("configured_max", maxIntVal); err != nil {
+			return fmt.Errorf("error storing configured max value: %w", err)
+		}
 	}
 	if projectid != "" {
 		p.SetProjectid(projectid)
@@ -403,7 +442,7 @@ func resourceCloudStackLimitsDelete(d *schema.ResourceData, meta interface{}) er
 	}
 
 	account := d.Get("account").(string)
-	domainid := d.Get("domainid").(string)
+	domain_id := d.Get("domain_id").(string)
 	projectid := d.Get("projectid").(string)
 
 	// Create a new parameter struct
@@ -411,8 +450,8 @@ func resourceCloudStackLimitsDelete(d *schema.ResourceData, meta interface{}) er
 	if account != "" {
 		p.SetAccount(account)
 	}
-	if domainid != "" {
-		p.SetDomainid(domainid)
+	if domain_id != "" {
+		p.SetDomainid(domain_id)
 	}
 	if projectid != "" {
 		p.SetProjectid(projectid)
