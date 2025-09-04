@@ -43,7 +43,7 @@ func dataSourceCloudstackProject() *schema.Resource {
 				Computed: true,
 			},
 
-			"display_text": {
+			"displaytext": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -108,7 +108,7 @@ func datasourceCloudStackProjectRead(d *schema.ResourceData, meta interface{}) e
 func projectDescriptionAttributes(d *schema.ResourceData, project *cloudstack.Project) error {
 	d.SetId(project.Id)
 	d.Set("name", project.Name)
-	d.Set("display_text", project.Displaytext)
+	d.Set("displaytext", project.Displaytext)
 	d.Set("domain", project.Domain)
 	d.Set("state", project.State)
 

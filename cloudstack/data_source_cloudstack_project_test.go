@@ -37,7 +37,7 @@ func TestAccProjectDataSource_basic(t *testing.T) {
 				Config: testProjectDataSourceConfig_basic,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
-					resource.TestCheckResourceAttrPair(datasourceName, "display_text", resourceName, "display_text"),
+					resource.TestCheckResourceAttrPair(datasourceName, "displaytext", resourceName, "displaytext"),
 					resource.TestCheckResourceAttrPair(datasourceName, "domain", resourceName, "domain"),
 				),
 			},
@@ -57,7 +57,7 @@ func TestAccProjectDataSource_withAccount(t *testing.T) {
 				Config: testProjectDataSourceConfig_withAccount,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
-					resource.TestCheckResourceAttrPair(datasourceName, "display_text", resourceName, "display_text"),
+					resource.TestCheckResourceAttrPair(datasourceName, "displaytext", resourceName, "displaytext"),
 					resource.TestCheckResourceAttrPair(datasourceName, "domain", resourceName, "domain"),
 					resource.TestCheckResourceAttrPair(datasourceName, "account", resourceName, "account"),
 				),
@@ -69,7 +69,7 @@ func TestAccProjectDataSource_withAccount(t *testing.T) {
 const testProjectDataSourceConfig_basic = `
 resource "cloudstack_project" "project-resource" {
   name = "test-project-datasource"
-  display_text = "Test Project for Data Source"
+  displaytext = "Test Project for Data Source"
 }
 
 data "cloudstack_project" "project-data-source" {
@@ -90,7 +90,7 @@ output "project-output" {
 const testProjectDataSourceConfig_withAccount = `
 resource "cloudstack_project" "project-account-resource" {
   name = "test-project-account-datasource"
-  display_text = "Test Project with Account for Data Source"
+  displaytext = "Test Project with Account for Data Source"
   account = "admin"
   domain = "ROOT"
 }
