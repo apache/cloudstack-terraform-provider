@@ -58,26 +58,66 @@ func dataSourceCloudstackDomainRead(d *schema.ResourceData, meta interface{}) er
 
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.Domain.NewListDomainsParams()
-	csDomains, err := cs.Domain.ListDomains(p)
 
+	var filterName, filterValue string
+	var filterByName, filterByID bool
+
+	// Apply filters if provided
+	if filters, filtersOk := d.GetOk("filter"); filtersOk {
+		for _, f := range filters.(*schema.Set).List() {
+			m := f.(map[string]interface{})
+			name := m["name"].(string)
+			value := m["value"].(string)
+
+			switch name {
+			case "name":
+				p.SetName(value)
+				filterName = value
+				filterByName = true
+				log.Printf("[DEBUG] Filtering by name: %s", value)
+			case "id":
+				p.SetId(value)
+				filterValue = value
+				filterByID = true
+				log.Printf("[DEBUG] Filtering by ID: %s", value)
+			}
+		}
+	}
+
+	csDomains, err := cs.Domain.ListDomains(p)
 	if err != nil {
 		return fmt.Errorf("failed to list domains: %s", err)
 	}
 
+	log.Printf("[DEBUG] Found %d domains from CloudStack API", len(csDomains.Domains))
+
 	var domain *cloudstack.Domain
 
-	for _, d := range csDomains.Domains {
-		if d.Name == "ROOT" {
-			domain = d
-			break
+	// If we have results from the API call, select the appropriate domain
+	if len(csDomains.Domains) > 0 {
+		// If we filtered by ID or name through the API, we should have a specific result
+		if filterByID || filterByName {
+			// Since we used API filtering, the first result should be our match
+			domain = csDomains.Domains[0]
+			log.Printf("[DEBUG] Using API-filtered domain: %s", domain.Name)
+		} else {
+			// If no filters were applied, we need to handle this case
+			// This shouldn't happen with the current schema as filters are required
+			return fmt.Errorf("no filter criteria specified")
 		}
 	}
 
 	if domain == nil {
-		return fmt.Errorf("no domain is matching with the specified name")
+		if filterByName {
+			return fmt.Errorf("no domain found with name: %s", filterName)
+		} else if filterByID {
+			return fmt.Errorf("no domain found with ID: %s", filterValue)
+		} else {
+			return fmt.Errorf("no domain found matching the specified criteria")
+		}
 	}
 
-	log.Printf("[DEBUG] Selected domain: %s\n", domain.Name)
+	log.Printf("[DEBUG] Selected domain: %s (ID: %s)", domain.Name, domain.Id)
 
 	return domainDescriptionAttributes(d, domain)
 }

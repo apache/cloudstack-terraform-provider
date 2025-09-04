@@ -20,8 +20,10 @@ package cloudstack
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/id"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -59,6 +61,19 @@ func testAccCheckCloudstackDomainDataSourceExists(n string) resource.TestCheckFu
 	}
 }
 
+func TestAccCloudstackDomainDataSource_invalidName(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccCloudstackDomainDataSource_invalidName(),
+				ExpectError: regexp.MustCompile("no domain found with name: badgerbearocto"),
+			},
+		},
+	})
+}
+
 func testAccCloudstackDomainDataSource_basic() string {
 	return `
 data "cloudstack_domain" "my_domain" {
@@ -68,4 +83,51 @@ data "cloudstack_domain" "my_domain" {
 	 }
 }
 `
+}
+
+func testAccCloudstackDomainDataSource_invalidName() string {
+	return `
+data "cloudstack_domain" "my_domain" {
+	 filter {
+	   name = "name"
+	   value = "badgerbearocto"
+	 }
+}
+`
+}
+
+func TestAccCloudstackDomainDataSource_byID(t *testing.T) {
+	domainResourceName := "cloudstack_domain.test_domain"
+	dataSourceName := "data.cloudstack_domain.my_domain_by_id"
+	testDomainName := "test-domain-" + id.UniqueId()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudstackDomainDataSource_byID(testDomainName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudstackDomainDataSourceExists(dataSourceName),
+					resource.TestCheckResourceAttrPair(dataSourceName, "name", domainResourceName, "name"),
+					resource.TestCheckResourceAttrPair(dataSourceName, "domain_id", domainResourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCloudstackDomainDataSource_byID(domainName string) string {
+	return fmt.Sprintf(`
+resource "cloudstack_domain" "test_domain" {
+  name = "%s"
+}
+
+data "cloudstack_domain" "my_domain_by_id" {
+  filter {
+    name  = "id"
+    value = cloudstack_domain.test_domain.id
+  }
+}
+`, domainName)
 }
