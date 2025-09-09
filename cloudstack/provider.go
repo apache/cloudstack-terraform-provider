@@ -96,6 +96,8 @@ func Provider() *schema.Provider {
 			"cloudstack_vpn_connection":       dataSourceCloudstackVPNConnection(),
 			"cloudstack_pod":                  dataSourceCloudstackPod(),
 			"cloudstack_physicalnetwork":      dataSourceCloudStackPhysicalNetwork(),
+			"cloudstack_domain":               dataSourceCloudstackDomain(),
+			"cloudstack_role":                 dataSourceCloudstackRole(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -144,6 +146,7 @@ func Provider() *schema.Provider {
 			"cloudstack_physicalnetwork":          resourceCloudStackPhysicalNetwork(),
 			"cloudstack_traffic_type":             resourceCloudStackTrafficType(),
 			"cloudstack_network_service_provider": resourceCloudStackNetworkServiceProvider(),
+			"cloudstack_role":                     resourceCloudStackRole(),
 		},
 
 		ConfigureFunc: providerConfigure,
