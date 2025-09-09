@@ -85,6 +85,12 @@ func resourceCloudStackPrivateGateway() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+
+			"bypass_vlan_overlap_check": {
+				Type:     schema.TypeBool,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -103,6 +109,8 @@ func resourceCloudStackPrivateGatewayCreate(d *schema.ResourceData, meta interfa
 		d.Get("vpc_id").(string),
 	)
 	p.SetVlan(d.Get("vlan").(string))
+
+	p.SetBypassvlanoverlapcheck(d.Get("bypass_vlan_overlap_check").(bool))
 
 	// Retrieve the network_offering ID
 	if networkofferingid != "" {
