@@ -53,6 +53,12 @@ func resourceCloudStackNIC() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"mac_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -66,9 +72,14 @@ func resourceCloudStackNICCreate(d *schema.ResourceData, meta interface{}) error
 		d.Get("virtual_machine_id").(string),
 	)
 
-	// If there is a ipaddres supplied, add it to the parameter struct
+	// If there is an ipaddress supplied, add it to the parameter struct
 	if ipaddress, ok := d.GetOk("ip_address"); ok {
 		p.SetIpaddress(ipaddress.(string))
+	}
+
+	// If there is a macaddress supplied, add it to the parameter struct
+	if macaddress, ok := d.GetOk("mac_address"); ok {
+		p.SetMacaddress(macaddress.(string))
 	}
 
 	// Create and attach the new NIC
@@ -115,6 +126,7 @@ func resourceCloudStackNICRead(d *schema.ResourceData, meta interface{}) error {
 			d.Set("ip_address", n.Ipaddress)
 			d.Set("network_id", n.Networkid)
 			d.Set("virtual_machine_id", vm.Id)
+			d.Set("mac_address", n.Macaddress)
 			found = true
 			break
 		}

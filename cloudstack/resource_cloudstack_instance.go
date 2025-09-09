@@ -59,6 +59,20 @@ func resourceCloudStackInstance() *schema.Resource {
 				Required: true,
 			},
 
+			"disk_offering": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
+			"override_disk_offering": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"network_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -297,6 +311,24 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetRootdisksize(int64(rootdisksize.(int)))
 	}
 
+	if diskoffering, ok := d.GetOk("disk_offering"); ok {
+		// Retrieve the disk_offering ID
+		diskofferingid, e := retrieveID(cs, "disk_offering", diskoffering.(string))
+		if e != nil {
+			return e.Error()
+		}
+		p.SetDiskofferingid(diskofferingid)
+	}
+
+	if override_disk_offering, ok := d.GetOk("override_disk_offering"); ok {
+		// Retrieve the override_disk_offering ID
+		override_disk_offeringid, e := retrieveID(cs, "disk_offering", override_disk_offering.(string))
+		if e != nil {
+			return e.Error()
+		}
+		p.SetOverridediskofferingid(override_disk_offeringid)
+	}
+
 	if d.Get("uefi").(bool) {
 		p.SetBoottype("UEFI")
 		p.SetBootmode("Legacy")
@@ -502,6 +534,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("tags", tagsToMap(vm.Tags))
 
 	setValueOrID(d, "service_offering", vm.Serviceofferingname, vm.Serviceofferingid)
+	setValueOrID(d, "disk_offering", vm.Diskofferingname, vm.Diskofferingid)
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
 	setValueOrID(d, "project", vm.Project, vm.Projectid)
 	setValueOrID(d, "zone", vm.Zonename, vm.Zoneid)
@@ -735,6 +768,11 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		p.SetDetails(vmDetails)
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the details for instance %s: %s", vmDetails, err)
+		}
 	}
 
 	return resourceCloudStackInstanceRead(d, meta)
