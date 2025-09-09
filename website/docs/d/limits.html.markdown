@@ -28,7 +28,7 @@ data "cloudstack_limits" "account_instance_limits" {
 # Get primary storage limits for a project
 data "cloudstack_limits" "project_storage_limits" {
   type         = "primarystorage"
-  projectid    = "project-uuid"
+  project      = "project-uuid"
 }
 ```
 
@@ -51,7 +51,7 @@ The following arguments are supported:
   * `secondarystorage`
 * `account` - (Optional) List resources by account. Must be used with the `domainid` parameter.
 * `domainid` - (Optional) List only resources belonging to the domain specified.
-* `projectid` - (Optional) List resource limits by project.
+* `project` - (Optional) List resource limits by project.
 
 ## Attributes Reference
 

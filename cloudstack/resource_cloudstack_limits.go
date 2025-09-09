@@ -87,7 +87,7 @@ func resourceCloudStackLimits() *schema.Resource {
 				Computed:    true,
 				Description: "Internal field to track the originally configured max value to distinguish between 0 and -1 when CloudStack returns -1.",
 			},
-			"projectid": {
+			"project": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
@@ -205,7 +205,7 @@ func resourceCloudStackLimitsCreate(d *schema.ResourceData, meta interface{}) er
 
 	account := d.Get("account").(string)
 	domain_id := d.Get("domain_id").(string)
-	projectid := d.Get("projectid").(string)
+	projectid := d.Get("project").(string)
 
 	// Validate account and domain parameters
 	if account != "" && domain_id == "" {
@@ -300,8 +300,8 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 						}
 					} else if idParts[1] == "project" {
 						// Format: resourcetype-project-projectid
-						if err := d.Set("projectid", idParts[2]); err != nil {
-							return fmt.Errorf("error setting projectid: %s", err)
+						if err := d.Set("project", idParts[2]); err != nil {
+							return fmt.Errorf("error setting project: %s", err)
 						}
 					} else if idParts[1] == "account" && len(idParts) >= 4 {
 						// Format: resourcetype-account-account-domain_id
@@ -319,7 +319,7 @@ func resourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) erro
 
 	account := d.Get("account").(string)
 	domain_id := d.Get("domain_id").(string)
-	projectid := d.Get("projectid").(string)
+	projectid := d.Get("project").(string)
 
 	// Create a new parameter struct
 	p := cs.Limit.NewListResourceLimitsParams()
@@ -397,7 +397,7 @@ func resourceCloudStackLimitsUpdate(d *schema.ResourceData, meta interface{}) er
 
 	account := d.Get("account").(string)
 	domain_id := d.Get("domain_id").(string)
-	projectid := d.Get("projectid").(string)
+	projectid := d.Get("project").(string)
 
 	// Create a new parameter struct
 	p := cs.Limit.NewUpdateResourceLimitParams(resourcetype)
@@ -443,7 +443,7 @@ func resourceCloudStackLimitsDelete(d *schema.ResourceData, meta interface{}) er
 
 	account := d.Get("account").(string)
 	domain_id := d.Get("domain_id").(string)
-	projectid := d.Get("projectid").(string)
+	projectid := d.Get("project").(string)
 
 	// Create a new parameter struct
 	p := cs.Limit.NewUpdateResourceLimitParams(resourcetype)

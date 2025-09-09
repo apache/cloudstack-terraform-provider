@@ -31,7 +31,7 @@ resource "cloudstack_limits" "volume_limit" {
 resource "cloudstack_limits" "storage_limit" {
   type         = "primarystorage"
   max          = 1000  # GB
-  projectid    = "project-uuid"
+  project      = "project-uuid"
 }
 
 # Set unlimited CPU limit
@@ -62,7 +62,7 @@ The following arguments are supported:
 * `account` - (Optional, ForceNew) Update resource for a specified account. Must be used with the `domainid` parameter.
 * `domainid` - (Optional, ForceNew) Update resource limits for all accounts in specified domain. If used with the `account` parameter, updates resource limits for a specified account in specified domain.
 * `max` - (Optional) Maximum resource limit. Use `-1` for unlimited resource limit. A value of `0` means zero resources are allowed, though the CloudStack API may return `-1` for a limit set to `0`.
-* `projectid` - (Optional, ForceNew) Update resource limits for project.
+* `project` - (Optional, ForceNew) Update resource limits for project.
 
 ## Attributes Reference
 
@@ -73,7 +73,7 @@ The following attributes are exported:
 * `max` - The maximum number of the resource.
 * `account` - The account of the resource limit.
 * `domainid` - The domain ID of the resource limit.
-* `projectid` - The project ID of the resource limit.
+* `project` - The project ID of the resource limit.
 
 ## Import
 
