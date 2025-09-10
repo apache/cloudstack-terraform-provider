@@ -200,7 +200,7 @@ resource "cloudstack_zone" "foo" {
   network_type = "Advanced"
 }
 
-resource "cloudstack_physicalnetwork" "foo" {
+resource "cloudstack_physical_network" "foo" {
   name = "terraform-physical-network"
   zone = cloudstack_zone.foo.name
   broadcast_domain_range = "ZONE"
@@ -209,7 +209,7 @@ resource "cloudstack_physicalnetwork" "foo" {
 
 resource "cloudstack_network_service_provider" "foo" {
   name = "VirtualRouter"
-  physical_network_id = cloudstack_physicalnetwork.foo.id
+  physical_network_id = cloudstack_physical_network.foo.id
   service_list = ["Dhcp", "Dns"]
   # Note: We don't set state for VirtualRouter as it requires configuration first
 }`
@@ -222,7 +222,7 @@ resource "cloudstack_zone" "foo" {
   network_type = "Advanced"
 }
 
-resource "cloudstack_physicalnetwork" "foo" {
+resource "cloudstack_physical_network" "foo" {
   name = "terraform-physical-network"
   zone = cloudstack_zone.foo.name
   broadcast_domain_range = "ZONE"
@@ -231,6 +231,6 @@ resource "cloudstack_physicalnetwork" "foo" {
 
 resource "cloudstack_network_service_provider" "security_group" {
   name = "SecurityGroupProvider"
-  physical_network_id = cloudstack_physicalnetwork.foo.id
+  physical_network_id = cloudstack_physical_network.foo.id
   # Note: We don't set service_list for SecurityGroupProvider as it doesn't support updating
 }`

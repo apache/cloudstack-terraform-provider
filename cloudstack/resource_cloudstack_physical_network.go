@@ -51,9 +51,10 @@ func resourceCloudStackPhysicalNetwork() *schema.Resource {
 			},
 			"isolation_methods": {
 				Description: "the isolation method for the physical network[VLAN/L3/GRE]",
-				Type:        schema.TypeString,
+				Type:        schema.TypeList,
 				Optional:    true,
 				ForceNew:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"name": {
 				Description: "the name of the physical network",
@@ -93,18 +94,27 @@ func resourceCloudStackPhysicalNetworkCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("broadcast_domain_range"); ok {
 		p.SetBroadcastdomainrange(strings.ToUpper(v.(string)))
 	}
+
 	if v, ok := d.GetOk("domain_id"); ok {
 		p.SetDomainid(v.(string))
 	}
-	if v, ok := d.GetOk("isolation_methods"); ok {
-		p.SetIsolationmethods([]string{v.(string)})
+
+	if isolationMethods, ok := d.GetOk("isolation_methods"); ok {
+		methods := make([]string, len(isolationMethods.([]interface{})))
+		for i, v := range isolationMethods.([]interface{}) {
+			methods[i] = v.(string)
+		}
+		p.SetIsolationmethods(methods)
 	}
+
 	if v, ok := d.GetOk("network_speed"); ok {
 		p.SetNetworkspeed(v.(string))
 	}
+
 	if v, ok := d.GetOk("tags"); ok {
 		p.SetTags([]string{v.(string)})
 	}
+
 	if v, ok := d.GetOk("vlan"); ok {
 		p.SetVlan(v.(string))
 	}
@@ -129,7 +139,11 @@ func resourceCloudStackPhysicalNetworkRead(d *schema.ResourceData, meta interfac
 
 	d.Set("broadcast_domain_range", p.Broadcastdomainrange)
 	d.Set("domain_id", p.Domainid)
-	d.Set("isolation_methods", p.Isolationmethods)
+	// Set isolation methods
+	if p.Isolationmethods != "" {
+		methods := strings.Split(p.Isolationmethods, ",")
+		d.Set("isolation_methods", methods)
+	}
 	d.Set("name", p.Name)
 	d.Set("network_speed", p.Networkspeed)
 	d.Set("tags", p.Tags)

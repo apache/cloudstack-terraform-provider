@@ -43,7 +43,7 @@ func TestAccCloudStackTrafficType_basic(t *testing.T) {
 						"cloudstack_traffic_type.foo", &trafficType),
 					testAccCheckCloudStackTrafficTypeBasicAttributes(&trafficType),
 					resource.TestCheckResourceAttrSet(
-						"cloudstack_traffic_type.foo", "type"),
+						"cloudstack_traffic_type.foo", "traffic_type"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_traffic_type.foo", "kvm_network_label", "cloudbr0"),
 				),
@@ -160,7 +160,7 @@ resource "cloudstack_zone" "foo" {
   network_type = "Advanced"
 }
 
-resource "cloudstack_physicalnetwork" "foo" {
+resource "cloudstack_physical_network" "foo" {
   name = "terraform-physical-network"
   zone_id = cloudstack_zone.foo.id
   broadcast_domain_range = "ZONE"
@@ -168,8 +168,8 @@ resource "cloudstack_physicalnetwork" "foo" {
 }
 
 resource "cloudstack_traffic_type" "foo" {
-  physical_network_id = cloudstack_physicalnetwork.foo.id
-  type = "Management"
+  physical_network_id = cloudstack_physical_network.foo.id
+  traffic_type = "Management"
   kvm_network_label = "cloudbr0"
   xen_network_label = "xenbr0"
 }`

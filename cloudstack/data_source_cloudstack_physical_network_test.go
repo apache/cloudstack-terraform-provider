@@ -34,9 +34,9 @@ func TestAccDataSourceCloudStackPhysicalNetwork_basic(t *testing.T) {
 				Config: testAccDataSourceCloudStackPhysicalNetwork_basic,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "name", "terraform-physical-network"),
+						"data.cloudstack_physical_network.foo", "name", "terraform-physical-network"),
 					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "broadcast_domain_range", "ZONE"),
+						"data.cloudstack_physical_network.foo", "broadcast_domain_range", "ZONE"),
 				),
 			},
 		},
@@ -51,17 +51,17 @@ resource "cloudstack_zone" "foo" {
   network_type = "Advanced"
 }
 
-resource "cloudstack_physicalnetwork" "foo" {
+resource "cloudstack_physical_network" "foo" {
   name = "terraform-physical-network"
-  zone = cloudstack_zone.foo.name
+  zone_id = cloudstack_zone.foo.id
   broadcast_domain_range = "ZONE"
   isolation_methods = ["VLAN"]
 }
 
-data "cloudstack_physicalnetwork" "foo" {
+data "cloudstack_physical_network" "foo" {
   filter {
     name = "name"
     value = "terraform-physical-network"
   }
-  depends_on = [cloudstack_physicalnetwork.foo]
-}`
+  depends_on = [cloudstack_physical_network.foo]
+`
