@@ -83,3 +83,42 @@ func testAccCheckCloudStackServiceOfferingExists(n string, so *cloudstack.Servic
 		return nil
 	}
 }
+
+func TestAccCloudStackServiceOffering_customized(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOffering_customized,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists("cloudstack_service_offering.custom", &so),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "customized", "true"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "min_cpu_number", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "max_cpu_number", "8"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "min_memory", "1024"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "max_memory", "16384"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "cpu_speed", "1000"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "encrypt_root", "true"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "storage_tags", "production,ssd"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOffering_customized = `
+resource "cloudstack_service_offering" "custom" {
+  name             = "custom_service_offering"
+  display_text     = "Custom Test"
+  customized       = true
+  min_cpu_number   = 1
+  max_cpu_number   = 8
+  min_memory       = 1024
+  max_memory       = 16384
+  cpu_speed        = 1000
+  encrypt_root     = true
+  storage_tags     = "production,ssd"
+}
+`

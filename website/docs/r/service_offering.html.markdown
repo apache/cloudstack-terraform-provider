@@ -49,6 +49,26 @@ The following arguments are supported:
 * `storage_type` - (Optional) The storage type of the service offering. Values are `local` and `shared`.
     Changing this forces a new resource to be created.
 
+* `customized` - (Optional) Whether the service offering allows custom CPU and memory values. Set to `true` to enable users to specify CPU/memory within the min/max constraints for constrained offerings and any value for unconstrained offerings.
+    Changing this forces a new resource to be created.
+
+* `min_cpu_number` - (Optional) Minimum number of CPU cores allowed for customized offerings.
+    Changing this forces a new resource to be created.
+
+* `max_cpu_number` - (Optional) Maximum number of CPU cores allowed for customized offerings.
+    Changing this forces a new resource to be created.
+
+* `min_memory` - (Optional) Minimum memory (in MB) allowed for customized offerings.
+    Changing this forces a new resource to be created.
+
+* `max_memory` - (Optional) Maximum memory (in MB) allowed for customized offerings.
+    Changing this forces a new resource to be created.
+
+* `encrypt_root` - (Optional) Whether to encrypt the root disk for VMs using this service offering.
+    Changing this forces a new resource to be created.
+
+* `storage_tags` - (Optional) Storage tags to associate with the service offering.
+
 ## Attributes Reference
 
 The following attributes are exported:

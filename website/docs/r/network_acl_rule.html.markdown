@@ -48,6 +48,8 @@ The following arguments are supported:
 
 The `rule` block supports:
 
+* `rule_number` - (Optional) The number of the ACL item used to order the ACL rules. The ACL rule with the lowest number has the highest priority. If not specified, the ACL item will be created with a number one greater than the highest numbered rule.
+
 * `action` - (Optional) The action for the rule. Valid options are: `allow` and
     `deny` (defaults allow).
 
@@ -67,6 +69,8 @@ The `rule` block supports:
 
 * `traffic_type` - (Optional) The traffic type for the rule. Valid options are:
     `ingress` or `egress` (defaults ingress).
+
+* `description` - (Optional) A description indicating why the ACL rule is required.
 
 ## Attributes Reference
 
