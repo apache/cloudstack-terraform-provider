@@ -25,23 +25,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// func TestAccCloudStackStoragePool_basic(t *testing.T) {
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:  func() { testAccPreCheck(t) },
-// 		Providers: testAccProviders,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccCloudStackStoragePoolConfig_basic,
-// 			},
-// 			{
-// 				Config: testAccCloudStackStoragePoolConfig_update,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					resource.TestCheckResourceAttr("cloudstack_storage_pool.test", "name", "accprimarystorage1"),
-// 				),
-// 			},
-// 		},
-// 	})
-// }
+// Simulator does not support storage pool creation
+// Error: CloudStack API error 530 (CSExceptionErrorCode: 9999): Failed to add data store: No host up to associate a storage pool with in cluster 1
+func TestAccCloudStackStoragePool_basic(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps:     []resource.TestStep{
+			// {
+			// 	Config: testAccCloudStackStoragePoolConfig_basic,
+			// },
+			// {
+			// 	Config: testAccCloudStackStoragePoolConfig_update,
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		resource.TestCheckResourceAttr("cloudstack_storage_pool.test", "name", "accprimarystorage1"),
+			// 	),
+			// },
+		},
+	})
+}
 
 const testAccCloudStackStoragePoolConfig_basic = `
 resource "cloudstack_zone" "test" {
