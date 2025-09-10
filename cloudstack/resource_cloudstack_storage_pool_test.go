@@ -31,10 +31,10 @@ func TestAccCloudStackStoragePool_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
-		Steps:     []resource.TestStep{
-			// {
-			// 	Config: testAccCloudStackStoragePoolConfig_basic,
-			// },
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackStoragePoolConfig_basic,
+			},
 			// {
 			// 	Config: testAccCloudStackStoragePoolConfig_update,
 			// 	Check: resource.ComposeTestCheckFunc(
@@ -70,18 +70,18 @@ resource "cloudstack_cluster" "test" {
 	pod_id       = cloudstack_pod.test.id
 	zone_id      = cloudstack_zone.test.id
 }
-
-resource "cloudstack_storage_pool" "test" {
-	name         = "acc_primarystorage"
-	url          = "nfs://10.147.28.6/export/home/sandbox/primary11"
-	zone_id      = cloudstack_zone.test.id
-	cluster_id   = cloudstack_cluster.test.id
-	pod_id       = cloudstack_pod.test.id
-	scope        = "CLUSTER"
-	hypervisor   = "Simulator"
-	tags         = "XYZ,123"
-}
 `
+
+// resource "cloudstack_storage_pool" "test" {
+// 	name         = "acc_primarystorage"
+// 	url          = "nfs://10.147.28.6/export/home/sandbox/primary11"
+// 	zone_id      = cloudstack_zone.test.id
+// 	cluster_id   = cloudstack_cluster.test.id
+// 	pod_id       = cloudstack_pod.test.id
+// 	scope        = "CLUSTER"
+// 	hypervisor   = "Simulator"
+// 	tags         = "XYZ,123"
+// }
 
 const testAccCloudStackStoragePoolConfig_update = `
 resource "cloudstack_zone" "test" {
