@@ -122,19 +122,19 @@ func resourceCloudStackPhysicalNetworkCreate(d *schema.ResourceData, meta interf
 func resourceCloudStackPhysicalNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	pn, _, err := cs.Network.GetPhysicalNetworkByID(d.Id())
+	p, _, err := cs.Network.GetPhysicalNetworkByID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	d.Set("broadcast_domain_range", pn.Broadcastdomainrange)
-	d.Set("domain_id", pn.Domainid)
-	d.Set("isolation_methods", pn.Isolationmethods)
-	d.Set("name", pn.Name)
-	d.Set("network_speed", pn.Networkspeed)
-	d.Set("tags", pn.Tags)
-	d.Set("vlan", pn.Vlan)
-	d.Set("zone_id", pn.Zoneid)
+	d.Set("broadcast_domain_range", p.Broadcastdomainrange)
+	d.Set("domain_id", p.Domainid)
+	d.Set("isolation_methods", p.Isolationmethods)
+	d.Set("name", p.Name)
+	d.Set("network_speed", p.Networkspeed)
+	d.Set("tags", p.Tags)
+	d.Set("vlan", p.Vlan)
+	d.Set("zone_id", p.Zoneid)
 
 	return nil
 }
