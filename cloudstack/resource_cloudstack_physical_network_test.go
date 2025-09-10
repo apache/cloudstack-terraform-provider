@@ -140,7 +140,7 @@ resource "cloudstack_zone" "foo" {
 
 resource "cloudstack_physicalnetwork" "foo" {
   name = "terraform-physical-network"
-  zone = cloudstack_zone.foo.name
+  zone_id = cloudstack_zone.foo.id
   broadcast_domain_range = "ZONE"
   isolation_methods = ["VLAN"]
 }`
