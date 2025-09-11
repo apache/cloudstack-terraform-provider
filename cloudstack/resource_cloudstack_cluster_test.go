@@ -25,43 +25,41 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceCloudStackPhysicalNetwork_basic(t *testing.T) {
+func TestAccCloudStackCluster_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceCloudStackPhysicalNetwork_basic,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "name", "terraform-physical-network"),
-					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "broadcast_domain_range", "ZONE"),
-				),
+				Config: testAccCloudStackCluster_basic,
 			},
 		},
 	})
 }
 
-const testAccDataSourceCloudStackPhysicalNetwork_basic = `
-resource "cloudstack_zone" "foo" {
-  name = "terraform-zone-ds"
-  dns1 = "8.8.8.8"
-  internal_dns1 = "8.8.4.4"
-  network_type = "Advanced"
+const testAccCloudStackCluster_basic = `
+resource "cloudstack_zone" "test" {
+	name          = "acc_zone"
+	dns1          = "8.8.8.8"
+	dns2          = "8.8.8.8"
+	internal_dns1 = "8.8.4.4"
+	internal_dns2 = "8.8.4.4"
+	network_type  = "Advanced"
+	domain        = "cloudstack.apache.org"
 }
-
-resource "cloudstack_physicalnetwork" "foo" {
-  name = "terraform-physical-network"
-  zone = cloudstack_zone.foo.name
-  broadcast_domain_range = "ZONE"
-  isolation_methods = ["VLAN"]
+resource "cloudstack_pod" "test" {
+	allocation_state = "Disabled"
+	gateway          = "172.30.0.1"
+	name             = "acc_pod"
+	netmask          = "255.255.240.0"
+	start_ip         = "172.30.0.2"
+	zone_id          = cloudstack_zone.test.id
 }
-
-data "cloudstack_physicalnetwork" "foo" {
-  filter {
-    name = "name"
-    value = "terraform-physical-network"
-  }
-  depends_on = [cloudstack_physicalnetwork.foo]
-}`
+resource "cloudstack_cluster" "test" {
+	cluster_name = "acc_cluster"
+	cluster_type = "CloudManaged"
+	hypervisor   = "KVM"
+	pod_id       = cloudstack_pod.test.id
+	zone_id      = cloudstack_zone.test.id
+}
+`

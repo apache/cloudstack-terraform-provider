@@ -21,7 +21,6 @@ package cloudstack
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -35,42 +34,54 @@ func resourceCloudStackPhysicalNetwork() *schema.Resource {
 		Update: resourceCloudStackPhysicalNetworkUpdate,
 		Delete: resourceCloudStackPhysicalNetworkDelete,
 		Importer: &schema.ResourceImporter{
-			State: importStatePassthrough,
+			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-
-			"zone": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
 			"broadcast_domain_range": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "ZONE",
-				ForceNew: true,
+				Description: "the broadcast domain range for the physical network[Pod or Zone]. In Acton release it can be Zone only in Advance zone, and Pod in Basic",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
 			},
-
+			"domain_id": {
+				Description: "domain ID of the account owning a physical network",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
 			"isolation_methods": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Description: "the isolation method for the physical network[VLAN/L3/GRE]",
+				Type:        schema.TypeList,
+				Optional:    true,
+				ForceNew:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
-
+			"name": {
+				Description: "the name of the physical network",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
 			"network_speed": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "the speed for the physical network[1G/10G]",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-
+			"tags": {
+				Description: "Tag the physical network",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
 			"vlan": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "the VLAN for the physical network",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"zone_id": {
+				Description: "zone id of the physical network",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
 			},
 		},
 	}
@@ -79,20 +90,13 @@ func resourceCloudStackPhysicalNetwork() *schema.Resource {
 func resourceCloudStackPhysicalNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	name := d.Get("name").(string)
-
-	// Retrieve the zone ID
-	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
-	if e != nil {
-		return e.Error()
+	p := cs.Network.NewCreatePhysicalNetworkParams(d.Get("name").(string), d.Get("zone_id").(string))
+	if v, ok := d.GetOk("broadcast_domain_range"); ok {
+		p.SetBroadcastdomainrange(strings.ToUpper(v.(string)))
 	}
 
-	// Create a new parameter struct
-	p := cs.Network.NewCreatePhysicalNetworkParams(name, zoneid)
-
-	// Set optional parameters
-	if broadcastDomainRange, ok := d.GetOk("broadcast_domain_range"); ok {
-		p.SetBroadcastdomainrange(broadcastDomainRange.(string))
+	if v, ok := d.GetOk("domain_id"); ok {
+		p.SetDomainid(v.(string))
 	}
 
 	if isolationMethods, ok := d.GetOk("isolation_methods"); ok {
@@ -103,23 +107,24 @@ func resourceCloudStackPhysicalNetworkCreate(d *schema.ResourceData, meta interf
 		p.SetIsolationmethods(methods)
 	}
 
-	if networkSpeed, ok := d.GetOk("network_speed"); ok {
-		p.SetNetworkspeed(networkSpeed.(string))
+	if v, ok := d.GetOk("network_speed"); ok {
+		p.SetNetworkspeed(v.(string))
 	}
 
-	if vlan, ok := d.GetOk("vlan"); ok {
-		p.SetVlan(vlan.(string))
+	if v, ok := d.GetOk("tags"); ok {
+		p.SetTags([]string{v.(string)})
 	}
 
-	// Create the physical network
+	if v, ok := d.GetOk("vlan"); ok {
+		p.SetVlan(v.(string))
+	}
+
 	r, err := cs.Network.CreatePhysicalNetwork(p)
 	if err != nil {
-		return fmt.Errorf("Error creating physical network %s: %s", name, err)
+		return err
 	}
 
 	d.SetId(r.Id)
-
-	// Physical networks don't support tags in CloudStack API
 
 	return resourceCloudStackPhysicalNetworkRead(d, meta)
 }
@@ -127,33 +132,23 @@ func resourceCloudStackPhysicalNetworkCreate(d *schema.ResourceData, meta interf
 func resourceCloudStackPhysicalNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Get the physical network details
-	p, count, err := cs.Network.GetPhysicalNetworkByID(d.Id())
+	p, _, err := cs.Network.GetPhysicalNetworkByID(d.Id())
 	if err != nil {
-		if count == 0 {
-			log.Printf("[DEBUG] Physical network %s does no longer exist", d.Get("name").(string))
-			d.SetId("")
-			return nil
-		}
-
 		return err
 	}
 
-	d.Set("name", p.Name)
 	d.Set("broadcast_domain_range", p.Broadcastdomainrange)
-	d.Set("network_speed", p.Networkspeed)
-	d.Set("vlan", p.Vlan)
-
+	d.Set("domain_id", p.Domainid)
 	// Set isolation methods
 	if p.Isolationmethods != "" {
 		methods := strings.Split(p.Isolationmethods, ",")
 		d.Set("isolation_methods", methods)
 	}
-
-	// Set the zone
-	setValueOrID(d, "zone", p.Zonename, p.Zoneid)
-
-	// Physical networks don't support tags in CloudStack API
+	d.Set("name", p.Name)
+	d.Set("network_speed", p.Networkspeed)
+	d.Set("tags", p.Tags)
+	d.Set("vlan", p.Vlan)
+	d.Set("zone_id", p.Zoneid)
 
 	return nil
 }
@@ -161,27 +156,21 @@ func resourceCloudStackPhysicalNetworkRead(d *schema.ResourceData, meta interfac
 func resourceCloudStackPhysicalNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Create a new parameter struct
 	p := cs.Network.NewUpdatePhysicalNetworkParams(d.Id())
-
-	// The UpdatePhysicalNetworkParams struct doesn't have a SetName method
-	// so we can't update the name
-
-	if d.HasChange("network_speed") {
-		p.SetNetworkspeed(d.Get("network_speed").(string))
+	if v, ok := d.GetOk("network_speed"); ok {
+		p.SetNetworkspeed(v.(string))
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		p.SetTags([]string{v.(string)})
+	}
+	if v, ok := d.GetOk("vlan"); ok {
+		p.SetVlan(v.(string))
 	}
 
-	if d.HasChange("vlan") {
-		p.SetVlan(d.Get("vlan").(string))
-	}
-
-	// Update the physical network
 	_, err := cs.Network.UpdatePhysicalNetwork(p)
 	if err != nil {
-		return fmt.Errorf("Error updating physical network %s: %s", d.Get("name").(string), err)
+		return fmt.Errorf("Error deleting physical network: %s", err)
 	}
-
-	// Physical networks don't support tags in CloudStack API
 
 	return resourceCloudStackPhysicalNetworkRead(d, meta)
 }
@@ -189,20 +178,10 @@ func resourceCloudStackPhysicalNetworkUpdate(d *schema.ResourceData, meta interf
 func resourceCloudStackPhysicalNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Create a new parameter struct
 	p := cs.Network.NewDeletePhysicalNetworkParams(d.Id())
-
-	// Delete the physical network
 	_, err := cs.Network.DeletePhysicalNetwork(p)
 	if err != nil {
-		// This is a very poor way to be told the ID does no longer exist :(
-		if strings.Contains(err.Error(), fmt.Sprintf(
-			"Invalid parameter id value=%s due to incorrect long value format, "+
-				"or entity does not exist", d.Id())) {
-			return nil
-		}
-
-		return fmt.Errorf("Error deleting physical network %s: %s", d.Get("name").(string), err)
+		return fmt.Errorf("Error deleting phsyical network: %s", err)
 	}
 
 	return nil

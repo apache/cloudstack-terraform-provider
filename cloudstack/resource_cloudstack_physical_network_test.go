@@ -40,7 +40,7 @@ func TestAccCloudStackPhysicalNetwork_basic(t *testing.T) {
 				Config: testAccCloudStackPhysicalNetwork_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackPhysicalNetworkExists(
-						"cloudstack_physicalnetwork.foo", &physicalNetwork),
+						"cloudstack_physical_network.foo", &physicalNetwork),
 					testAccCheckCloudStackPhysicalNetworkBasicAttributes(&physicalNetwork),
 				),
 			},
@@ -58,7 +58,7 @@ func TestAccCloudStackPhysicalNetwork_import(t *testing.T) {
 				Config: testAccCloudStackPhysicalNetwork_basic,
 			},
 			{
-				ResourceName:      "cloudstack_physicalnetwork.foo",
+				ResourceName:      "cloudstack_physical_network.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -113,7 +113,7 @@ func testAccCheckCloudStackPhysicalNetworkDestroy(s *terraform.State) error {
 	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "cloudstack_physicalnetwork" {
+		if rs.Type != "cloudstack_physical_network" {
 			continue
 		}
 
@@ -138,9 +138,9 @@ resource "cloudstack_zone" "foo" {
   network_type = "Advanced"
 }
 
-resource "cloudstack_physicalnetwork" "foo" {
+resource "cloudstack_physical_network" "foo" {
   name = "terraform-physical-network"
-  zone = cloudstack_zone.foo.name
+  zone_id = cloudstack_zone.foo.id
   broadcast_domain_range = "ZONE"
   isolation_methods = ["VLAN"]
 }`
