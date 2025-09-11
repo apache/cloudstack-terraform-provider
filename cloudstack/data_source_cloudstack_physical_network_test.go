@@ -64,4 +64,5 @@ data "cloudstack_physical_network" "foo" {
     value = "terraform-physical-network"
   }
   depends_on = [cloudstack_physical_network.foo]
+}
 `

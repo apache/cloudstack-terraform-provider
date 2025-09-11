@@ -36,7 +36,7 @@ func TestAccCloudStackZone_basic(t *testing.T) {
 			{
 				Config: testAccCloudStackZone_update,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("cloudstack_zone.test", "name", "acctestupdated"),
+					resource.TestCheckResourceAttr("cloudstack_zone.test", "name", "acctestZone1Updated"),
 				),
 			},
 		},
@@ -45,7 +45,7 @@ func TestAccCloudStackZone_basic(t *testing.T) {
 
 const testAccCloudStackZone_basic = `
 resource "cloudstack_zone" "test" {
-	name          = "acctest"
+	name          = "acctestZone1"
 	dns1          = "8.8.8.8"
 	dns2          = "8.8.8.8"
 	internal_dns1 = "8.8.4.4"
@@ -57,7 +57,7 @@ resource "cloudstack_zone" "test" {
 
 const testAccCloudStackZone_update = `
 resource "cloudstack_zone" "test" {
-	name             = "acctestupdated"
+	name             = "acctestZone1Updated"
 	dns1             = "8.8.4.4"
 	dns2             = "8.8.4.4"
 	internal_dns1    = "8.8.8.8"
