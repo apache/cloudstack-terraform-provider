@@ -93,6 +93,7 @@ func Provider() *schema.Provider {
 			"cloudstack_domain":           dataSourceCloudstackDomain(),
 			"cloudstack_physicalnetwork":  dataSourceCloudStackPhysicalNetwork(),
 			"cloudstack_role":             dataSourceCloudstackRole(),
+			"cloudstack_cluster":          dataSourceCloudstackCluster(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -113,6 +114,8 @@ func Provider() *schema.Provider {
 			"cloudstack_network_acl":              resourceCloudStackNetworkACL(),
 			"cloudstack_network_acl_rule":         resourceCloudStackNetworkACLRule(),
 			"cloudstack_nic":                      resourceCloudStackNIC(),
+			"cloudstack_pod":                      resourceCloudStackPod(),
+			"cloudstack_cluster":                  resourceCloudStackCluster(),
 			"cloudstack_port_forward":             resourceCloudStackPortForward(),
 			"cloudstack_private_gateway":          resourceCloudStackPrivateGateway(),
 			"cloudstack_secondary_ipaddress":      resourceCloudStackSecondaryIPAddress(),
