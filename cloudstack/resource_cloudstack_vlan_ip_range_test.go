@@ -66,7 +66,7 @@ resource "cloudstack_zone" "test" {
 }
 resource "cloudstack_physical_network" "test" {
 	broadcast_domain_range = "ZONE"
-	isolation_methods      = "VLAN"
+	isolation_methods      = ["VLAN"]
 	name                   = "test01"
 	network_speed          = "1G"
 	tags                   = "vlan"
