@@ -132,6 +132,25 @@ func resourceCloudStackKubernetesCluster() *schema.Resource {
 				Optional: true,
 				Default:  8,
 			},
+
+			"docker_registry_url": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
+			"docker_registry_username": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
+			"docker_registry_password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				ForceNew:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -180,6 +199,15 @@ func resourceCloudStackKubernetesClusterCreate(d *schema.ResourceData, meta inte
 	if noderootdisksize, ok := d.GetOk("noderootdisksize"); ok {
 		p.SetNoderootdisksize(int64(noderootdisksize.(int)))
 	}
+	if dockerurl, ok := d.GetOk("docker_registry_url"); ok {
+		p.SetDockerregistryurl(dockerurl.(string))
+	}
+	if dockerusername, ok := d.GetOk("docker_registry_username"); ok {
+		p.SetDockerregistryusername(dockerusername.(string))
+	}
+	if dockerpassword, ok := d.GetOk("docker_registry_password"); ok {
+		p.SetDockerregistrypassword(dockerpassword.(string))
+	}
 
 	// If there is a project supplied, we retrieve and set the project id
 	if err := setProjectid(p, cs, d); err != nil {
@@ -189,6 +217,13 @@ func resourceCloudStackKubernetesClusterCreate(d *schema.ResourceData, meta inte
 	log.Printf("[DEBUG] Creating Kubernetes Cluster %s", name)
 	r, err := cs.Kubernetes.CreateKubernetesCluster(p)
 	if err != nil {
+		cluster, _, errg := cs.Kubernetes.GetKubernetesClusterByName(
+			name,
+			cloudstack.WithProject(d.Get("project").(string)),
+		)
+		if errg == nil {
+			d.SetId(cluster.Id)
+		}
 		return err
 	}
 

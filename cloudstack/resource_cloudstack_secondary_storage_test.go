@@ -25,43 +25,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceCloudStackPhysicalNetwork_basic(t *testing.T) {
+func TestAccCloudStackSecondaryStorage_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceCloudStackPhysicalNetwork_basic,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "name", "terraform-physical-network"),
-					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "broadcast_domain_range", "ZONE"),
-				),
+				Config: testAccCloudStackSecondaryStorage_basic,
 			},
 		},
 	})
 }
 
-const testAccDataSourceCloudStackPhysicalNetwork_basic = `
-resource "cloudstack_zone" "foo" {
-  name = "terraform-zone-ds"
-  dns1 = "8.8.8.8"
-  internal_dns1 = "8.8.4.4"
-  network_type = "Advanced"
+const testAccCloudStackSecondaryStorage_basic = `
+data "cloudstack_zone" "test" {
+	filter {
+		name  = "name"
+		value = "Sandbox-simulator"
+	}
 }
-
-resource "cloudstack_physicalnetwork" "foo" {
-  name = "terraform-physical-network"
-  zone = cloudstack_zone.foo.name
-  broadcast_domain_range = "ZONE"
-  isolation_methods = ["VLAN"]
+resource "cloudstack_secondary_storage" "test" {
+	name             = "acctest_secondarystorage"
+	storage_provider = "NFS"
+	url              = "nfs://10.147.28.6:/export/home/sandbox/secondary"
+	zone_id          = data.cloudstack_zone.test.id
 }
-
-data "cloudstack_physicalnetwork" "foo" {
-  filter {
-    name = "name"
-    value = "terraform-physical-network"
-  }
-  depends_on = [cloudstack_physicalnetwork.foo]
-}`
+`

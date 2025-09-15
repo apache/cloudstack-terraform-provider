@@ -256,7 +256,6 @@ func resourceCloudStackClusterCreate(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("Error creating Cluster %s: %s", name, err)
 	}
 
-	// The response directly contains the cluster information
 	d.SetId(r.Id)
 
 	return resourceCloudStackClusterRead(d, meta)
