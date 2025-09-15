@@ -39,46 +39,54 @@ func resourceCloudStackTrafficType() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"physical_network_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"type": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
-			"kvm_network_label": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
-			"vlan": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
-			"xen_network_label": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
-			"vmware_network_label": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-
 			"hyperv_network_label": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "The network name label of the physical device dedicated to this traffic on a Hyperv host",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
-
+			"isolation_method": {
+				Description: "Used if physical network has multiple isolation types and traffic type is public. Choose which isolation method. Valid options currently 'vlan' or 'vxlan', defaults to 'vlan'.",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"kvm_network_label": {
+				Description: "The network name label of the physical device dedicated to this traffic on a KVM host",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
 			"ovm3_network_label": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "The network name of the physical device dedicated to this traffic on an OVM3 host",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"physical_network_id": {
+				Description: "the Physical Network ID",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
+			"traffic_type": {
+				Description:  "the trafficType to be added to the physical network",
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateTrafficType,
+			},
+			"vlan": {
+				Description: "The VLAN id to be used for Management traffic by VMware host",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"vmware_network_label": {
+				Description: "The network name label of the physical device dedicated to this traffic on a VMware host",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
+			"xen_network_label": {
+				Description: "The network name label of the physical device dedicated to this traffic on a XenServer host",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 		},
 	}
@@ -88,7 +96,7 @@ func resourceCloudStackTrafficTypeCreate(d *schema.ResourceData, meta interface{
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	physicalNetworkID := d.Get("physical_network_id").(string)
-	trafficType := d.Get("type").(string)
+	trafficType := d.Get("traffic_type").(string)
 
 	// Create a new parameter struct
 	p := cs.Usage.NewAddTrafficTypeParams(physicalNetworkID, trafficType)
@@ -96,6 +104,10 @@ func resourceCloudStackTrafficTypeCreate(d *schema.ResourceData, meta interface{
 	// Set optional parameters
 	if kvmNetworkLabel, ok := d.GetOk("kvm_network_label"); ok {
 		p.SetKvmnetworklabel(kvmNetworkLabel.(string))
+	}
+
+	if v, ok := d.GetOk("isolation_method"); ok {
+		p.SetIsolationmethod(v.(string))
 	}
 
 	if vlan, ok := d.GetOk("vlan"); ok {
@@ -150,7 +162,7 @@ func resourceCloudStackTrafficTypeRead(d *schema.ResourceData, meta interface{})
 	}
 
 	if trafficType == nil {
-		log.Printf("[DEBUG] Traffic type %s does no longer exist", d.Get("type").(string))
+		log.Printf("[DEBUG] Traffic type %s does no longer exist", d.Get("traffic_type").(string))
 		d.SetId("")
 		return nil
 	}
@@ -158,7 +170,7 @@ func resourceCloudStackTrafficTypeRead(d *schema.ResourceData, meta interface{})
 	// The TrafficType struct has a Name field which contains the traffic type
 	// But in some cases it might be empty, so we'll keep the original value from the state
 	if trafficType.Name != "" {
-		d.Set("type", trafficType.Name)
+		d.Set("traffic_type", trafficType.Name)
 	}
 
 	// Note: The TrafficType struct doesn't have fields for network labels or VLAN
@@ -200,7 +212,7 @@ func resourceCloudStackTrafficTypeUpdate(d *schema.ResourceData, meta interface{
 	// Update the traffic type
 	_, err := cs.Usage.UpdateTrafficType(p)
 	if err != nil {
-		return fmt.Errorf("Error updating traffic type %s: %s", d.Get("type").(string), err)
+		return fmt.Errorf("Error updating traffic type %s: %s", d.Get("traffic_type").(string), err)
 	}
 
 	return resourceCloudStackTrafficTypeRead(d, meta)
@@ -222,7 +234,7 @@ func resourceCloudStackTrafficTypeDelete(d *schema.ResourceData, meta interface{
 			return nil
 		}
 
-		return fmt.Errorf("Error deleting traffic type %s: %s", d.Get("type").(string), err)
+		return fmt.Errorf("Error deleting traffic type %s: %s", d.Get("traffic_type").(string), err)
 	}
 
 	return nil
@@ -256,11 +268,11 @@ func resourceCloudStackTrafficTypeImport(d *schema.ResourceData, meta interface{
 				// Set the type attribute - use the original value from the API call
 				// If the Name field is empty, use a default value based on the traffic type ID
 				if tt.Name != "" {
-					d.Set("type", tt.Name)
+					d.Set("traffic_type", tt.Name)
 				} else {
 					// Use a default value based on common traffic types
 					// This is a fallback and might not be accurate
-					d.Set("type", "Management")
+					d.Set("traffic_type", "Management")
 				}
 
 				// For import to work correctly, we need to set default values for network labels
@@ -279,4 +291,19 @@ func resourceCloudStackTrafficTypeImport(d *schema.ResourceData, meta interface{
 	}
 
 	return nil, fmt.Errorf("could not find physical network for traffic type %s", d.Id())
+}
+
+func validateTrafficType(v interface{}, _ string) (warnings []string, errors []error) {
+	input := v.(string)
+
+	allowed := []string{"Public", "Guest", "Management", "Storage"}
+
+	for _, str := range allowed {
+		if str == input {
+			return
+		}
+	}
+	errors = append(errors, fmt.Errorf("traffic_type identifier (%q) not found, expecting %v", input, allowed))
+
+	return warnings, errors
 }

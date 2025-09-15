@@ -25,43 +25,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccDataSourceCloudStackPhysicalNetwork_basic(t *testing.T) {
+func TestAccDataSourceCloudStackRole_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceCloudStackPhysicalNetwork_basic,
+				Config: testAccDataSourceCloudStackRole_basic,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "name", "terraform-physical-network"),
+						"data.cloudstack_role.role", "name", "terraform-role"),
 					resource.TestCheckResourceAttr(
-						"data.cloudstack_physicalnetwork.foo", "broadcast_domain_range", "ZONE"),
+						"data.cloudstack_role.role", "description", "terraform test role"),
+					resource.TestCheckResourceAttr(
+						"data.cloudstack_role.role", "is_public", "true"),
 				),
 			},
 		},
 	})
 }
 
-const testAccDataSourceCloudStackPhysicalNetwork_basic = `
-resource "cloudstack_zone" "foo" {
-  name = "terraform-zone-ds"
-  dns1 = "8.8.8.8"
-  internal_dns1 = "8.8.4.4"
-  network_type = "Advanced"
+const testAccDataSourceCloudStackRole_basic = `
+resource "cloudstack_role" "foo" {
+  name = "terraform-role"
+  description = "terraform test role"
+  is_public = true
+  type = "User"
 }
 
-resource "cloudstack_physicalnetwork" "foo" {
-  name = "terraform-physical-network"
-  zone = cloudstack_zone.foo.name
-  broadcast_domain_range = "ZONE"
-  isolation_methods = ["VLAN"]
-}
-
-data "cloudstack_physicalnetwork" "foo" {
+data "cloudstack_role" "role" {
   filter {
     name = "name"
-    value = "terraform-physical-network"
+    value = "${cloudstack_role.foo.name}"
   }
-  depends_on = [cloudstack_physicalnetwork.foo]
-}`
+}
+`
