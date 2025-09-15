@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -59,6 +60,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: importStatePassthrough,
 		},
+		CustomizeDiff: resourceCloudStackNetworkCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -72,9 +74,23 @@ func resourceCloudStackNetwork() *schema.Resource {
 				Computed: true,
 			},
 
+			"type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "L3",
+				ForceNew: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if v != "L2" && v != "L3" {
+						errs = append(errs, fmt.Errorf("%q must be either 'L2' or 'L3', got: %s", key, v))
+					}
+					return
+				},
+			},
+
 			"cidr": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 
@@ -158,6 +174,23 @@ func resourceCloudStackNetwork() *schema.Resource {
 	}
 }
 
+func resourceCloudStackNetworkCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	networkType := d.Get("type").(string)
+	cidr := d.Get("cidr").(string)
+	
+	// For L3 networks, cidr is required
+	if networkType == "L3" && cidr == "" {
+		return fmt.Errorf("cidr is required when type is L3")
+	}
+	
+	// For L2 networks, cidr should not be provided
+	if networkType == "L2" && cidr != "" {
+		return fmt.Errorf("cidr should not be provided when type is L2")
+	}
+	
+	return nil
+}
+
 func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
@@ -190,23 +223,31 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
-	m, err := parseCIDR(d, no.Specifyipranges)
-	if err != nil {
-		return err
-	}
+	// Check if this is an L2 network
+	networkType := d.Get("type").(string)
+	if networkType == "L2" {
+		// For L2 networks, we don't set IP-related parameters
+		// The network offering should handle VLAN-only configuration
+	} else {
+		// For L3 networks, parse CIDR and set IP parameters
+		m, err := parseCIDR(d, no.Specifyipranges)
+		if err != nil {
+			return err
+		}
 
-	// Set the needed IP config
-	p.SetGateway(m["gateway"])
-	p.SetNetmask(m["netmask"])
+		// Set the needed IP config
+		p.SetGateway(m["gateway"])
+		p.SetNetmask(m["netmask"])
 
-	// Only set the start IP if we have one
-	if startip, ok := m["startip"]; ok {
-		p.SetStartip(startip)
-	}
+		// Only set the start IP if we have one
+		if startip, ok := m["startip"]; ok {
+			p.SetStartip(startip)
+		}
 
-	// Only set the end IP if we have one
-	if endip, ok := m["endip"]; ok {
-		p.SetEndip(endip)
+		// Only set the end IP if we have one
+		if endip, ok := m["endip"]; ok {
+			p.SetEndip(endip)
+		}
 	}
 
 	// Set the network domain if we have one
@@ -305,6 +346,13 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("gateway", n.Gateway)
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
+	
+	// Determine network type based on CIDR presence
+	if n.Cidr == "" {
+		d.Set("type", "L2")
+	} else {
+		d.Set("type", "L3")
+	}
 
 	if n.Aclid == "" {
 		n.Aclid = none
@@ -439,7 +487,19 @@ func resourceCloudStackNetworkDelete(d *schema.ResourceData, meta interface{}) e
 func parseCIDR(d *schema.ResourceData, specifyiprange bool) (map[string]string, error) {
 	m := make(map[string]string, 4)
 
+	// Check if this is an L2 network
+	networkType := d.Get("type").(string)
+	if networkType == "L2" {
+		// For L2 networks, we don't need CIDR parsing
+		// Just return empty values for IP-related fields
+		return m, nil
+	}
+
 	cidr := d.Get("cidr").(string)
+	if cidr == "" {
+		return nil, fmt.Errorf("cidr is required for L3 networks")
+	}
+
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse cidr %s: %s", cidr, err)
