@@ -20,6 +20,8 @@
 package cloudstack
 
 import (
+	"fmt"
+	"log"
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -35,42 +37,46 @@ func resourceCloudStackPod() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+
 		Schema: map[string]*schema.Schema{
-			"allocation_state": {
-				Description: "Allocation state of this Pod for allocation of new resources",
-				Type:        schema.TypeString,
-				Optional:    true,
-			},
-			"end_ip": {
-				Description: "he ending IP address for the Pod",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
-			},
-			"gateway": {
-				Description: "the gateway for the Pod",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
 			"name": {
-				Description: "the name of the Pod",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"netmask": {
-				Description: "the netmask for the Pod",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"start_ip": {
-				Description: "the starting IP address for the Pod",
-				Type:        schema.TypeString,
-				Required:    true,
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"zone_id": {
-				Description: "the Zone ID in which the Pod will be created",
-				Type:        schema.TypeString,
-				Required:    true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"gateway": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"netmask": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"start_ip": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"end_ip": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"allocation_state": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"zone_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			// VLAN ID is not directly settable in the CreatePodParams
+			// It's returned in the response but can't be set during creation
+			"vlan_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -79,32 +85,34 @@ func resourceCloudStackPod() *schema.Resource {
 func resourceCloudStackPodCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	p := cs.Pod.NewCreatePodParams(d.Get("name").(string), d.Get("zone_id").(string))
-	if v, ok := d.GetOk("allocation_state"); ok {
-		p.SetAllocationstate(v.(string))
-	}
-	if v, ok := d.GetOk("end_ip"); ok {
-		p.SetEndip(v.(string))
-	}
-	if v, ok := d.GetOk("gateway"); ok {
-		p.SetGateway(v.(string))
-	}
-	if v, ok := d.GetOk("netmask"); ok {
-		p.SetNetmask(v.(string))
-	}
-	if v, ok := d.GetOk("start_ip"); ok {
-		p.SetStartip(v.(string))
-	}
-	if v, ok := d.GetOk("zone_id"); ok {
-		p.SetZoneid(v.(string))
+	name := d.Get("name").(string)
+	zoneID := d.Get("zone_id").(string)
+	gateway := d.Get("gateway").(string)
+	netmask := d.Get("netmask").(string)
+	startIP := d.Get("start_ip").(string)
+
+	// Create a new parameter struct
+	p := cs.Pod.NewCreatePodParams(name, zoneID)
+
+	// Set required parameters
+	p.SetGateway(gateway)
+	p.SetNetmask(netmask)
+	p.SetStartip(startIP)
+
+	// Set optional parameters
+	if endIP, ok := d.GetOk("end_ip"); ok {
+		p.SetEndip(endIP.(string))
 	}
 
-	r, err := cs.Pod.CreatePod(p)
+	// Note: VLAN ID is not directly settable in the CreatePodParams
+
+	log.Printf("[DEBUG] Creating Pod %s", name)
+	pod, err := cs.Pod.CreatePod(p)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error creating Pod %s: %s", name, err)
 	}
 
-	d.SetId(r.Id)
+	d.SetId(pod.Id)
 
 	return resourceCloudStackPodRead(d, meta)
 }
@@ -112,18 +120,41 @@ func resourceCloudStackPodCreate(d *schema.ResourceData, meta interface{}) error
 func resourceCloudStackPodRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	r, _, err := cs.Pod.GetPodByID(d.Id())
+	// Get the Pod details
+	p := cs.Pod.NewListPodsParams()
+	p.SetId(d.Id())
+
+	pods, err := cs.Pod.ListPods(p)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error getting Pod %s: %s", d.Id(), err)
 	}
 
-	d.Set("allocation_state", r.Allocationstate)
-	d.Set("end_ip", strings.Join(r.Endip, " "))
-	d.Set("gateway", r.Gateway)
-	d.Set("name", r.Name)
-	d.Set("netmask", r.Netmask)
-	d.Set("start_ip", strings.Join(r.Startip, " "))
-	d.Set("zone_id", r.Zoneid)
+	if pods.Count == 0 {
+		log.Printf("[DEBUG] Pod %s does no longer exist", d.Id())
+		d.SetId("")
+		return nil
+	}
+
+	pod := pods.Pods[0]
+
+	d.Set("name", pod.Name)
+	d.Set("zone_id", pod.Zoneid)
+	d.Set("zone_name", pod.Zonename)
+	d.Set("gateway", pod.Gateway)
+	d.Set("netmask", pod.Netmask)
+	d.Set("allocation_state", pod.Allocationstate)
+
+	if len(pod.Startip) > 0 {
+		d.Set("start_ip", pod.Startip[0])
+	}
+
+	if len(pod.Endip) > 0 {
+		d.Set("end_ip", pod.Endip[0])
+	}
+
+	if len(pod.Vlanid) > 0 {
+		d.Set("vlan_id", pod.Vlanid[0])
+	}
 
 	return nil
 }
@@ -131,29 +162,32 @@ func resourceCloudStackPodRead(d *schema.ResourceData, meta interface{}) error {
 func resourceCloudStackPodUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
+	// Create a new parameter struct
 	p := cs.Pod.NewUpdatePodParams(d.Id())
-	if v, ok := d.GetOk("allocation_state"); ok {
-		p.SetAllocationstate(v.(string))
+
+	if d.HasChange("name") {
+		p.SetName(d.Get("name").(string))
 	}
-	if v, ok := d.GetOk("end_ip"); ok {
-		p.SetEndip(v.(string))
+
+	if d.HasChange("gateway") {
+		p.SetGateway(d.Get("gateway").(string))
 	}
-	if v, ok := d.GetOk("gateway"); ok {
-		p.SetGateway(v.(string))
+
+	if d.HasChange("netmask") {
+		p.SetNetmask(d.Get("netmask").(string))
 	}
-	if v, ok := d.GetOk("name"); ok {
-		p.SetName(v.(string))
+
+	if d.HasChange("start_ip") {
+		p.SetStartip(d.Get("start_ip").(string))
 	}
-	if v, ok := d.GetOk("netmask"); ok {
-		p.SetNetmask(v.(string))
-	}
-	if v, ok := d.GetOk("start_ip"); ok {
-		p.SetStartip(v.(string))
+
+	if d.HasChange("end_ip") {
+		p.SetEndip(d.Get("end_ip").(string))
 	}
 
 	_, err := cs.Pod.UpdatePod(p)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error updating Pod %s: %s", d.Get("name").(string), err)
 	}
 
 	return resourceCloudStackPodRead(d, meta)
@@ -162,9 +196,21 @@ func resourceCloudStackPodUpdate(d *schema.ResourceData, meta interface{}) error
 func resourceCloudStackPodDelete(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	_, err := cs.Pod.DeletePod(cs.Pod.NewDeletePodParams(d.Id()))
+	// Create a new parameter struct
+	p := cs.Pod.NewDeletePodParams(d.Id())
+
+	log.Printf("[DEBUG] Deleting Pod %s", d.Get("name").(string))
+	_, err := cs.Pod.DeletePod(p)
+
 	if err != nil {
-		return err
+		// This is a very poor way to be told the ID does no longer exist :(
+		if strings.Contains(err.Error(), fmt.Sprintf(
+			"Invalid parameter id value=%s due to incorrect long value format, "+
+				"or entity does not exist", d.Id())) {
+			return nil
+		}
+
+		return fmt.Errorf("Error deleting Pod %s: %s", d.Get("name").(string), err)
 	}
 
 	return nil

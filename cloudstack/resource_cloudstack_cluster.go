@@ -20,8 +20,13 @@
 package cloudstack
 
 import (
+	"fmt"
+	"log"
+	"strings"
+
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCloudStackCluster() *schema.Resource {
@@ -33,115 +38,140 @@ func resourceCloudStackCluster() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+
 		Schema: map[string]*schema.Schema{
-			"allocation_state": {
-				Description: "Allocation state of this cluster for allocation of new resources",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
-			},
-			"cluster_name": {
-				Description: "the cluster name",
-				Type:        schema.TypeString,
-				Required:    true,
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"cluster_type": {
-				Description: "ype of the cluster: CloudManaged, ExternalManaged",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"guest_vswitch_name": {
-				Description: "Name of virtual switch used for guest traffic in the cluster. This would override zone wide traffic label setting.",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"guest_vswitch_type": {
-				Description: "Type of virtual switch used for guest traffic in the cluster. Allowed values are, vmwaresvs (for VMware standard vSwitch) and vmwaredvs (for VMware distributed vSwitch)",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"CloudManaged",
+					"ExternalManaged",
+				}, false),
 			},
 			"hypervisor": {
-				Description: "hypervisor type of the cluster: XenServer,KVM,VMware,Hyperv,BareMetal,Simulator,Ovm3",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"ovm3_cluster": {
-				Description: "Ovm3 native OCFS2 clustering enabled for cluster",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"ovm3_pool": {
-				Description: "Ovm3 native pooling enabled for cluster",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"ovm3_vip": {
-				Description: "Ovm3 vip to use for pool (and cluster)",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"password": {
-				Description: "the password for the host",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"public_vswitch_name": {
-				Description: "Name of virtual switch used for public traffic in the cluster. This would override zone wide traffic label setting.",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"public_vswitch_type": {
-				Description: "Type of virtual switch used for public traffic in the cluster. Allowed values are, vmwaresvs (for VMware standard vSwitch) and vmwaredvs (for VMware distributed vSwitch)",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"XenServer",
+					"KVM",
+					"VMware",
+					"Hyperv",
+					"BareMetal",
+					"Simulator",
+					"Ovm3",
+				}, false),
 			},
 			"pod_id": {
-				Description: "Type of virtual switch used for public traffic in the cluster. Allowed values are, vmwaresvs (for VMware standard vSwitch) and vmwaredvs (for VMware distributed vSwitch)",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
-			"url": {
-				Description: "the URL",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"username": {
-				Description: "the username for the cluster",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"vsm_ip_address": {
-				Description: "the ipaddress of the VSM associated with this cluster",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"vsm_password": {
-				Description: "the password for the VSM associated with this cluster",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-			},
-			"vsm_username": {
-				Description: "the username for the VSM associated with this cluster",
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"zone_id": {
-				Description: "the Zone ID for the cluster",
-				Type:        schema.TypeString,
-				Required:    true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"allocation_state": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"arch": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"x86_64",
+					"aarch64",
+				}, false),
+			},
+			"guest_vswitch_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"guest_vswitch_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"vmwaresvs",
+					"vmwaredvs",
+				}, false),
+			},
+			"ovm3cluster": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ovm3pool": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"ovm3vip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"public_vswitch_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"public_vswitch_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"vmwaresvs",
+					"vmwaredvs",
+				}, false),
+			},
+			"url": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"username": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"vsm_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"vsm_password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"vsm_username": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"pod_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"zone_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"managed_state": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"cpu_overcommit_ratio": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"memory_overcommit_ratio": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -150,57 +180,82 @@ func resourceCloudStackCluster() *schema.Resource {
 func resourceCloudStackClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	p := cs.Cluster.NewAddClusterParams(d.Get("cluster_name").(string), d.Get("cluster_type").(string), d.Get("hypervisor").(string), d.Get("pod_id").(string), d.Get("zone_id").(string))
-	if v, ok := d.GetOk("allocation_state"); ok {
-		p.SetAllocationstate(v.(string))
-	}
-	if v, ok := d.GetOk("guest_vswitch_name"); ok {
-		p.SetGuestvswitchname(v.(string))
-	}
-	if v, ok := d.GetOk("guest_vswitch_type"); ok {
-		p.SetGuestvswitchtype(v.(string))
-	}
-	if v, ok := d.GetOk("hypervisor"); ok {
-		p.SetHypervisor(v.(string))
-	}
-	if v, ok := d.GetOk("ovm3_cluster"); ok {
-		p.SetOvm3cluster(v.(string))
-	}
-	if v, ok := d.GetOk("ovm3_pool"); ok {
-		p.SetOvm3pool(v.(string))
-	}
-	if v, ok := d.GetOk("ovm3_vip"); ok {
-		p.SetOvm3vip(v.(string))
-	}
-	if v, ok := d.GetOk("password"); ok {
-		p.SetPassword(v.(string))
-	}
-	if v, ok := d.GetOk("public_vswitch_name"); ok {
-		p.SetPublicvswitchname(v.(string))
-	}
-	if v, ok := d.GetOk("public_vswitch_type"); ok {
-		p.SetPublicvswitchtype(v.(string))
-	}
-	if v, ok := d.GetOk("url"); ok {
-		p.SetUrl(v.(string))
-	}
-	if v, ok := d.GetOk("username"); ok {
-		p.SetUsername(v.(string))
-	}
-	if v, ok := d.GetOk("vsm_ip_address"); ok {
-		p.SetVsmipaddress(v.(string))
-	}
-	if v, ok := d.GetOk("vsm_password"); ok {
-		p.SetVsmpassword(v.(string))
-	}
-	if v, ok := d.GetOk("vsm_username"); ok {
-		p.SetVsmusername(v.(string))
+	name := d.Get("name").(string)
+	clusterType := d.Get("cluster_type").(string)
+	hypervisor := d.Get("hypervisor").(string)
+	podID := d.Get("pod_id").(string)
+	zoneID := d.Get("zone_id").(string)
+
+	// Create a new parameter struct
+	p := cs.Cluster.NewAddClusterParams(name, clusterType, hypervisor, podID, zoneID)
+
+	// Set optional parameters
+	if allocationState, ok := d.GetOk("allocation_state"); ok {
+		p.SetAllocationstate(allocationState.(string))
 	}
 
+	if arch, ok := d.GetOk("arch"); ok {
+		p.SetArch(arch.(string))
+	}
+
+	if guestVSwitchName, ok := d.GetOk("guest_vswitch_name"); ok {
+		p.SetGuestvswitchname(guestVSwitchName.(string))
+	}
+
+	if guestVSwitchType, ok := d.GetOk("guest_vswitch_type"); ok {
+		p.SetGuestvswitchtype(guestVSwitchType.(string))
+	}
+
+	if ovm3cluster, ok := d.GetOk("ovm3cluster"); ok {
+		p.SetOvm3cluster(ovm3cluster.(string))
+	}
+
+	if ovm3pool, ok := d.GetOk("ovm3pool"); ok {
+		p.SetOvm3pool(ovm3pool.(string))
+	}
+
+	if ovm3vip, ok := d.GetOk("ovm3vip"); ok {
+		p.SetOvm3vip(ovm3vip.(string))
+	}
+
+	if password, ok := d.GetOk("password"); ok {
+		p.SetPassword(password.(string))
+	}
+
+	if publicVSwitchName, ok := d.GetOk("public_vswitch_name"); ok {
+		p.SetPublicvswitchname(publicVSwitchName.(string))
+	}
+
+	if publicVSwitchType, ok := d.GetOk("public_vswitch_type"); ok {
+		p.SetPublicvswitchtype(publicVSwitchType.(string))
+	}
+
+	if url, ok := d.GetOk("url"); ok {
+		p.SetUrl(url.(string))
+	}
+
+	if username, ok := d.GetOk("username"); ok {
+		p.SetUsername(username.(string))
+	}
+
+	if vsmIPAddress, ok := d.GetOk("vsm_ip_address"); ok {
+		p.SetVsmipaddress(vsmIPAddress.(string))
+	}
+
+	if vsmPassword, ok := d.GetOk("vsm_password"); ok {
+		p.SetVsmpassword(vsmPassword.(string))
+	}
+
+	if vsmUsername, ok := d.GetOk("vsm_username"); ok {
+		p.SetVsmusername(vsmUsername.(string))
+	}
+
+	log.Printf("[DEBUG] Creating Cluster %s", name)
 	r, err := cs.Cluster.AddCluster(p)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error creating Cluster %s: %s", name, err)
 	}
+
 	d.SetId(r.Id)
 
 	return resourceCloudStackClusterRead(d, meta)
@@ -209,18 +264,30 @@ func resourceCloudStackClusterCreate(d *schema.ResourceData, meta interface{}) e
 func resourceCloudStackClusterRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	r, _, err := cs.Cluster.GetClusterByID(d.Id())
+	// Get the Cluster details
+	c, count, err := cs.Cluster.GetClusterByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			log.Printf("[DEBUG] Cluster %s does no longer exist", d.Get("name").(string))
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
-	d.Set("allocation_state", r.Allocationstate)
-	d.Set("cluster_type", r.Clustertype)
-	d.Set("hypervisor", r.Hypervisortype)
-	d.Set("cluster_name", r.Name)
-	d.Set("ovm3_vip", r.Ovm3vip)
-	d.Set("pod_id", r.Podid)
-	d.Set("zone_id", r.Zoneid)
+	d.Set("name", c.Name)
+	d.Set("cluster_type", c.Clustertype)
+	d.Set("hypervisor", c.Hypervisortype)
+	d.Set("pod_id", c.Podid)
+	d.Set("pod_name", c.Podname)
+	d.Set("zone_id", c.Zoneid)
+	d.Set("zone_name", c.Zonename)
+	d.Set("allocation_state", c.Allocationstate)
+	d.Set("managed_state", c.Managedstate)
+	d.Set("cpu_overcommit_ratio", c.Cpuovercommitratio)
+	d.Set("memory_overcommit_ratio", c.Memoryovercommitratio)
+	d.Set("arch", c.Arch)
+	d.Set("ovm3vip", c.Ovm3vip)
 
 	return nil
 }
@@ -228,23 +295,22 @@ func resourceCloudStackClusterRead(d *schema.ResourceData, meta interface{}) err
 func resourceCloudStackClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
+	// Create a new parameter struct
 	p := cs.Cluster.NewUpdateClusterParams(d.Id())
-	if v, ok := d.GetOk("allocation_state"); ok {
-		p.SetAllocationstate(v.(string))
+
+	if d.HasChange("name") {
+		p.SetClustername(d.Get("name").(string))
 	}
-	if v, ok := d.GetOk("cluster_name"); ok {
-		p.SetClustername(v.(string))
+
+	if d.HasChange("allocation_state") {
+		p.SetAllocationstate(d.Get("allocation_state").(string))
 	}
-	if v, ok := d.GetOk("cluster_type"); ok {
-		p.SetClustertype(v.(string))
-	}
-	if v, ok := d.GetOk("hypervisor"); ok {
-		p.SetHypervisor(v.(string))
-	}
+
+	// Note: managed_state is a computed field and cannot be set directly
 
 	_, err := cs.Cluster.UpdateCluster(p)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error updating Cluster %s: %s", d.Get("name").(string), err)
 	}
 
 	return resourceCloudStackClusterRead(d, meta)
@@ -253,9 +319,21 @@ func resourceCloudStackClusterUpdate(d *schema.ResourceData, meta interface{}) e
 func resourceCloudStackClusterDelete(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	_, err := cs.Cluster.DeleteCluster(cs.Cluster.NewDeleteClusterParams(d.Id()))
+	// Create a new parameter struct
+	p := cs.Cluster.NewDeleteClusterParams(d.Id())
+
+	log.Printf("[DEBUG] Deleting Cluster %s", d.Get("name").(string))
+	_, err := cs.Cluster.DeleteCluster(p)
+
 	if err != nil {
-		return err
+		// This is a very poor way to be told the ID does no longer exist :(
+		if strings.Contains(err.Error(), fmt.Sprintf(
+			"Invalid parameter id value=%s due to incorrect long value format, "+
+				"or entity does not exist", d.Id())) {
+			return nil
+		}
+
+		return fmt.Errorf("Error deleting Cluster %s: %s", d.Get("name").(string), err)
 	}
 
 	return nil

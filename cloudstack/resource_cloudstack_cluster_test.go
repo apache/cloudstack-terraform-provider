@@ -20,46 +20,153 @@
 package cloudstack
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccCloudStackCluster_basic(t *testing.T) {
+	var cluster cloudstack.Cluster
+
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackClusterDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCloudStackCluster_basic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackClusterExists(
+						"cloudstack_cluster.foo", &cluster),
+					testAccCheckCloudStackClusterAttributes(&cluster),
+					resource.TestCheckResourceAttr(
+						"cloudstack_cluster.foo", "name", "terraform-cluster"),
+				),
 			},
 		},
 	})
 }
 
+func TestAccCloudStackCluster_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackCluster_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_cluster.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"password", "vsm_password",
+				},
+			},
+		},
+	})
+}
+
+func testAccCheckCloudStackClusterExists(
+	n string, cluster *cloudstack.Cluster) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Cluster ID is set")
+		}
+
+		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+		c, count, err := cs.Cluster.GetClusterByID(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+
+		if count == 0 {
+			return fmt.Errorf("Cluster not found")
+		}
+
+		*cluster = *c
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackClusterAttributes(
+	cluster *cloudstack.Cluster) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if cluster.Name != "terraform-cluster" {
+			return fmt.Errorf("Bad name: %s", cluster.Name)
+		}
+
+		if cluster.Clustertype != "CloudManaged" {
+			return fmt.Errorf("Bad cluster type: %s", cluster.Clustertype)
+		}
+
+		if cluster.Hypervisortype != "KVM" {
+			return fmt.Errorf("Bad hypervisor: %s", cluster.Hypervisortype)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackClusterDestroy(s *terraform.State) error {
+	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "cloudstack_cluster" {
+			continue
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Cluster ID is set")
+		}
+
+		_, count, err := cs.Cluster.GetClusterByID(rs.Primary.ID)
+		if err != nil {
+			return nil
+		}
+
+		if count > 0 {
+			return fmt.Errorf("Cluster %s still exists", rs.Primary.ID)
+		}
+	}
+
+	return nil
+}
+
 const testAccCloudStackCluster_basic = `
-resource "cloudstack_zone" "test" {
-	name          = "acc_zone"
-	dns1          = "8.8.8.8"
-	dns2          = "8.8.8.8"
-	internal_dns1 = "8.8.4.4"
-	internal_dns2 = "8.8.4.4"
-	network_type  = "Advanced"
-	domain        = "cloudstack.apache.org"
+data "cloudstack_zone" "zone" {
+  filter {
+    name = "name"
+    value = "Sandbox-simulator"
+  }
 }
-resource "cloudstack_pod" "test" {
-	allocation_state = "Disabled"
-	gateway          = "172.30.0.1"
-	name             = "acc_pod"
-	netmask          = "255.255.240.0"
-	start_ip         = "172.30.0.2"
-	zone_id          = cloudstack_zone.test.id
+
+resource "cloudstack_pod" "foopod" {
+  name = "terraform-pod"
+  zone_id = data.cloudstack_zone.zone.id
+  gateway = "192.168.56.1"
+  netmask = "255.255.255.0"
+  start_ip = "192.168.56.2"
+  end_ip = "192.168.56.254"
 }
-resource "cloudstack_cluster" "test" {
-	cluster_name = "acc_cluster"
-	cluster_type = "CloudManaged"
-	hypervisor   = "KVM"
-	pod_id       = cloudstack_pod.test.id
-	zone_id      = cloudstack_zone.test.id
-}
-`
+
+resource "cloudstack_cluster" "foo" {
+  name = "terraform-cluster"
+  cluster_type = "CloudManaged"
+  hypervisor = "KVM"
+  pod_id = cloudstack_pod.foopod.id
+  zone_id = data.cloudstack_zone.zone.id
+  arch = "x86_64"
+}`
