@@ -177,17 +177,17 @@ func resourceCloudStackNetwork() *schema.Resource {
 func resourceCloudStackNetworkCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	networkType := d.Get("type").(string)
 	cidr := d.Get("cidr").(string)
-	
+
 	// For L3 networks, cidr is required
 	if networkType == "L3" && cidr == "" {
 		return fmt.Errorf("cidr is required when type is L3")
 	}
-	
+
 	// For L2 networks, cidr should not be provided
 	if networkType == "L2" && cidr != "" {
 		return fmt.Errorf("cidr should not be provided when type is L2")
 	}
-	
+
 	return nil
 }
 
@@ -346,7 +346,7 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("gateway", n.Gateway)
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
-	
+
 	// Determine network type based on CIDR presence
 	if n.Cidr == "" {
 		d.Set("type", "L2")

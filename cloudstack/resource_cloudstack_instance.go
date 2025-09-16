@@ -153,7 +153,7 @@ func resourceCloudStackInstance() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"keypair": &schema.Schema{
+			"keypair": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"keypairs"},
