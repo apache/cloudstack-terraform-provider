@@ -93,6 +93,7 @@ func Provider() *schema.Provider {
 			"cloudstack_domain":           dataSourceCloudstackDomain(),
 			"cloudstack_physical_network": dataSourceCloudStackPhysicalNetwork(),
 			"cloudstack_role":             dataSourceCloudstackRole(),
+			"cloudstack_cluster":          dataSourceCloudstackCluster(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
