@@ -27,7 +27,7 @@ import (
 
 func TestResourceCloudStackNetworkSchema(t *testing.T) {
 	networkResource := resourceCloudStackNetwork()
-	
+
 	// Test that required fields exist
 	t.Run("Schema should have type field", func(t *testing.T) {
 		if typeField, ok := networkResource.Schema["type"]; !ok {
@@ -47,7 +47,7 @@ func TestResourceCloudStackNetworkSchema(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("Schema should have cidr field as optional", func(t *testing.T) {
 		if cidrField, ok := networkResource.Schema["cidr"]; !ok {
 			t.Error("Schema should have 'cidr' field")
@@ -60,7 +60,7 @@ func TestResourceCloudStackNetworkSchema(t *testing.T) {
 			}
 		}
 	})
-	
+
 	t.Run("Schema should have CustomizeDiff", func(t *testing.T) {
 		if networkResource.CustomizeDiff == nil {
 			t.Error("Resource should have CustomizeDiff function")
