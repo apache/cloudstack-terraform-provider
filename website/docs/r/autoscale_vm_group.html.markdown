@@ -21,7 +21,7 @@ resource "cloudstack_autoscale_vm_group" "vm_group" {
   max_members      = 5
   vm_profile_id    = cloudstack_autoscale_vm_profile.profile.id
   state            = "enable"  # or "disable"
-  cleanup          = true
+  cleanup          = true # or false
   
   scaleup_policy_ids = [
     cloudstack_autoscale_policy.scale_up_policy.id

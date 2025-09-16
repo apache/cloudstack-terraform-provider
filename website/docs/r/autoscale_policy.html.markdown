@@ -18,7 +18,7 @@ resource "cloudstack_condition" "scale_up_condition" {
   relational_operator = "GT"
   threshold           = 80.0
   account_name        = "admin"
-  domain_id           = "1"
+  domain_id           = "67bc8dbe-8416-11f0-9a72-1e001b000238"
 }
 
 resource "cloudstack_autoscale_policy" "scale_up_policy" {
