@@ -22,6 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -43,8 +44,14 @@ func resourceCloudStackAutoScalePolicy() *schema.Resource {
 			"action": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "the action to be executed if all the conditions evaluate to true for the specified duration",
+				Description: "the action to be executed if all the conditions evaluate to true for the specified duration (case insensitive: scaleup/SCALEUP or scaledown/SCALEDOWN)",
 				ForceNew:    true,
+				StateFunc: func(val interface{}) string {
+					return strings.ToUpper(val.(string))
+				},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.ToUpper(old) == strings.ToUpper(new)
+				},
 			},
 			"duration": {
 				Type:        schema.TypeInt,
@@ -98,7 +105,19 @@ func resourceCloudStackAutoScalePolicyCreate(d *schema.ResourceData, meta interf
 	d.SetId(resp.Id)
 	log.Printf("[DEBUG] Autoscale policy created with ID: %s", resp.Id)
 
-	return resourceCloudStackAutoScalePolicyRead(d, meta)
+	conditionSet := schema.NewSet(schema.HashString, []interface{}{})
+	for _, id := range conditionIds {
+		conditionSet.Add(id)
+	}
+	d.Set("condition_ids", conditionSet)
+	d.Set("name", d.Get("name").(string))
+	d.Set("action", action)
+	d.Set("duration", duration)
+	if v, ok := d.GetOk("quiet_time"); ok {
+		d.Set("quiet_time", v.(int))
+	}
+
+	return nil
 }
 
 func resourceCloudStackAutoScalePolicyRead(d *schema.ResourceData, meta interface{}) error {
@@ -120,23 +139,24 @@ func resourceCloudStackAutoScalePolicyRead(d *schema.ResourceData, meta interfac
 
 	policy := resp.AutoScalePolicies[0]
 	d.Set("name", policy.Name)
+	// CloudStack always returns uppercase actions (SCALEUP/SCALEDOWN)
+	// Our StateFunc normalizes user input to uppercase, so this should match
 	d.Set("action", policy.Action)
 	d.Set("duration", policy.Duration)
 	d.Set("quiet_time", policy.Quiettime)
 
 	conditionIds := schema.NewSet(schema.HashString, []interface{}{})
 	for _, condition := range policy.Conditions {
-		var conditionInterface interface{} = condition
-		switch v := conditionInterface.(type) {
-		case string:
-			conditionIds.Add(v)
-		case map[string]interface{}:
-			if id, ok := v["id"].(string); ok {
-				conditionIds.Add(id)
-			}
-		default:
-			log.Printf("[DEBUG] Unexpected condition type: %T, value: %+v", condition, condition)
-			conditionIds.Add(fmt.Sprintf("%v", condition))
+		// Try to extract the ID from the condition object
+		if condition == nil {
+			continue
+		}
+
+		// The condition is a *cloudstack.Condition struct, so access the Id field directly
+		if condition.Id != "" {
+			conditionIds.Add(condition.Id)
+		} else {
+			log.Printf("[WARN] Condition has empty ID: %+v", condition)
 		}
 	}
 	d.Set("condition_ids", conditionIds)
