@@ -15,14 +15,14 @@ Use this data source to retrieve information about CloudStack resource limits fo
 ```hcl
 # Get all resource limits for a specific domain
 data "cloudstack_limits" "domain_limits" {
-  domainid = "domain-uuid"
+  domain_id = "domain-uuid"
 }
 
 # Get instance limits for a specific account
 data "cloudstack_limits" "account_instance_limits" {
   type         = "instance"
   account      = "acct1"
-  domainid     = "domain-uuid"
+  domain_id     = "domain-uuid"
 }
 
 # Get primary storage limits for a project
@@ -49,8 +49,8 @@ The following arguments are supported:
   * `memory`
   * `primarystorage`
   * `secondarystorage`
-* `account` - (Optional) List resources by account. Must be used with the `domainid` parameter.
-* `domainid` - (Optional) List only resources belonging to the domain specified.
+* `account` - (Optional) List resources by account. Must be used with the `domain_id` parameter.
+* `domain_id` - (Optional) List only resources belonging to the domain specified.
 * `project` - (Optional) List resource limits by project.
 
 ## Attributes Reference
@@ -63,6 +63,6 @@ The following attributes are exported:
   * `max` - The maximum number of the resource. A value of `-1` indicates unlimited resources. A value of `0` means zero resources are allowed, though the CloudStack API may return `-1` for a limit set to `0`.
   * `account` - The account of the resource limit.
   * `domain` - The domain name of the resource limit.
-  * `domainid` - The domain ID of the resource limit.
+  * `domain_id` - The domain ID of the resource limit.
   * `project` - The project name of the resource limit.
   * `projectid` - The project ID of the resource limit.

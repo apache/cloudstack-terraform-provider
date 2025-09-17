@@ -24,7 +24,7 @@ resource "cloudstack_limits" "volume_limit" {
   type         = "volume"
   max          = 50
   account      = "acct1"
-  domainid     = "domain-uuid"
+  domain_id     = "domain-uuid"
 }
 
 # Set primary storage limit for a project
@@ -59,8 +59,8 @@ The following arguments are supported:
   * `primarystorage`
   * `secondarystorage`
 
-* `account` - (Optional, ForceNew) Update resource for a specified account. Must be used with the `domainid` parameter.
-* `domainid` - (Optional, ForceNew) Update resource limits for all accounts in specified domain. If used with the `account` parameter, updates resource limits for a specified account in specified domain.
+* `account` - (Optional, ForceNew) Update resource for a specified account. Must be used with the `domain_id` parameter.
+* `domain_id` - (Optional, ForceNew) Update resource limits for all accounts in specified domain. If used with the `account` parameter, updates resource limits for a specified account in specified domain.
 * `max` - (Optional) Maximum resource limit. Use `-1` for unlimited resource limit. A value of `0` means zero resources are allowed, though the CloudStack API may return `-1` for a limit set to `0`.
 * `project` - (Optional, ForceNew) Update resource limits for project.
 
@@ -72,7 +72,7 @@ The following attributes are exported:
 * `type` - The type of resource.
 * `max` - The maximum number of the resource.
 * `account` - The account of the resource limit.
-* `domainid` - The domain ID of the resource limit.
+* `domain_id` - The domain ID of the resource limit.
 * `project` - The project ID of the resource limit.
 
 ## Import

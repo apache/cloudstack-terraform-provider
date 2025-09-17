@@ -160,7 +160,7 @@ func dataSourceCloudStackLimitsRead(d *schema.ResourceData, meta interface{}) er
 		}
 
 		if limit.Domainid != "" {
-			limitMap["domainid"] = limit.Domainid
+			limitMap["domain_id"] = limit.Domainid
 		}
 
 		if limit.Project != "" {

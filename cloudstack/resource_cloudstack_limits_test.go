@@ -439,8 +439,8 @@ resource "cloudstack_account" "test_account" {
   last_name    = "Account"
   email        = "test-account-limits@example.com"
   account_type = 2  # Regular user account type
-  role_id      = 4  # Regular user role
-  domainid     = cloudstack_domain.test_domain.id
+  role_id      = "4"  # Regular user role
+  domain_id    = cloudstack_domain.test_domain.id
 }
 
 resource "cloudstack_limits" "account_limit" {
