@@ -196,7 +196,7 @@ const testAccCloudStackSnapshotPolicy_basic = `
 data "cloudstack_zone" "zone" {
   filter {
     name   = "name"
-    values = ["Sandbox-simulator"]
+    value  = "Sandbox-simulator"
   }
 }
 
@@ -204,8 +204,6 @@ resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering"
   display_text       = "terraform-disk-offering"
   disk_size          = 10
-  storage_type       = "shared"
-  provisioning_type  = "thin"
 }
 
 resource "cloudstack_disk" "foo" {
@@ -234,7 +232,7 @@ const testAccCloudStackSnapshotPolicy_update = `
 data "cloudstack_zone" "zone" {
   filter {
     name   = "name"
-    values = ["Sandbox-simulator"]
+    value  = "Sandbox-simulator"
   }
 }
 
@@ -242,8 +240,6 @@ resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering"
   display_text       = "terraform-disk-offering"
   disk_size          = 10
-  storage_type       = "shared"
-  provisioning_type  = "thin"
 }
 
 resource "cloudstack_disk" "foo" {
@@ -273,7 +269,7 @@ const testAccCloudStackSnapshotPolicy_hourly = `
 data "cloudstack_zone" "zone" {
   filter {
     name   = "name"
-    values = ["Sandbox-simulator"]
+    value  = "Sandbox-simulator"
   }
 }
 
@@ -305,7 +301,7 @@ const testAccCloudStackSnapshotPolicy_weekly = `
 data "cloudstack_zone" "zone" {
   filter {
     name   = "name"
-    values = ["Sandbox-simulator"]
+    value  = "Sandbox-simulator"
   }
 }
 
@@ -336,7 +332,7 @@ const testAccCloudStackSnapshotPolicy_monthly = `
 data "cloudstack_zone" "zone" {
   filter {
     name   = "name"
-    values = ["Sandbox-simulator"]
+    value  = "Sandbox-simulator"
   }
 }
 
