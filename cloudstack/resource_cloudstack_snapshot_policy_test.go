@@ -194,7 +194,10 @@ func testAccCheckCloudStackSnapshotPolicyDestroy(s *terraform.State) error {
 
 const testAccCloudStackSnapshotPolicy_basic = `
 data "cloudstack_zone" "zone" {
-  name = "Sandbox-simulator"
+  filter {
+    name   = "name"
+    values = ["Sandbox-simulator"]
+  }
 }
 
 resource "cloudstack_disk_offering" "foo" {
@@ -229,7 +232,10 @@ resource "cloudstack_snapshot_policy" "foo" {
 
 const testAccCloudStackSnapshotPolicy_update = `
 data "cloudstack_zone" "zone" {
-  name = "Sandbox-simulator"
+  filter {
+    name   = "name"
+    values = ["Sandbox-simulator"]
+  }
 }
 
 resource "cloudstack_disk_offering" "foo" {
@@ -265,15 +271,16 @@ resource "cloudstack_snapshot_policy" "foo" {
 
 const testAccCloudStackSnapshotPolicy_hourly = `
 data "cloudstack_zone" "zone" {
-  name = "Sandbox-simulator"
+  filter {
+    name   = "name"
+    values = ["Sandbox-simulator"]
+  }
 }
 
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering-hourly"
   display_text       = "terraform-disk-offering-hourly"
   disk_size          = 10
-  storage_type       = "shared"
-  provisioning_type  = "thin"
 }
 
 resource "cloudstack_disk" "foo" {
@@ -296,15 +303,16 @@ resource "cloudstack_snapshot_policy" "hourly" {
 
 const testAccCloudStackSnapshotPolicy_weekly = `
 data "cloudstack_zone" "zone" {
-  name = "Sandbox-simulator"
+  filter {
+    name   = "name"
+    values = ["Sandbox-simulator"]
+  }
 }
 
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering-weekly"
   display_text       = "terraform-disk-offering-weekly"
   disk_size          = 10
-  storage_type       = "shared"
-  provisioning_type  = "thin"
 }
 
 resource "cloudstack_disk" "foo" {
@@ -326,15 +334,16 @@ resource "cloudstack_snapshot_policy" "weekly" {
 
 const testAccCloudStackSnapshotPolicy_monthly = `
 data "cloudstack_zone" "zone" {
-  name = "Sandbox-simulator"
+  filter {
+    name   = "name"
+    values = ["Sandbox-simulator"]
+  }
 }
 
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering-monthly"
   display_text       = "terraform-disk-offering-monthly"
   disk_size          = 10
-  storage_type       = "shared"
-  provisioning_type  = "thin"
 }
 
 resource "cloudstack_disk" "foo" {
