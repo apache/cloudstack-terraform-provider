@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,6 +31,81 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// treats 'all ports' for tcp/udp across CS versions returning 0/0, -1/-1, or 1/65535
+func isAllPortsTCPUDP(protocol string, start, end int) bool {
+	p := strings.ToLower(protocol)
+	if p != "tcp" && p != "udp" {
+		return false
+	}
+	// handle various representations of all ports across CloudStack versions
+	if (start == 0 && end == 0) ||
+		(start == -1 && end == -1) ||
+		(start == 1 && end == 65535) {
+		return true
+	}
+	return false
+}
+
+// normalizeRemoteCIDRs normalizes a comma-separated CIDR string from CloudStack API
+func normalizeRemoteCIDRs(cidrList string) []string {
+	if cidrList == "" {
+		return []string{}
+	}
+
+	cidrs := strings.Split(cidrList, ",")
+	normalized := make([]string, 0, len(cidrs))
+
+	for _, cidr := range cidrs {
+		trimmed := strings.TrimSpace(cidr)
+		if trimmed != "" {
+			normalized = append(normalized, trimmed)
+		}
+	}
+
+	sort.Strings(normalized)
+	return normalized
+}
+
+// normalizeLocalCIDRs normalizes a Terraform schema.Set of CIDRs
+func normalizeLocalCIDRs(cidrSet *schema.Set) []string {
+	if cidrSet == nil {
+		return []string{}
+	}
+
+	normalized := make([]string, 0, cidrSet.Len())
+	for _, cidr := range cidrSet.List() {
+		if cidrStr, ok := cidr.(string); ok {
+			trimmed := strings.TrimSpace(cidrStr)
+			if trimmed != "" {
+				normalized = append(normalized, trimmed)
+			}
+		}
+	}
+
+	sort.Strings(normalized)
+	return normalized
+}
+
+// cidrSetsEqual compares normalized CIDR sets for equality (order/whitespace agnostic)
+func cidrSetsEqual(remoteCidrList string, localCidrSet *schema.Set) bool {
+	remoteCidrs := normalizeRemoteCIDRs(remoteCidrList)
+	localCidrs := normalizeLocalCIDRs(localCidrSet)
+
+	// Compare lengths first
+	if len(remoteCidrs) != len(localCidrs) {
+		return false
+	}
+
+	// Compare each element (both are already sorted)
+	for i, remoteCidr := range remoteCidrs {
+		if remoteCidr != localCidrs[i] {
+			return false
+		}
+	}
+
+	return true
+}
 
 func resourceCloudStackEgressFirewall() *schema.Resource {
 	return &schema.Resource{
@@ -250,6 +326,15 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 				uuids[port.(string)] = r.Id
 				rule["uuids"] = uuids
 			}
+		} else {
+			// No ports specified - create a rule that encompasses all ports
+			// by not setting startport and endport parameters
+			r, err := cs.Firewall.CreateEgressFirewallRule(p)
+			if err != nil {
+				return err
+			}
+			uuids["all"] = r.Id
+			rule["uuids"] = uuids
 		}
 	}
 
@@ -368,8 +453,74 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 						rule["ports"] = ports
 						rules.Add(rule)
 					}
+				} else {
+					// No ports specified - check if we have an "all" rule
+					id, ok := uuids["all"]
+					if !ok {
+						continue
+					}
+
+					// Get the rule
+					r, ok := ruleMap[id.(string)]
+					if !ok {
+						delete(uuids, "all")
+						continue
+					}
+
+					// Verify this is actually an all-ports rule using our helper
+					if !isAllPortsTCPUDP(r.Protocol, r.Startport, r.Endport) {
+						// This rule has specific ports, but we expected all-ports
+						// This might happen if CloudStack behavior changed
+						continue
+					}
+
+					// Delete the known rule so only unknown rules remain in the ruleMap
+					delete(ruleMap, id.(string))
+
+					// Create a set with all CIDR's
+					cidrs := &schema.Set{F: schema.HashString}
+					for _, cidr := range strings.Split(r.Cidrlist, ",") {
+						cidrs.Add(cidr)
+					}
+
+					// Update the values
+					rule["protocol"] = r.Protocol
+					rule["cidr_list"] = cidrs
+					rules.Add(rule)
 				}
 			}
+
+			// Fallback: Check if any remaining rules in ruleMap match our expected all-ports pattern
+			// This handles cases where CloudStack might return all-ports rules in unexpected formats
+			if rule["protocol"].(string) != "icmp" && strings.ToLower(rule["protocol"].(string)) != "all" {
+				// Look for any remaining rules that might be our all-ports rule
+				for ruleID, r := range ruleMap {
+					// Get local CIDR set for comparison
+					localCidrSet, ok := rule["cidr_list"].(*schema.Set)
+					if !ok {
+						continue
+					}
+
+					if isAllPortsTCPUDP(r.Protocol, r.Startport, r.Endport) &&
+						strings.EqualFold(r.Protocol, rule["protocol"].(string)) &&
+						cidrSetsEqual(r.Cidrlist, localCidrSet) {
+						// This looks like our all-ports rule, add it to state
+						cidrs := &schema.Set{F: schema.HashString}
+						for _, cidr := range strings.Split(r.Cidrlist, ",") {
+							cidrs.Add(cidr)
+						}
+
+						rule["protocol"] = r.Protocol
+						rule["cidr_list"] = cidrs
+						rules.Add(rule)
+
+						// Remove from ruleMap so it's not processed again
+						delete(ruleMap, ruleID)
+						break
+					}
+				}
+			}
+
 			if strings.ToLower(rule["protocol"].(string)) == "all" {
 				id, ok := uuids["all"]
 				if !ok {
@@ -606,10 +757,9 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 						"%q is not a valid port value. Valid options are '80' or '80-90'", port.(string))
 				}
 			}
-		} else {
-			return fmt.Errorf(
-				"Parameter ports is a required parameter when *not* using protocol 'icmp'")
 		}
+		// Note: ports parameter is optional for TCP/UDP protocols
+		// When omitted, the rule will encompass all ports
 	} else if strings.ToLower(protocol) == "all" {
 		if ports, _ := rule["ports"].(*schema.Set); ports.Len() > 0 {
 			return fmt.Errorf(
