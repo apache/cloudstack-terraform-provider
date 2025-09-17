@@ -200,6 +200,24 @@ data "cloudstack_zone" "zone" {
   }
 }
 
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = data.cloudstack_zone.zone.name
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform"
+  service_offering = "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = data.cloudstack_zone.zone.name
+  expunge = true
+}
+
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering"
   display_text       = "terraform-disk-offering"
@@ -208,8 +226,9 @@ resource "cloudstack_disk_offering" "foo" {
 
 resource "cloudstack_disk" "foo" {
   name             = "terraform-disk"
-  attach           = false
+  attach           = true
   disk_offering    = cloudstack_disk_offering.foo.name
+  virtual_machine_id = cloudstack_instance.foobar.id
   zone             = data.cloudstack_zone.zone.name
 }
 
@@ -236,6 +255,24 @@ data "cloudstack_zone" "zone" {
   }
 }
 
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = data.cloudstack_zone.zone.name
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform"
+  service_offering = "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = data.cloudstack_zone.zone.name
+  expunge = true
+}
+
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering"
   display_text       = "terraform-disk-offering"
@@ -244,8 +281,9 @@ resource "cloudstack_disk_offering" "foo" {
 
 resource "cloudstack_disk" "foo" {
   name             = "terraform-disk"
-  attach           = false
+  attach           = true
   disk_offering    = cloudstack_disk_offering.foo.name
+  virtual_machine_id = cloudstack_instance.foobar.id
   zone             = data.cloudstack_zone.zone.name
 }
 
@@ -273,6 +311,24 @@ data "cloudstack_zone" "zone" {
   }
 }
 
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-hourly"
+  display_text = "terraform-network-hourly"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = data.cloudstack_zone.zone.name
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test-hourly"
+  display_name = "terraform-hourly"
+  service_offering = "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = data.cloudstack_zone.zone.name
+  expunge = true
+}
+
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering-hourly"
   display_text       = "terraform-disk-offering-hourly"
@@ -281,8 +337,9 @@ resource "cloudstack_disk_offering" "foo" {
 
 resource "cloudstack_disk" "foo" {
   name             = "terraform-disk-hourly"
-  attach           = false
+  attach           = true
   disk_offering    = cloudstack_disk_offering.foo.name
+  virtual_machine_id = cloudstack_instance.foobar.id
   zone             = data.cloudstack_zone.zone.name
 }
 
@@ -305,6 +362,24 @@ data "cloudstack_zone" "zone" {
   }
 }
 
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-weekly"
+  display_text = "terraform-network-weekly"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = data.cloudstack_zone.zone.name
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test-weekly"
+  display_name = "terraform-weekly"
+  service_offering = "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = data.cloudstack_zone.zone.name
+  expunge = true
+}
+
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering-weekly"
   display_text       = "terraform-disk-offering-weekly"
@@ -313,8 +388,9 @@ resource "cloudstack_disk_offering" "foo" {
 
 resource "cloudstack_disk" "foo" {
   name             = "terraform-disk-weekly"
-  attach           = false
+  attach           = true
   disk_offering    = cloudstack_disk_offering.foo.name
+  virtual_machine_id = cloudstack_instance.foobar.id
   zone             = data.cloudstack_zone.zone.name
 }
 
@@ -336,6 +412,24 @@ data "cloudstack_zone" "zone" {
   }
 }
 
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-monthly"
+  display_text = "terraform-network-monthly"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = data.cloudstack_zone.zone.name
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test-monthly"
+  display_name = "terraform-monthly"
+  service_offering = "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = data.cloudstack_zone.zone.name
+  expunge = true
+}
+
 resource "cloudstack_disk_offering" "foo" {
   name               = "terraform-disk-offering-monthly"
   display_text       = "terraform-disk-offering-monthly"
@@ -344,8 +438,9 @@ resource "cloudstack_disk_offering" "foo" {
 
 resource "cloudstack_disk" "foo" {
   name             = "terraform-disk-monthly"
-  attach           = false
+  attach           = true
   disk_offering    = cloudstack_disk_offering.foo.name
+  virtual_machine_id = cloudstack_instance.foobar.id
   zone             = data.cloudstack_zone.zone.name
 }
 
