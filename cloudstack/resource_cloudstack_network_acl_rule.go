@@ -732,7 +732,6 @@ func resourceCloudStackNetworkACLRuleImport(d *schema.ResourceData, meta interfa
 
 	log.Printf("[DEBUG] Found ACL list with ID: %s", aclID)
 	d.Set("acl_id", aclID)
-	d.SetId(aclID)
 
 	log.Printf("[DEBUG] Setting managed=true for ACL list import")
 	d.Set("managed", true)
