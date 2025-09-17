@@ -42,8 +42,11 @@ func TestResourceCloudStackNetworkSchema(t *testing.T) {
 			if typeField.Optional != true {
 				t.Error("Type field should be optional")
 			}
-			if typeField.Default != "L3" {
-				t.Errorf("Type field default should be 'L3', got: %v", typeField.Default)
+			if typeField.Computed != true {
+				t.Error("Type field should be computed")
+			}
+			if typeField.Default != nil {
+				t.Errorf("Type field should not have a default (it's computed), got: %v", typeField.Default)
 			}
 		}
 	})

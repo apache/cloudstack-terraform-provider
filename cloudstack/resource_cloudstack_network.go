@@ -77,7 +77,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 			"type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "L3",
+				Computed: true,
 				ForceNew: true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(string)
@@ -175,17 +175,35 @@ func resourceCloudStackNetwork() *schema.Resource {
 }
 
 func resourceCloudStackNetworkCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
-	networkType := d.Get("type").(string)
+	var t string
+	if v, ok := d.GetOk("type"); ok {
+		t = v.(string)
+	}
 	cidr := d.Get("cidr").(string)
 
-	// For L3 networks, cidr is required
-	if networkType == "L3" && cidr == "" {
-		return fmt.Errorf("cidr is required when type is L3")
+	// Default type if user didn't set it
+	if t == "" {
+		if cidr != "" {
+			if err := d.SetNew("type", "L3"); err != nil {
+				return err
+			}
+			t = "L3"
+		} else {
+			if err := d.SetNew("type", "L2"); err != nil {
+				return err
+			}
+			t = "L2"
+		}
 	}
 
-	// For L2 networks, cidr should not be provided
-	if networkType == "L2" && cidr != "" {
-		return fmt.Errorf("cidr should not be provided when type is L2")
+	// Enforce combinations; also clear stray cidr for L2 to avoid drift
+	if t == "L3" && cidr == "" {
+		return fmt.Errorf("cidr is required when type is L3")
+	}
+	if t == "L2" && cidr != "" {
+		if err := d.SetNew("cidr", ""); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -342,16 +360,18 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 
 	d.Set("name", n.Name)
 	d.Set("display_text", n.Displaytext)
-	d.Set("cidr", n.Cidr)
-	d.Set("gateway", n.Gateway)
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
 
-	// Determine network type based on CIDR presence
-	if n.Cidr == "" {
+	// Normalize: different ACS versions omit/empty fields
+	if strings.TrimSpace(n.Cidr) == "" {
 		d.Set("type", "L2")
+		d.Set("cidr", "")
+		d.Set("gateway", "")
 	} else {
 		d.Set("type", "L3")
+		d.Set("cidr", n.Cidr)
+		d.Set("gateway", n.Gateway)
 	}
 
 	if n.Aclid == "" {
