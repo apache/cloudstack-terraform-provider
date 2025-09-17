@@ -146,20 +146,3 @@ schedule = "1:02:00"   # 1st day of month at 2:00 AM
 schedule = "15:03:30"  # 15th day of month at 3:30 AM
 schedule = "28:01:00"  # 28th day of month at 1:00 AM
 ```
-
-## Import
-
-Snapshot policies can be imported using the policy ID:
-
-```shell
-terraform import cloudstack_snapshot_policy.example 12345678-1234-1234-1234-123456789012
-```
-
-## Notes
-
-* Snapshot policies will continue to execute regardless of the volume's state (attached/detached).
-* Snapshots are incremental and space-efficient in most CloudStack configurations.
-* You can have multiple snapshot policies for the same volume with different intervals.
-* Consider storage costs when setting `max_snaps` values, especially for frequently changing volumes.
-* The actual snapshot creation time may vary slightly from the scheduled time depending on system load.
-* When a snapshot policy is deleted, existing snapshots created by that policy are not automatically deleted.
