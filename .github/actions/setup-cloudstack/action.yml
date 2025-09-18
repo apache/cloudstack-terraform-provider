@@ -43,7 +43,7 @@ runs:
       run: |
         echo "Starting Cloudstack health check"
         T=0
-        until [ $T -gt 20 ]  || curl -sfL http://localhost:8080 --output /dev/null
+        until [ $T -gt 40 ]  || curl -sfL http://localhost:8080 --output /dev/null
         do
             echo "Waiting for Cloudstack to be ready..."
             ((T+=1))
