@@ -38,6 +38,9 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 		Read:   resourceCloudStackNetworkACLRuleRead,
 		Update: resourceCloudStackNetworkACLRuleUpdate,
 		Delete: resourceCloudStackNetworkACLRuleDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceCloudStackNetworkACLRuleImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"acl_id": {
@@ -713,4 +716,37 @@ func retryableACLCreationFunc(
 		}
 		return r, nil
 	}
+}
+
+func resourceCloudStackNetworkACLRuleImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	aclID := d.Id()
+
+	log.Printf("[DEBUG] Attempting to import ACL list with ID: %s", aclID)
+	if aclExists, err := checkACLListExists(cs, aclID); err != nil {
+		return nil, fmt.Errorf("error checking ACL list existence: %v", err)
+	} else if !aclExists {
+		return nil, fmt.Errorf("ACL list with ID %s does not exist", aclID)
+	}
+
+	log.Printf("[DEBUG] Found ACL list with ID: %s", aclID)
+	d.Set("acl_id", aclID)
+
+	log.Printf("[DEBUG] Setting managed=true for ACL list import")
+	d.Set("managed", true)
+
+	return []*schema.ResourceData{d}, nil
+}
+
+func checkACLListExists(cs *cloudstack.CloudStackClient, aclID string) (bool, error) {
+	log.Printf("[DEBUG] Checking if ACL list exists: %s", aclID)
+	_, count, err := cs.NetworkACL.GetNetworkACLListByID(aclID)
+	if err != nil {
+		log.Printf("[DEBUG] Error getting ACL list by ID: %v", err)
+		return false, err
+	}
+
+	log.Printf("[DEBUG] ACL list check result: count=%d", count)
+	return count > 0, nil
 }
