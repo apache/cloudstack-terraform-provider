@@ -234,7 +234,7 @@ resource "cloudstack_disk" "foo" {
 
 resource "cloudstack_snapshot_policy" "foo" {
   volume_id     = cloudstack_disk.foo.id
-  interval_type = 1
+  interval_type = "DAILY"
   max_snaps     = 7
   schedule      = "02:30"
   timezone      = "UTC"
@@ -345,7 +345,7 @@ resource "cloudstack_disk" "foo" {
 
 resource "cloudstack_snapshot_policy" "hourly" {
   volume_id     = cloudstack_disk.foo.id
-  interval_type = 0
+  interval_type = "HOURLY"
   max_snaps     = 6
   schedule      = "0"
   timezone      = "UTC"
@@ -396,7 +396,7 @@ resource "cloudstack_disk" "foo" {
 
 resource "cloudstack_snapshot_policy" "weekly" {
   volume_id     = cloudstack_disk.foo.id
-  interval_type = 2
+  interval_type = "WEEKLY"
   max_snaps     = 4
   schedule      = "1:03:00"  # Monday at 3:00 AM
   timezone      = "UTC"
@@ -446,7 +446,7 @@ resource "cloudstack_disk" "foo" {
 
 resource "cloudstack_snapshot_policy" "monthly" {
   volume_id     = cloudstack_disk.foo.id
-  interval_type = 3
+  interval_type = "MONTHLY"
   max_snaps     = 12
   schedule      = "15:01:00"  # 15th day at 1:00 AM
   timezone      = "UTC"

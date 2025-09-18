@@ -27,6 +27,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+func intervalTypeToString(intervalType int) string {
+	switch intervalType {
+	case 0:
+		return "hourly"
+	case 1:
+		return "daily"
+	case 2:
+		return "weekly"
+	case 3:
+		return "monthly"
+	default:
+		return fmt.Sprintf("%d", intervalType)
+	}
+}
+
 func resourceCloudStackSnapshotPolicy() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceCloudstackSnapshotPolicyCreate,
@@ -38,26 +53,32 @@ func resourceCloudStackSnapshotPolicy() *schema.Resource {
 			"volume_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"interval_type": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"max_snaps": {
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 			"schedule": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"timezone": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"zone_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -150,7 +171,7 @@ func resourceCloudstackSnapshotPolicyRead(d *schema.ResourceData, meta interface
 	snapshotPolicy := resp.SnapshotPolicies[0]
 
 	d.Set("volume_id", snapshotPolicy.Volumeid)
-	d.Set("interval_type", snapshotPolicy.Intervaltype)
+	d.Set("interval_type", intervalTypeToString(snapshotPolicy.Intervaltype))
 	d.Set("max_snaps", snapshotPolicy.Maxsnaps)
 	d.Set("schedule", snapshotPolicy.Schedule)
 	d.Set("timezone", snapshotPolicy.Timezone)
