@@ -30,13 +30,13 @@ import (
 func intervalTypeToString(intervalType int) string {
 	switch intervalType {
 	case 0:
-		return "hourly"
+		return "HOURLY"
 	case 1:
-		return "daily"
+		return "DAILY"
 	case 2:
-		return "weekly"
+		return "WEEKLY"
 	case 3:
-		return "monthly"
+		return "MONTHLY"
 	default:
 		return fmt.Sprintf("%d", intervalType)
 	}
