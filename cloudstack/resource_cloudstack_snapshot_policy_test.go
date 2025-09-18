@@ -96,7 +96,7 @@ func TestAccCloudStackSnapshotPolicy_update(t *testing.T) {
 				Config: testAccCloudStackSnapshotPolicy_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackSnapshotPolicyExists("cloudstack_snapshot_policy.foo", &snapshotPolicy),
-					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.foo", "max_snaps", "10"),
+					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.foo", "max_snaps", "8"),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.foo", "tags.Environment", "production"),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.foo", "tags.Updated", "true"),
 				),
@@ -290,7 +290,7 @@ resource "cloudstack_disk" "foo" {
 resource "cloudstack_snapshot_policy" "foo" {
   volume_id     = cloudstack_disk.foo.id
   interval_type = "DAILY"
-  max_snaps     = 10
+  max_snaps     = 8
   schedule      = "02:30"
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
@@ -351,6 +351,8 @@ resource "cloudstack_snapshot_policy" "hourly" {
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
   custom_id     = "test-hourly"
+  
+  tags = {}
 }
 `
 
@@ -401,6 +403,8 @@ resource "cloudstack_snapshot_policy" "weekly" {
   schedule      = "1:03:00"  # Monday at 3:00 AM
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
+  
+  tags = {}
 }
 `
 
@@ -447,9 +451,11 @@ resource "cloudstack_disk" "foo" {
 resource "cloudstack_snapshot_policy" "monthly" {
   volume_id     = cloudstack_disk.foo.id
   interval_type = "MONTHLY"
-  max_snaps     = 12
+  max_snaps     = 8
   schedule      = "15:01:00"  # 15th day at 1:00 AM
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
+  
+  tags = {}
 }
 `
