@@ -95,6 +95,7 @@ func Provider() *schema.Provider {
 			"cloudstack_physical_network": dataSourceCloudStackPhysicalNetwork(),
 			"cloudstack_role":             dataSourceCloudstackRole(),
 			"cloudstack_cluster":          dataSourceCloudstackCluster(),
+			"cloudstack_limits":           dataSourceCloudStackLimits(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -147,6 +148,7 @@ func Provider() *schema.Provider {
 			"cloudstack_domain":                         resourceCloudStackDomain(),
 			"cloudstack_network_service_provider":       resourceCloudStackNetworkServiceProvider(),
 			"cloudstack_role":                           resourceCloudStackRole(),
+			"cloudstack_limits":                         resourceCloudStackLimits(),
 		},
 
 		ConfigureFunc: providerConfigure,
