@@ -70,6 +70,7 @@ func TestAccCloudStackSnapshotPolicy_hourly(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.hourly", "schedule", "0"),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.hourly", "timezone", "UTC"),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.hourly", "custom_id", "test-hourly"),
+					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.hourly", "tags.%", "0"),
 				),
 			},
 		},
@@ -119,6 +120,7 @@ func TestAccCloudStackSnapshotPolicy_weekly(t *testing.T) {
 					testAccCheckCloudStackSnapshotPolicyExists("cloudstack_snapshot_policy.weekly", &snapshotPolicy),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.weekly", "interval_type", "WEEKLY"),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.weekly", "schedule", "1:03:00"),
+					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.weekly", "tags.%", "0"),
 				),
 			},
 		},
@@ -139,6 +141,7 @@ func TestAccCloudStackSnapshotPolicy_monthly(t *testing.T) {
 					testAccCheckCloudStackSnapshotPolicyExists("cloudstack_snapshot_policy.monthly", &snapshotPolicy),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.monthly", "interval_type", "MONTHLY"),
 					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.monthly", "schedule", "15:01:00"),
+					resource.TestCheckResourceAttr("cloudstack_snapshot_policy.monthly", "tags.%", "0"),
 				),
 			},
 		},
@@ -351,8 +354,6 @@ resource "cloudstack_snapshot_policy" "hourly" {
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
   custom_id     = "test-hourly"
-  
-  tags = {}
 }
 `
 
@@ -403,8 +404,6 @@ resource "cloudstack_snapshot_policy" "weekly" {
   schedule      = "1:03:00"  # Monday at 3:00 AM
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
-  
-  tags = {}
 }
 `
 
@@ -455,7 +454,5 @@ resource "cloudstack_snapshot_policy" "monthly" {
   schedule      = "15:01:00"  # 15th day at 1:00 AM
   timezone      = "UTC"
   zone_ids      = [data.cloudstack_zone.zone.id]
-  
-  tags = {}
 }
 `
