@@ -278,7 +278,9 @@ func resourceCloudStackAutoScaleVMProfileRead(d *schema.ResourceData, meta inter
 	}
 
 	if p.Userdatadetails != "" {
-		d.Set("user_data_details", map[string]interface{}{})
+		if _, ok := d.GetOk("user_data_details"); !ok {
+			d.Set("user_data_details", map[string]interface{}{})
+		}
 	}
 
 	if p.Autoscaleuserid != "" {
@@ -308,85 +310,185 @@ func resourceCloudStackAutoScaleVMProfileRead(d *schema.ResourceData, meta inter
 	return nil
 }
 
+// waitForVMGroupsState waits for the specified VM groups to reach the desired state
+func waitForVMGroupsState(cs *cloudstack.CloudStackClient, groupIDs []string, desiredState string) error {
+	maxRetries := 30 // 30 * 2 seconds = 60 seconds max wait
+	for i := 0; i < maxRetries; i++ {
+		allInDesiredState := true
+
+		for _, groupID := range groupIDs {
+			group, _, err := cs.AutoScale.GetAutoScaleVmGroupByID(groupID)
+			if err != nil {
+				return fmt.Errorf("Error checking state of VM group %s: %s", groupID, err)
+			}
+
+			groupInDesiredState := false
+			if desiredState == "disabled" {
+				groupInDesiredState = (group.State == "disabled")
+			} else if desiredState == "enabled" {
+				groupInDesiredState = (group.State == "enabled")
+			} else {
+				groupInDesiredState = (group.State == desiredState)
+			}
+
+			if !groupInDesiredState {
+				allInDesiredState = false
+				log.Printf("[DEBUG] VM group %s is in state '%s', waiting for '%s'", groupID, group.State, desiredState)
+				break
+			}
+		}
+
+		if allInDesiredState {
+			log.Printf("[INFO] All VM groups have reached desired state: %s", desiredState)
+			return nil
+		}
+
+		if i < maxRetries-1 {
+			log.Printf("[INFO] Waiting for VM groups to reach state '%s' (attempt %d/%d)", desiredState, i+1, maxRetries)
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	return fmt.Errorf("Timeout waiting for VM groups to reach state '%s' after %d seconds", desiredState, maxRetries*2)
+}
+
+func waitForVMGroupsToBeDisabled(cs *cloudstack.CloudStackClient, profileID string) error {
+	log.Printf("[DEBUG] Waiting for VM groups using profile %s to be disabled", profileID)
+	listParams := cs.AutoScale.NewListAutoScaleVmGroupsParams()
+	listParams.SetVmprofileid(profileID)
+
+	groups, err := cs.AutoScale.ListAutoScaleVmGroups(listParams)
+	if err != nil {
+		log.Printf("[ERROR] Failed to list VM groups for profile %s: %s", profileID, err)
+		return fmt.Errorf("Error listing autoscale VM groups: %s", err)
+	}
+
+	log.Printf("[DEBUG] Found %d VM groups using profile %s", len(groups.AutoScaleVmGroups), profileID)
+
+	var groupIDs []string
+	for _, group := range groups.AutoScaleVmGroups {
+		log.Printf("[DEBUG] VM group %s (%s) current state: %s", group.Name, group.Id, group.State)
+		groupIDs = append(groupIDs, group.Id)
+	}
+
+	if len(groupIDs) == 0 {
+		log.Printf("[DEBUG] No VM groups found using profile %s", profileID)
+		return nil
+	}
+
+	log.Printf("[INFO] Waiting for %d VM groups to be disabled for profile update", len(groupIDs))
+	if err := waitForVMGroupsState(cs, groupIDs, "disabled"); err != nil {
+		return fmt.Errorf("Autoscale VM groups must be disabled before updating profile: %s", err)
+	}
+
+	log.Printf("[DEBUG] All VM groups are now disabled for profile %s", profileID)
+	return nil
+}
+
 func resourceCloudStackAutoScaleVMProfileUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
-
-	p := cs.AutoScale.NewUpdateAutoScaleVmProfileParams(d.Id())
-
-	if d.HasChange("template") {
-		zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
-		if e != nil {
-			return e.Error()
+	log.Printf("[DEBUG] Profile update requested for ID: %s", d.Id())
+	for _, key := range []string{"template", "destroy_vm_grace_period", "counter_param_list", "user_data", "user_data_id", "user_data_details", "autoscale_user_id", "display", "metadata"} {
+		if d.HasChange(key) {
+			old, new := d.GetChange(key)
+			log.Printf("[DEBUG] Field '%s' changed from %v to %v", key, old, new)
 		}
-		templateid, e := retrieveTemplateID(cs, zoneid, d.Get("template").(string))
-		if e != nil {
-			return e.Error()
-		}
-		p.SetTemplateid(templateid)
 	}
 
-	if d.HasChange("destroy_vm_grace_period") {
-		if v, ok := d.GetOk("destroy_vm_grace_period"); ok {
-			duration, err := time.ParseDuration(v.(string))
-			if err != nil {
-				return err
+	// Check if we only have metadata changes (which don't require CloudStack API update)
+	onlyMetadataChanges := d.HasChange("metadata") &&
+		!d.HasChange("template") &&
+		!d.HasChange("destroy_vm_grace_period") &&
+		!d.HasChange("counter_param_list") &&
+		!d.HasChange("user_data") &&
+		!d.HasChange("user_data_id") &&
+		!d.HasChange("user_data_details") &&
+		!d.HasChange("autoscale_user_id") &&
+		!d.HasChange("display")
+
+	if !onlyMetadataChanges {
+		if err := waitForVMGroupsToBeDisabled(cs, d.Id()); err != nil {
+			return fmt.Errorf("Autoscale VM groups must be disabled before updating profile: %s", err)
+		}
+
+		p := cs.AutoScale.NewUpdateAutoScaleVmProfileParams(d.Id())
+
+		if d.HasChange("template") {
+			zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
+			if e != nil {
+				return e.Error()
 			}
-			p.SetExpungevmgraceperiod(int(duration.Seconds()))
-		}
-	}
-
-	if d.HasChange("counter_param_list") {
-		if v, ok := d.GetOk("counter_param_list"); ok {
-			nv := make(map[string]string)
-			for k, v := range v.(map[string]interface{}) {
-				nv[k] = v.(string)
+			templateid, e := retrieveTemplateID(cs, zoneid, d.Get("template").(string))
+			if e != nil {
+				return e.Error()
 			}
-			p.SetCounterparam(nv)
+			p.SetTemplateid(templateid)
 		}
-	}
 
-	if d.HasChange("user_data") {
-		if v, ok := d.GetOk("user_data"); ok {
-			p.SetUserdata(v.(string))
-		}
-	}
-
-	if d.HasChange("user_data_id") {
-		if v, ok := d.GetOk("user_data_id"); ok {
-			p.SetUserdataid(v.(string))
-		}
-	}
-
-	if d.HasChange("user_data_details") {
-		if v, ok := d.GetOk("user_data_details"); ok {
-			nv := make(map[string]string)
-			for k, v := range v.(map[string]interface{}) {
-				nv[k] = v.(string)
+		if d.HasChange("destroy_vm_grace_period") {
+			if v, ok := d.GetOk("destroy_vm_grace_period"); ok {
+				duration, err := time.ParseDuration(v.(string))
+				if err != nil {
+					return err
+				}
+				p.SetExpungevmgraceperiod(int(duration.Seconds()))
 			}
-			p.SetUserdatadetails(nv)
 		}
-	}
 
-	if d.HasChange("autoscale_user_id") {
-		if v, ok := d.GetOk("autoscale_user_id"); ok {
-			p.SetAutoscaleuserid(v.(string))
+		if d.HasChange("counter_param_list") {
+			if v, ok := d.GetOk("counter_param_list"); ok {
+				nv := make(map[string]string)
+				for k, v := range v.(map[string]interface{}) {
+					nv[k] = v.(string)
+				}
+				p.SetCounterparam(nv)
+			}
 		}
-	}
 
-	if d.HasChange("display") {
-		if v, ok := d.GetOk("display"); ok {
-			p.SetFordisplay(v.(bool))
+		if d.HasChange("user_data") {
+			if v, ok := d.GetOk("user_data"); ok {
+				p.SetUserdata(v.(string))
+			}
 		}
-	}
 
-	_, err := cs.AutoScale.UpdateAutoScaleVmProfile(p)
-	if err != nil {
-		return fmt.Errorf("Error updating AutoScaleVmProfile %s: %s", d.Id(), err)
+		if d.HasChange("user_data_id") {
+			if v, ok := d.GetOk("user_data_id"); ok {
+				p.SetUserdataid(v.(string))
+			}
+		}
+
+		if d.HasChange("user_data_details") {
+			if v, ok := d.GetOk("user_data_details"); ok {
+				nv := make(map[string]string)
+				for k, v := range v.(map[string]interface{}) {
+					nv[k] = v.(string)
+				}
+				p.SetUserdatadetails(nv)
+			}
+		}
+
+		if d.HasChange("autoscale_user_id") {
+			if v, ok := d.GetOk("autoscale_user_id"); ok {
+				p.SetAutoscaleuserid(v.(string))
+			}
+		}
+
+		if d.HasChange("display") {
+			if v, ok := d.GetOk("display"); ok {
+				p.SetFordisplay(v.(bool))
+			}
+		}
+
+		log.Printf("[DEBUG] Performing CloudStack API update for profile %s", d.Id())
+		_, updateErr := cs.AutoScale.UpdateAutoScaleVmProfile(p)
+		if updateErr != nil {
+			return fmt.Errorf("Error updating AutoScaleVmProfile %s: %s", d.Id(), updateErr)
+		}
 	}
 
 	if d.HasChange("metadata") {
-		if err := updateMetadata(cs, d, "AutoScaleVmProfile"); err != nil {
-			return fmt.Errorf("Error updating tags on AutoScaleVmProfile %s: %s", d.Id(), err)
+		if metadataErr := updateMetadata(cs, d, "AutoScaleVmProfile"); metadataErr != nil {
+			return fmt.Errorf("Error updating tags on AutoScaleVmProfile %s: %s", d.Id(), metadataErr)
 		}
 	}
 
