@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -258,9 +259,71 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 	for _, i := range l.LoadBalancerRuleInstances {
 		mbs = append(mbs, i.Id)
 	}
+
+	asgCheckParams := cs.AutoScale.NewListAutoScaleVmGroupsParams()
+	asgCheckParams.SetLbruleid(d.Id())
+
+	asgGroups, err := cs.AutoScale.ListAutoScaleVmGroups(asgCheckParams)
+	if err != nil {
+		log.Printf("[WARN] Failed to check for autoscale VM groups during read: %s", err)
+	}
+
+	if len(asgGroups.AutoScaleVmGroups) > 0 {
+		log.Printf("[DEBUG] Load balancer rule %s is managed by %d autoscale VM group(s), current members: %v",
+			d.Id(), len(asgGroups.AutoScaleVmGroups), mbs)
+
+		if currentMemberIds, ok := d.GetOk("member_ids"); ok {
+			currentSet := currentMemberIds.(*schema.Set)
+			if currentSet.Len() == 0 && len(mbs) > 0 {
+				d.Set("member_ids", []string{})
+				return nil
+			}
+		}
+	}
+
 	d.Set("member_ids", mbs)
 
 	return nil
+}
+
+func waitForASGsToBeDisabled(cs *cloudstack.CloudStackClient, lbRuleID string) error {
+	log.Printf("[DEBUG] Waiting for autoscale VM groups using load balancer rule %s to be disabled", lbRuleID)
+
+	maxRetries := 60 // 60 * 2 seconds = 120 seconds max wait (longer for Terraform-driven changes)
+	for i := 0; i < maxRetries; i++ {
+		listParams := cs.AutoScale.NewListAutoScaleVmGroupsParams()
+		listParams.SetLbruleid(lbRuleID)
+
+		groups, err := cs.AutoScale.ListAutoScaleVmGroups(listParams)
+		if err != nil {
+			log.Printf("[WARN] Failed to list autoscale VM groups: %s", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		allDisabled := true
+		var enabledGroups []string
+
+		for _, group := range groups.AutoScaleVmGroups {
+			if group.State != "disabled" && group.State != "disable" {
+				allDisabled = false
+				enabledGroups = append(enabledGroups, fmt.Sprintf("%s(%s:%s)", group.Name, group.Id, group.State))
+			}
+		}
+
+		if allDisabled {
+			log.Printf("[INFO] All autoscale VM groups using load balancer rule %s are now disabled", lbRuleID)
+			return nil
+		}
+
+		if i < maxRetries-1 {
+			log.Printf("[DEBUG] Waiting for autoscale VM groups to be disabled (attempt %d/%d). Groups still enabled: %v",
+				i+1, maxRetries, enabledGroups)
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	return fmt.Errorf("Timeout waiting for autoscale VM groups to be disabled after %d seconds", maxRetries*2)
 }
 
 func resourceCloudStackLoadBalancerRuleUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -324,35 +387,126 @@ func resourceCloudStackLoadBalancerRuleUpdate(d *schema.ResourceData, meta inter
 	}
 
 	if d.HasChange("member_ids") {
-		o, n := d.GetChange("member_ids")
-		ombs, nmbs := o.(*schema.Set), n.(*schema.Set)
+		log.Printf("[DEBUG] Load balancer rule %s member_ids change detected", d.Id())
 
-		setToStringList := func(s *schema.Set) []string {
-			l := make([]string, s.Len())
-			for i, v := range s.List() {
-				l[i] = v.(string)
-			}
-			return l
+		asgCheckParams := cs.AutoScale.NewListAutoScaleVmGroupsParams()
+		asgCheckParams.SetLbruleid(d.Id())
+
+		asgGroups, err := cs.AutoScale.ListAutoScaleVmGroups(asgCheckParams)
+		if err != nil {
+			log.Printf("[WARN] Failed to check for autoscale VM groups: %s", err)
 		}
 
-		membersToAdd := setToStringList(nmbs.Difference(ombs))
-		membersToRemove := setToStringList(ombs.Difference(nmbs))
+		if len(asgGroups.AutoScaleVmGroups) > 0 {
+			log.Printf("[INFO] Load balancer rule %s is managed by %d autoscale VM group(s), handling member updates carefully",
+				d.Id(), len(asgGroups.AutoScaleVmGroups))
 
-		log.Printf("[DEBUG] Members to add: %v, remove: %v", membersToAdd, membersToRemove)
+			o, n := d.GetChange("member_ids")
+			ombs, nmbs := o.(*schema.Set), n.(*schema.Set)
 
-		if len(membersToAdd) > 0 {
-			p := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(d.Id())
-			p.SetVirtualmachineids(membersToAdd)
-			if _, err := cs.LoadBalancer.AssignToLoadBalancerRule(p); err != nil {
-				return err
+			setToStringList := func(s *schema.Set) []string {
+				l := make([]string, s.Len())
+				for i, v := range s.List() {
+					l[i] = v.(string)
+				}
+				return l
 			}
-		}
 
-		if len(membersToRemove) > 0 {
-			p := cs.LoadBalancer.NewRemoveFromLoadBalancerRuleParams(d.Id())
-			p.SetVirtualmachineids(membersToRemove)
-			if _, err := cs.LoadBalancer.RemoveFromLoadBalancerRule(p); err != nil {
-				return err
+			oldMembers := setToStringList(ombs)
+			newMembers := setToStringList(nmbs)
+
+			log.Printf("[DEBUG] Terraform state - old members: %v, new members: %v", oldMembers, newMembers)
+
+			p := cs.LoadBalancer.NewListLoadBalancerRuleInstancesParams(d.Id())
+			currentInstances, err := cs.LoadBalancer.ListLoadBalancerRuleInstances(p)
+			if err != nil {
+				return fmt.Errorf("Error listing current load balancer members: %s", err)
+			}
+
+			var currentMembers []string
+			for _, i := range currentInstances.LoadBalancerRuleInstances {
+				currentMembers = append(currentMembers, i.Id)
+			}
+
+			log.Printf("[DEBUG] CloudStack actual members: %v", currentMembers)
+
+			// If Terraform state is empty but CloudStack has members, it means autoscale is managing them
+			if len(oldMembers) == 0 && len(currentMembers) > 0 {
+				log.Printf("[INFO] Detected autoscale-managed members in load balancer. Skipping member updates to avoid conflicts.")
+				log.Printf("[INFO] Autoscale VM groups will manage the member lifecycle automatically.")
+
+				d.Set("member_ids", currentMembers)
+				return resourceCloudStackLoadBalancerRuleRead(d, meta)
+			}
+
+			if len(newMembers) > 0 {
+				log.Printf("[WARN] Explicit member_ids specified for autoscale-managed load balancer. This may conflict with autoscale operations.")
+
+				if err := waitForASGsToBeDisabled(cs, d.Id()); err != nil {
+					return fmt.Errorf("Autoscale VM groups must be disabled before modifying load balancer members: %s", err)
+				}
+
+				membersToAdd := setToStringList(nmbs.Difference(ombs))
+				membersToRemove := setToStringList(ombs.Difference(nmbs))
+
+				log.Printf("[DEBUG] Explicit member changes - to add: %v, to remove: %v", membersToAdd, membersToRemove)
+
+				if len(membersToRemove) > 0 {
+					log.Printf("[DEBUG] Removing %d explicit members from load balancer rule %s", len(membersToRemove), d.Id())
+					removeParams := cs.LoadBalancer.NewRemoveFromLoadBalancerRuleParams(d.Id())
+					removeParams.SetVirtualmachineids(membersToRemove)
+					if _, err := cs.LoadBalancer.RemoveFromLoadBalancerRule(removeParams); err != nil {
+						return fmt.Errorf("Error removing explicit members from load balancer rule %s: %s. Members: %v", d.Id(), err, membersToRemove)
+					}
+				}
+
+				if len(membersToAdd) > 0 {
+					log.Printf("[DEBUG] Adding %d explicit members to load balancer rule %s", len(membersToAdd), d.Id())
+					addParams := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(d.Id())
+					addParams.SetVirtualmachineids(membersToAdd)
+					if _, err := cs.LoadBalancer.AssignToLoadBalancerRule(addParams); err != nil {
+						return fmt.Errorf("Error adding explicit members to load balancer rule %s: %s. Members: %v", d.Id(), err, membersToAdd)
+					}
+				}
+			}
+		} else {
+			// No autoscale groups, proceed with normal member management
+			log.Printf("[DEBUG] No autoscale groups found, proceeding with normal member management")
+
+			o, n := d.GetChange("member_ids")
+			ombs, nmbs := o.(*schema.Set), n.(*schema.Set)
+
+			setToStringList := func(s *schema.Set) []string {
+				l := make([]string, s.Len())
+				for i, v := range s.List() {
+					l[i] = v.(string)
+				}
+				return l
+			}
+
+			membersToAdd := setToStringList(nmbs.Difference(ombs))
+			membersToRemove := setToStringList(ombs.Difference(nmbs))
+
+			log.Printf("[DEBUG] Members to add: %v, remove: %v", membersToAdd, membersToRemove)
+
+			if len(membersToRemove) > 0 {
+				log.Printf("[DEBUG] Removing %d members from load balancer rule %s", len(membersToRemove), d.Id())
+				p := cs.LoadBalancer.NewRemoveFromLoadBalancerRuleParams(d.Id())
+				p.SetVirtualmachineids(membersToRemove)
+				if _, err := cs.LoadBalancer.RemoveFromLoadBalancerRule(p); err != nil {
+					return fmt.Errorf("Error removing members from load balancer rule %s: %s. Members to remove: %v", d.Id(), err, membersToRemove)
+				}
+				log.Printf("[DEBUG] Successfully removed members from load balancer rule")
+			}
+
+			if len(membersToAdd) > 0 {
+				log.Printf("[DEBUG] Adding %d members to load balancer rule %s", len(membersToAdd), d.Id())
+				p := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(d.Id())
+				p.SetVirtualmachineids(membersToAdd)
+				if _, err := cs.LoadBalancer.AssignToLoadBalancerRule(p); err != nil {
+					return fmt.Errorf("Error adding members to load balancer rule %s: %s. Members to add: %v", d.Id(), err, membersToAdd)
+				}
+				log.Printf("[DEBUG] Successfully added members to load balancer rule")
 			}
 		}
 	}
