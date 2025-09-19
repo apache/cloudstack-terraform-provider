@@ -143,6 +143,11 @@ func resourceCloudstackSnapshotPolicyCreate(d *schema.ResourceData, meta interfa
 
 	log.Printf("[DEBUG] Snapshot policy created with ID: %s", d.Id())
 
+	// Set tags if provided
+	if err := setTags(cs, d, "SnapshotPolicy"); err != nil {
+		return fmt.Errorf("Error setting tags on snapshot policy %s: %s", d.Id(), err)
+	}
+
 	return resourceCloudstackSnapshotPolicyRead(d, meta)
 }
 
@@ -190,6 +195,13 @@ func resourceCloudstackSnapshotPolicyRead(d *schema.ResourceData, meta interface
 		d.Set("zone_ids", nil)
 	}
 
+	// Handle tags
+	tags := make(map[string]interface{})
+	for _, tag := range snapshotPolicy.Tags {
+		tags[tag.Key] = tag.Value
+	}
+	d.Set("tags", tags)
+
 	return nil
 }
 
@@ -203,7 +215,18 @@ func resourceCloudstackSnapshotPolicyUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	_, err := cs.Snapshot.UpdateSnapshotPolicy(p)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Handle tags
+	if d.HasChange("tags") {
+		if err := updateTags(cs, d, "SnapshotPolicy"); err != nil {
+			return fmt.Errorf("Error updating tags on snapshot policy %s: %s", d.Id(), err)
+		}
+	}
+
+	return resourceCloudstackSnapshotPolicyRead(d, meta)
 }
 
 func resourceCloudstackSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}) error {
