@@ -149,6 +149,7 @@ func Provider() *schema.Provider {
 			"cloudstack_network_service_provider":       resourceCloudStackNetworkServiceProvider(),
 			"cloudstack_role":                           resourceCloudStackRole(),
 			"cloudstack_limits":                         resourceCloudStackLimits(),
+			"cloudstack_snapshot_policy":                resourceCloudStackSnapshotPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
