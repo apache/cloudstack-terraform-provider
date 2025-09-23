@@ -253,3 +253,9 @@ This codebase relicensed under APLv2 and donated to the Apache CloudStack
 project under an [IP
 clearance](https://github.com/apache/cloudstack/issues/5159) process and
 imported on 26th July 2021.
+
+## License
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at <http://www.apache.org/licenses/LICENSE-2.0>
