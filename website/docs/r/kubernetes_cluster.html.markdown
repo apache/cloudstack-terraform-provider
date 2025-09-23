@@ -52,6 +52,9 @@ The following arguments are supported:
 * `state` - (Optional) The state of the Kubernetes cluster. Defaults to `"Running"`.
 * `project` - (Optional) The project to assign the Kubernetes cluster to.
 * `noderootdisksize` - (Optional) root disk size in GB for each node.
+* `docker_registry_url` - (Optional) URL for the docker image private registry
+* `docker_registry_username` - (Optional) password for the docker image private registry
+* `docker_registry_password"` - (Optional) user name for the docker image private registry
 
 ## Attributes Reference
 
