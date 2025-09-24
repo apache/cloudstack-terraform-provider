@@ -121,6 +121,20 @@ func resourceCloudStackKubernetesCluster() *schema.Resource {
 				// Default:  "Running",
 			},
 
+			"account": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional account for the Kubernetes cluster. Must be used with domain_id.",
+			},
+
+			"domain_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional domain ID for the Kubernetes cluster. If the account parameter is used, domain_id must also be used. Hosts dedicated to the specified domain will be used for deploying the cluster",
+			},
+
 			"project": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -150,6 +164,55 @@ func resourceCloudStackKubernetesCluster() *schema.Resource {
 				Optional:  true,
 				ForceNew:  true,
 				Sensitive: true,
+			},
+
+			"as_number": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional as number for the Kubernetes cluster",
+			},
+
+			"cni_config_details": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional map of CNI configuration details. It is used to specify the parameters values for the variables in userdata",
+			},
+
+			"cni_configuration_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional CNI configuration ID for the Kubernetes cluster. If not specified, the default CNI configuration will be used",
+			},
+
+			"etcd_nodes_size": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true, // For now
+				Description: "Number of etcd nodes in the Kubernetes cluster. Default is 0",
+			},
+
+			"hypervisor": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The hypervisor on which to deploy the cluster.",
+			},
+
+			"node_offerings": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional map of node roles to service offerings. If not specified, the service_offering parameter will be used for all node roles. Valid roles are: worker, control, etcd",
+			},
+
+			"node_templates": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "An optional map of node roles to instance templates. If not specified, system VM template will be used. Valid roles are: worker, control, etcd",
 			},
 		},
 	}
@@ -214,6 +277,69 @@ func resourceCloudStackKubernetesClusterCreate(d *schema.ResourceData, meta inte
 		return err
 	}
 
+	if account, ok := d.GetOk("account"); ok {
+		p.SetAccount(account.(string))
+	}
+	if domainID, ok := d.GetOk("domain_id"); ok {
+		p.SetDomainid(domainID.(string))
+	}
+
+	if asNumber, ok := d.GetOk("as_number"); ok {
+		p.SetAsnumber(int64(asNumber.(int)))
+	}
+
+	if etcdNodesSize, ok := d.GetOk("etcd_nodes_size"); ok {
+		p.SetEtcdnodes(int64(etcdNodesSize.(int)))
+	}
+
+	if hypervisor, ok := d.GetOk("hypervisor"); ok {
+		p.SetHypervisor(hypervisor.(string))
+	}
+
+	if cniConfigID, ok := d.GetOk("cni_configuration_id"); ok {
+		p.SetCniconfigurationid(cniConfigID.(string))
+	}
+
+	if nodeOfferings, ok := d.GetOk("node_offerings"); ok {
+		nodeOfferingsMap := nodeOfferings.(map[string]interface{})
+		nodeOfferingsFormatted := make(map[string]string)
+		for nodeType, offeringName := range nodeOfferingsMap {
+			// Retrieve the offering ID
+			offeringID, e := retrieveID(cs, "service_offering", offeringName.(string))
+			if e != nil {
+				return e.Error()
+			}
+			nodeOfferingsFormatted[nodeType] = offeringID
+		}
+		p.SetNodeofferings(nodeOfferingsFormatted)
+	}
+
+	if nodeTemplates, ok := d.GetOk("node_templates"); ok {
+		nodeTemplatesMap := nodeTemplates.(map[string]interface{})
+		nodeTemplatesFormatted := make(map[string]string)
+		for nodeType, templateName := range nodeTemplatesMap {
+			zoneID, err := retrieveID(cs, "zone", d.Get("zone").(string))
+			if err != nil {
+				return err.Error()
+			}
+			templateID, e := retrieveTemplateID(cs, zoneID, templateName.(string))
+			if e != nil {
+				return e.Error()
+			}
+			nodeTemplatesFormatted[nodeType] = templateID
+		}
+		p.SetNodetemplates(nodeTemplatesFormatted)
+	}
+
+	if cniConfigDetails, ok := d.GetOk("cni_config_details"); ok {
+		cniConfigDetailsMap := cniConfigDetails.(map[string]interface{})
+		cniConfigDetailsFormatted := make(map[string]string)
+		for key, value := range cniConfigDetailsMap {
+			cniConfigDetailsFormatted[key] = value.(string)
+		}
+		p.SetCniconfigdetails(cniConfigDetailsFormatted)
+	}
+
 	log.Printf("[DEBUG] Creating Kubernetes Cluster %s", name)
 	r, err := cs.Kubernetes.CreateKubernetesCluster(p)
 	if err != nil {
@@ -273,6 +399,10 @@ func resourceCloudStackKubernetesClusterRead(d *schema.ResourceData, meta interf
 	d.Set("network_id", cluster.Networkid)
 	d.Set("ip_address", cluster.Ipaddress)
 	d.Set("state", cluster.State)
+	d.Set("account", cluster.Account)
+	d.Set("domain_id", cluster.Domainid)
+	d.Set("etcd_nodes_size", cluster.Etcdnodes)
+	d.Set("cni_configuration_id", cluster.Cniconfigurationid)
 
 	setValueOrID(d, "kubernetes_version", cluster.Kubernetesversionname, cluster.Kubernetesversionid)
 	setValueOrID(d, "service_offering", cluster.Serviceofferingname, cluster.Serviceofferingid)
@@ -295,7 +425,7 @@ func autoscaleKubernetesCluster(d *schema.ResourceData, meta interface{}) error 
 func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	if d.HasChange("service_offering") || d.HasChange("size") {
+	if d.HasChange("service_offering") || d.HasChange("size") || d.HasChange("node_offerings") {
 		p := cs.Kubernetes.NewScaleKubernetesClusterParams(d.Id())
 		serviceOfferingID, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
 		if e != nil {
@@ -303,6 +433,22 @@ func resourceCloudStackKubernetesClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		p.SetServiceofferingid(serviceOfferingID)
 		p.SetSize(int64(d.Get("size").(int)))
+
+		// Handle node offerings if they changed
+		if nodeOfferings, ok := d.GetOk("node_offerings"); ok {
+			nodeOfferingsMap := nodeOfferings.(map[string]interface{})
+			nodeOfferingsFormatted := make(map[string]string)
+			for nodeType, offeringName := range nodeOfferingsMap {
+				// Retrieve the offering ID
+				offeringID, e := retrieveID(cs, "service_offering", offeringName.(string))
+				if e != nil {
+					return e.Error()
+				}
+				nodeOfferingsFormatted[nodeType] = offeringID
+			}
+			p.SetNodeofferings(nodeOfferingsFormatted)
+		}
+
 		_, err := cs.Kubernetes.ScaleKubernetesCluster(p)
 		if err != nil {
 			return fmt.Errorf(
