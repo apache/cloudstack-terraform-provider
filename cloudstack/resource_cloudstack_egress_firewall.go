@@ -331,10 +331,12 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 			// by not setting startport and endport parameters
 			r, err := cs.Firewall.CreateEgressFirewallRule(p)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create all-ports egress firewall rule: %w", err)
 			}
 			uuids["all"] = r.Id
 			rule["uuids"] = uuids
+			// Remove the ports field since we're creating an all-ports rule
+			delete(rule, "ports")
 		}
 	}
 
@@ -501,7 +503,47 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 					// Update the values
 					rule["protocol"] = r.Protocol
 					rule["cidr_list"] = cidrs
+					// Remove ports field for all-ports rules
+					delete(rule, "ports")
 					rules.Add(rule)
+				}
+			}
+
+			// Fallback: Check if any remaining rules in ruleMap match our expected all-ports pattern
+			// This handles cases where CloudStack might return all-ports rules in unexpected formats
+			if rule["protocol"].(string) != "icmp" && strings.ToLower(rule["protocol"].(string)) != "all" {
+				// Look for any remaining rules that might be our all-ports rule
+				for ruleID, r := range ruleMap {
+					// Get local CIDR set for comparison
+					localCidrSet, ok := rule["cidr_list"].(*schema.Set)
+					if !ok {
+						continue
+					}
+
+					if isAllPortsTCPUDP(r.Protocol, r.Startport, r.Endport) &&
+						strings.EqualFold(r.Protocol, rule["protocol"].(string)) &&
+						cidrSetsEqual(r.Cidrlist, localCidrSet) {
+						// This looks like our all-ports rule, add it to state
+						cidrs := &schema.Set{F: schema.HashString}
+						if r.Cidrlist != "" {
+							for _, cidr := range strings.Split(r.Cidrlist, ",") {
+								cidr = strings.TrimSpace(cidr)
+								if cidr != "" {
+									cidrs.Add(cidr)
+								}
+							}
+						}
+
+						rule["protocol"] = r.Protocol
+						rule["cidr_list"] = cidrs
+						// Remove ports field for all-ports rules
+						delete(rule, "ports")
+						rules.Add(rule)
+
+						// Remove from ruleMap so it's not processed again
+						delete(ruleMap, ruleID)
+						break
+					}
 				}
 			}
 
@@ -715,7 +757,7 @@ func verifyEgressFirewallParams(d *schema.ResourceData) error {
 
 	if !rules && !managed {
 		return fmt.Errorf(
-			"You must supply at least one 'rule' when not using the 'managed' firewall feature")
+			"you must supply at least one 'rule' when not using the 'managed' firewall feature")
 	}
 
 	return nil
@@ -731,11 +773,11 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 	if protocol == "icmp" {
 		if _, ok := rule["icmp_type"]; !ok {
 			return fmt.Errorf(
-				"Parameter icmp_type is a required parameter when using protocol 'icmp'")
+				"parameter icmp_type is a required parameter when using protocol 'icmp'")
 		}
 		if _, ok := rule["icmp_code"]; !ok {
 			return fmt.Errorf(
-				"Parameter icmp_code is a required parameter when using protocol 'icmp'")
+				"parameter icmp_code is a required parameter when using protocol 'icmp'")
 		}
 	} else if strings.ToLower(protocol) != "all" {
 		if ports, ok := rule["ports"].(*schema.Set); ok {
@@ -752,7 +794,7 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 	} else if strings.ToLower(protocol) == "all" {
 		if ports, _ := rule["ports"].(*schema.Set); ports.Len() > 0 {
 			return fmt.Errorf(
-				"Parameter ports is not required when using protocol 'ALL'")
+				"parameter ports is not required when using protocol 'ALL'")
 		}
 	}
 
