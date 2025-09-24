@@ -105,7 +105,7 @@ The `rule` block supports:
     the protocol is ICMP.
 
 * `ports` - (Optional) List of ports and/or port ranges to allow. This can only
-    be specified if the protocol is TCP or UDP. For TCP/UDP, omitting `ports` creates an all-ports rule. CloudStack may represent this as empty start/end, `0/0`, or `1/65535`; the provider handles all.
+    be specified if the protocol is TCP or UDP. For TCP/UDP protocols, omitting `ports` creates an all-ports rule. CloudStack may represent this as empty start/end ports, `0/0`, or `1/65535`; the provider handles all formats.
 
 ## Attributes Reference
 
