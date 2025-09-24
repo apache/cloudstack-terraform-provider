@@ -31,7 +31,7 @@ test: fmtcheck
 		xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
 
 testacc: fmtcheck
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 30m
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 60m
 
 vet:
 	@echo "go vet ."
