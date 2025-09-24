@@ -32,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// treats 'all ports' for tcp/udp across CS versions returning 0/0, -1/-1, or 1/65535
+// isAllPortsTCPUDP determines if a rule represents all ports for TCP/UDP protocols across CloudStack versions that may return 0/0, -1/-1, or 1/65535
 func isAllPortsTCPUDP(protocol string, start, end int) bool {
 	p := strings.ToLower(protocol)
 	if p != "tcp" && p != "udp" {
@@ -721,6 +721,8 @@ func verifyEgressFirewallParams(d *schema.ResourceData) error {
 	return nil
 }
 
+// verifyEgressFirewallRuleParams validates egress firewall rule parameters.
+// Note: ports parameter is optional for TCP/UDP protocols - when omitted, the rule will encompass all ports
 func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
 	protocol := rule["protocol"].(string)
 	if strings.ToLower(protocol) != "all" && protocol != "tcp" && protocol != "udp" && protocol != "icmp" {
@@ -747,8 +749,6 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 				}
 			}
 		}
-		// Note: ports parameter is optional for TCP/UDP protocols
-		// When omitted, the rule will encompass all ports
 	} else if strings.ToLower(protocol) == "all" {
 		if ports, _ := rule["ports"].(*schema.Set); ports.Len() > 0 {
 			return fmt.Errorf(
