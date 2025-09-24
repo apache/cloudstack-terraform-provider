@@ -335,8 +335,8 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 			}
 			uuids["all"] = r.Id
 			rule["uuids"] = uuids
-			// Clear the ports field since we're creating an all-ports rule
-			rule["ports"] = &schema.Set{F: schema.HashString}
+			// Remove the ports field since we're creating an all-ports rule
+			delete(rule, "ports")
 		}
 	}
 
@@ -488,8 +488,8 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 					// Update the values
 					rule["protocol"] = r.Protocol
 					rule["cidr_list"] = cidrs
-					// Clear ports field for all-ports rules
-					rule["ports"] = &schema.Set{F: schema.HashString}
+					// Remove ports field for all-ports rules
+					delete(rule, "ports")
 					rules.Add(rule)
 				}
 			}
@@ -516,8 +516,8 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 
 						rule["protocol"] = r.Protocol
 						rule["cidr_list"] = cidrs
-						// Clear ports field for all-ports rules
-						rule["ports"] = &schema.Set{F: schema.HashString}
+						// Remove ports field for all-ports rules
+						delete(rule, "ports")
 						rules.Add(rule)
 
 						// Remove from ruleMap so it's not processed again
