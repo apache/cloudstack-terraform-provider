@@ -772,12 +772,12 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 
 	if protocol == "icmp" {
 		if _, ok := rule["icmp_type"]; !ok {
-		return fmt.Errorf(
-			"parameter icmp_type is a required parameter when using protocol 'icmp'")
+			return fmt.Errorf(
+				"parameter icmp_type is a required parameter when using protocol 'icmp'")
 		}
 		if _, ok := rule["icmp_code"]; !ok {
-		return fmt.Errorf(
-			"parameter icmp_code is a required parameter when using protocol 'icmp'")
+			return fmt.Errorf(
+				"parameter icmp_code is a required parameter when using protocol 'icmp'")
 		}
 	} else if strings.ToLower(protocol) != "all" {
 		if ports, ok := rule["ports"].(*schema.Set); ok {
@@ -793,8 +793,8 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 		// When omitted, the rule will encompass all ports
 	} else if strings.ToLower(protocol) == "all" {
 		if ports, _ := rule["ports"].(*schema.Set); ports.Len() > 0 {
-		return fmt.Errorf(
-			"parameter ports is not required when using protocol 'ALL'")
+			return fmt.Errorf(
+				"parameter ports is not required when using protocol 'ALL'")
 		}
 	}
 
