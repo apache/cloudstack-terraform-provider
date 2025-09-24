@@ -102,6 +102,7 @@ func Provider() *schema.Provider {
 			"cloudstack_affinity_group":                 resourceCloudStackAffinityGroup(),
 			"cloudstack_attach_volume":                  resourceCloudStackAttachVolume(),
 			"cloudstack_autoscale_vm_profile":           resourceCloudStackAutoScaleVMProfile(),
+			"cloudstack_cni_configuration":              resourceCloudStackCniConfiguration(),
 			"cloudstack_configuration":                  resourceCloudStackConfiguration(),
 			"cloudstack_cluster":                        resourceCloudStackCluster(),
 			"cloudstack_disk":                           resourceCloudStackDisk(),

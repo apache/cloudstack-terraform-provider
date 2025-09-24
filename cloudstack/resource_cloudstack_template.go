@@ -126,6 +126,13 @@ func resourceCloudStackTemplate() *schema.Resource {
 				Default:  300,
 			},
 
+			"for_cks": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -180,6 +187,10 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("password_enabled"); ok {
 		p.SetPasswordenabled(v.(bool))
+	}
+
+	if v, ok := d.GetOk("for_cks"); ok {
+		p.SetForcks(v.(bool))
 	}
 
 	// Retrieve the zone ID
@@ -277,6 +288,7 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("is_public", t.Ispublic)
 	d.Set("password_enabled", t.Passwordenabled)
 	d.Set("is_ready", t.Isready)
+	d.Set("for_cks", t.Forcks)
 
 	tags := make(map[string]interface{})
 	for _, tag := range t.Tags {
