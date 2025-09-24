@@ -331,7 +331,7 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 			// by not setting startport and endport parameters
 			r, err := cs.Firewall.CreateEgressFirewallRule(p)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create all-ports egress firewall rule: %w", err)
 			}
 			uuids["all"] = r.Id
 			rule["uuids"] = uuids

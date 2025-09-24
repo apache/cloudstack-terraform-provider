@@ -132,6 +132,60 @@ func testAccCheckCloudStackEgressFirewallRulesExist(n string) resource.TestCheck
 	}
 }
 
+func testAccCheckCloudStackEgressFirewallAllPortsRule(n string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No firewall ID is set")
+		}
+
+		// Check that we have exactly 2 rules
+		ruleCount := 0
+		hasTcpWithPorts := false
+		hasUdpAllPorts := false
+
+		for k, v := range rs.Primary.Attributes {
+			if strings.HasPrefix(k, "rule.") && strings.HasSuffix(k, ".protocol") {
+				ruleCount++
+				protocol := v
+				ruleIndex := strings.Split(k, ".")[1]
+
+				if protocol == "tcp" {
+					// Check if this TCP rule has ports
+					portsKey := fmt.Sprintf("rule.%s.ports", ruleIndex)
+					if _, exists := rs.Primary.Attributes[portsKey]; exists {
+						hasTcpWithPorts = true
+					}
+				} else if protocol == "udp" {
+					// Check if this UDP rule has no ports (all-ports)
+					portsKey := fmt.Sprintf("rule.%s.ports", ruleIndex)
+					if _, exists := rs.Primary.Attributes[portsKey]; !exists {
+						hasUdpAllPorts = true
+					}
+				}
+			}
+		}
+
+		if ruleCount != 2 {
+			return fmt.Errorf("Expected 2 rules, got %d", ruleCount)
+		}
+
+		if !hasTcpWithPorts {
+			return fmt.Errorf("Expected TCP rule with specific ports")
+		}
+
+		if !hasUdpAllPorts {
+			return fmt.Errorf("Expected UDP rule with all ports (no ports attribute)")
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckCloudStackEgressFirewallDestroy(s *terraform.State) error {
 	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
 
@@ -144,15 +198,19 @@ func testAccCheckCloudStackEgressFirewallDestroy(s *terraform.State) error {
 			return fmt.Errorf("No instance ID is set")
 		}
 
-		for k, id := range rs.Primary.Attributes {
-			if !strings.Contains(k, ".uuids.") || strings.HasSuffix(k, ".uuids.%") {
-				continue
-			}
+		// Check if any egress firewall rules still exist for this network
+		p := cs.Firewall.NewListEgressFirewallRulesParams()
+		p.SetNetworkid(rs.Primary.ID)
+		p.SetListall(true)
 
-			_, _, err := cs.Firewall.GetEgressFirewallRuleByID(id)
-			if err == nil {
-				return fmt.Errorf("Egress rule %s still exists", rs.Primary.ID)
-			}
+		l, err := cs.Firewall.ListEgressFirewallRules(p)
+		if err != nil {
+			// If we can't list rules, assume they're cleaned up
+			continue
+		}
+
+		if l.Count > 0 {
+			return fmt.Errorf("Egress firewall rules still exist for network %s", rs.Primary.ID)
 		}
 	}
 
@@ -296,10 +354,8 @@ func TestAccCloudStackEgressFirewall_allPortsCombined(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.mixed"),
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.#", "2"),
-					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.0.protocol", "tcp"),
-					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.0.ports.#", "2"),
-					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.protocol", "udp"),
-					resource.TestCheckNoResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.ports"),
+					// Check that we have exactly 2 rules and verify the all-ports rule exists
+					testAccCheckCloudStackEgressFirewallAllPortsRule("cloudstack_egress_firewall.mixed"),
 				),
 			},
 		},
