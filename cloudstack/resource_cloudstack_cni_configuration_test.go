@@ -29,7 +29,7 @@ import (
 )
 
 func TestAccCloudStackCniConfiguration_basic(t *testing.T) {
-	var cniConfig cloudstack.CniConfiguration
+	var cniConfig cloudstack.UserData
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -48,7 +48,7 @@ func TestAccCloudStackCniConfiguration_basic(t *testing.T) {
 	})
 }
 
-func testAccCheckCloudStackCniConfigurationExists(n string, cniConfig *cloudstack.CniConfiguration) resource.TestCheckFunc {
+func testAccCheckCloudStackCniConfigurationExists(n string, cniConfig *cloudstack.UserData) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -60,11 +60,19 @@ func testAccCheckCloudStackCniConfigurationExists(n string, cniConfig *cloudstac
 		}
 
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
-		config, _, err := cs.Configuration.GetCniConfigurationByID(rs.Primary.ID)
+		p := cs.Configuration.NewListCniConfigurationParams()
+		p.SetId(rs.Primary.ID)
+
+		resp, err := cs.Configuration.ListCniConfiguration(p)
 		if err != nil {
 			return err
 		}
 
+		if resp.Count != 1 {
+			return fmt.Errorf("CNI configuration not found")
+		}
+
+		config := resp.CniConfiguration[0]
 		if config.Id != rs.Primary.ID {
 			return fmt.Errorf("CNI configuration not found")
 		}
@@ -86,8 +94,11 @@ func testAccCheckCloudStackCniConfigurationDestroy(s *terraform.State) error {
 			return fmt.Errorf("No CNI configuration ID is set")
 		}
 
-		_, _, err := cs.Configuration.GetCniConfigurationByID(rs.Primary.ID)
-		if err == nil {
+		p := cs.Configuration.NewListCniConfigurationParams()
+		p.SetId(rs.Primary.ID)
+
+		resp, err := cs.Configuration.ListCniConfiguration(p)
+		if err == nil && resp.Count > 0 {
 			return fmt.Errorf("CNI configuration %s still exists", rs.Primary.ID)
 		}
 	}
@@ -98,24 +109,34 @@ func testAccCheckCloudStackCniConfigurationDestroy(s *terraform.State) error {
 const testAccCloudStackCniConfiguration_basic = `
 resource "cloudstack_cni_configuration" "foo" {
   name       = "test-cni-config"
-  cni_config = <<EOF
-{
-  "cniVersion": "0.4.0",
-  "name": "test-network",
-  "type": "bridge",
-  "bridge": "cni0",
-  "isGateway": true,
-  "ipMasq": true,
-  "ipam": {
-    "type": "host-local",
-    "subnet": "10.244.0.0/16",
-    "routes": [
-      { "dst": "0.0.0.0/0" }
+  cni_config = base64encode(jsonencode({
+    "name": "test-network",
+    "cniVersion": "0.4.0",
+    "plugins": [
+      {
+        "type": "calico",
+        "log_level": "info",
+        "datastore_type": "kubernetes",
+        "nodename": "KUBERNETES_NODE_NAME",
+        "mtu": "CNI_MTU",
+        "ipam": {
+          "type": "calico-ipam"
+        },
+        "policy": {
+          "type": "k8s"
+        },
+        "kubernetes": {
+          "kubeconfig": "KUBECONFIG_FILEPATH"
+        }
+      },
+      {
+        "type": "portmap",
+        "snat": true,
+        "capabilities": {"portMappings": true}
+      }
     ]
-  }
-}
-EOF
+  }))
   
-  params = ["subnet", "gateway"]
+  params = ["KUBERNETES_NODE_NAME", "CNI_MTU"]
 }
 `
