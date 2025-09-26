@@ -18,7 +18,7 @@
 module github.com/terraform-providers/terraform-provider-cloudstack
 
 require (
-	github.com/apache/cloudstack-go/v2 v2.17.1
+	github.com/apache/cloudstack-go/v2 v2.18.1
 	github.com/go-ini/ini v1.67.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/terraform-plugin-framework v1.12.0
@@ -35,7 +35,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
@@ -85,5 +84,3 @@ require (
 )
 
 go 1.23.0
-
-toolchain go1.22.4
