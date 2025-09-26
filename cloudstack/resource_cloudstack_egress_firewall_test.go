@@ -220,8 +220,8 @@ func TestAccCloudStackEgressFirewall_allPortsTCP(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
 					// No ports should be set when omitting the ports parameter
-					resource.TestCheckNoResourceAttr(
-						"cloudstack_egress_firewall.foo", "rule.0.ports"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_egress_firewall.foo", "rule.0.ports.#", "0"),
 				),
 			},
 		},
@@ -259,7 +259,7 @@ func TestAccCloudStackEgressFirewall_allPortsUDP(t *testing.T) {
 					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.foo"),
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.#", "1"),
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.protocol", "udp"),
-					resource.TestCheckNoResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports.#", "0"),
 				),
 			},
 		},
@@ -299,7 +299,7 @@ func TestAccCloudStackEgressFirewall_allPortsCombined(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.0.ports.#", "2"),
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.protocol", "udp"),
-					resource.TestCheckNoResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.ports"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.ports.#", "0"),
 				),
 			},
 		},
@@ -319,13 +319,13 @@ resource "cloudstack_egress_firewall" "mixed" {
   network_id = cloudstack_network.foo.id
 
   rule {
-    cidr_list = ["10.0.0.0/8"]
+    cidr_list = ["10.1.3.10/32"]
     protocol  = "tcp"
     ports     = ["80", "443"]
   }
 
   rule {
-    cidr_list = ["10.1.0.0/16"]
+    cidr_list = ["10.1.3.20/32"]
     protocol  = "udp"
     # no ports => all ports
   }
@@ -350,7 +350,7 @@ func TestAccCloudStackEgressFirewall_portsToAllPorts(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.foo"),
 					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.#", "1"),
-					resource.TestCheckNoResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports.#", "0"),
 				),
 			},
 		},
@@ -370,7 +370,7 @@ resource "cloudstack_egress_firewall" "foo" {
   network_id = cloudstack_network.foo.id
 
   rule {
-    cidr_list = ["10.1.1.10/32"]
+    cidr_list = ["10.1.4.10/32"]
     protocol  = "tcp"
     ports     = ["80", "1000-2000"]
   }
@@ -390,7 +390,7 @@ resource "cloudstack_egress_firewall" "foo" {
   network_id = cloudstack_network.foo.id
 
   rule {
-    cidr_list = ["10.1.1.10/32"]
+    cidr_list = ["10.1.4.10/32"]
     protocol  = "tcp"
     # no ports => all ports
   }
