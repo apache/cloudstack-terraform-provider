@@ -331,10 +331,12 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 			// by not setting startport and endport parameters
 			r, err := cs.Firewall.CreateEgressFirewallRule(p)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create all-ports egress firewall rule: %w", err)
 			}
 			uuids["all"] = r.Id
 			rule["uuids"] = uuids
+			// Remove the ports field since we're creating an all-ports rule
+			delete(rule, "ports")
 		}
 	}
 
@@ -501,6 +503,8 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 					// Update the values
 					rule["protocol"] = r.Protocol
 					rule["cidr_list"] = cidrs
+					// Remove ports field for all-ports rules
+					delete(rule, "ports")
 					rules.Add(rule)
 				}
 			}
