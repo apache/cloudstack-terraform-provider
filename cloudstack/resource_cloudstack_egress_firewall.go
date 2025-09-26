@@ -402,8 +402,13 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 
 				// Create a set with all CIDR's
 				cidrs := &schema.Set{F: schema.HashString}
-				for _, cidr := range strings.Split(r.Cidrlist, ",") {
-					cidrs.Add(cidr)
+				if r.Cidrlist != "" {
+					for _, cidr := range strings.Split(r.Cidrlist, ",") {
+						cidr = strings.TrimSpace(cidr)
+						if cidr != "" {
+							cidrs.Add(cidr)
+						}
+					}
 				}
 
 				// Update the values
@@ -440,8 +445,13 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 
 						// Create a set with all CIDR's
 						cidrs := &schema.Set{F: schema.HashString}
-						for _, cidr := range strings.Split(r.Cidrlist, ",") {
-							cidrs.Add(cidr)
+						if r.Cidrlist != "" {
+							for _, cidr := range strings.Split(r.Cidrlist, ",") {
+								cidr = strings.TrimSpace(cidr)
+								if cidr != "" {
+									cidrs.Add(cidr)
+								}
+							}
 						}
 
 						// Update the values
@@ -481,8 +491,13 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 
 					// Create a set with all CIDR's
 					cidrs := &schema.Set{F: schema.HashString}
-					for _, cidr := range strings.Split(r.Cidrlist, ",") {
-						cidrs.Add(cidr)
+					if r.Cidrlist != "" {
+						for _, cidr := range strings.Split(r.Cidrlist, ",") {
+							cidr = strings.TrimSpace(cidr)
+							if cidr != "" {
+								cidrs.Add(cidr)
+							}
+						}
 					}
 
 					// Update the values
@@ -526,7 +541,6 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 					}
 				}
 			}
-
 			if strings.ToLower(rule["protocol"].(string)) == "all" {
 				id, ok := uuids["all"]
 				if !ok {
@@ -546,8 +560,13 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 				// Create a set with all CIDR's
 				if _, ok := rule["cidr_list"]; ok {
 					cidrs := &schema.Set{F: schema.HashString}
-					for _, cidr := range strings.Split(r.Cidrlist, ",") {
-						cidrs.Add(cidr)
+					if r.Cidrlist != "" {
+						for _, cidr := range strings.Split(r.Cidrlist, ",") {
+							cidr = strings.TrimSpace(cidr)
+							if cidr != "" {
+								cidrs.Add(cidr)
+							}
+						}
 					}
 					rule["cidr_list"] = cidrs
 				}
@@ -775,3 +794,5 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 
 	return nil
 }
+
+// Formatting fix
