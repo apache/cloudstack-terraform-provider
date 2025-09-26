@@ -47,6 +47,7 @@ jobs:
     name: Terraform ${{ matrix.terraform-version }} with Cloudstack ${{ matrix.cloudstack-version }}
     needs: [prepare-matrix]
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
@@ -86,6 +87,7 @@ jobs:
     name: OpenTofu ${{ matrix.opentofu-version }} with Cloudstack ${{ matrix.cloudstack-version }}
     needs: [prepare-matrix]
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
