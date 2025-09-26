@@ -319,13 +319,13 @@ resource "cloudstack_egress_firewall" "mixed" {
   network_id = cloudstack_network.foo.id
 
   rule {
-    cidr_list = ["10.1.3.10/32"]
+    cidr_list = [cloudstack_network.foo.cidr]
     protocol  = "tcp"
     ports     = ["80", "443"]
   }
 
   rule {
-    cidr_list = ["10.1.3.20/32"]
+    cidr_list = ["${cidrhost(cloudstack_network.foo.cidr, 10)}"]
     protocol  = "udp"
     # no ports => all ports
   }
@@ -370,7 +370,7 @@ resource "cloudstack_egress_firewall" "foo" {
   network_id = cloudstack_network.foo.id
 
   rule {
-    cidr_list = ["10.1.4.10/32"]
+    cidr_list = ["${cidrhost(cloudstack_network.foo.cidr, 10)}"]
     protocol  = "tcp"
     ports     = ["80", "1000-2000"]
   }
@@ -390,7 +390,7 @@ resource "cloudstack_egress_firewall" "foo" {
   network_id = cloudstack_network.foo.id
 
   rule {
-    cidr_list = ["10.1.4.10/32"]
+    cidr_list = ["${cidrhost(cloudstack_network.foo.cidr, 10)}"]
     protocol  = "tcp"
     # no ports => all ports
   }
