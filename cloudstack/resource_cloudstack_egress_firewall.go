@@ -762,3 +762,4 @@ func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]inte
 
 	return nil
 }
+// Formatting fix
