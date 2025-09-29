@@ -32,7 +32,7 @@ func TestAccCloudStackCniConfiguration_basic(t *testing.T) {
 	var cniConfig cloudstack.UserData
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheck(t); testAccPreCheckCniSupport(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackCniConfigurationDestroy,
 		Steps: []resource.TestStep{
@@ -140,3 +140,14 @@ resource "cloudstack_cni_configuration" "foo" {
   params = ["KUBERNETES_NODE_NAME", "CNI_MTU"]
 }
 `
+
+func testAccPreCheckCniSupport(t *testing.T) {
+	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+	// Try to list CNI configurations to check if the feature is available
+	p := cs.Configuration.NewListCniConfigurationParams()
+	_, err := cs.Configuration.ListCniConfiguration(p)
+	if err != nil {
+		t.Skipf("CNI configuration not supported in this CloudStack version (requires 4.21.0+): %v", err)
+	}
+}
