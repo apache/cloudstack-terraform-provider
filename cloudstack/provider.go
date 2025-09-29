@@ -109,6 +109,7 @@ func Provider() *schema.Provider {
 			"cloudstack_autoscale_policy":               resourceCloudStackAutoScalePolicy(),
 			"cloudstack_autoscale_vm_group":             resourceCloudStackAutoScaleVMGroup(),
 			"cloudstack_autoscale_vm_profile":           resourceCloudStackAutoScaleVMProfile(),
+			"cloudstack_cni_configuration":              resourceCloudStackCniConfiguration(),
 			"cloudstack_condition":                      resourceCloudStackCondition(),
 			"cloudstack_configuration":                  resourceCloudStackConfiguration(),
 			"cloudstack_counter":                        resourceCloudStackCounter(),
