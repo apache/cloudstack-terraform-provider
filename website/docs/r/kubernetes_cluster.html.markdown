@@ -122,6 +122,9 @@ The following arguments are supported:
 * `etcd_nodes_size` - (Optional) The number of etcd nodes in the cluster. Defaults to `0` (uses control nodes for etcd).
 * `description` - (Optional) A description for the Kubernetes cluster.
 * `hypervisor` - (Optional) The hypervisor type for the cluster nodes. Defaults to `"KVM"`.
+* `docker_registry_url` - (Optional) URL for the docker image private registry
+* `docker_registry_username` - (Optional) password for the docker image private registry
+* `docker_registry_password"` - (Optional) user name for the docker image private registry
 
 ### Autoscaling Configuration
 

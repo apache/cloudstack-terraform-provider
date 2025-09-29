@@ -5,7 +5,7 @@
 - [Terraform](https://www.terraform.io/downloads.html) 1.0.x
 - [Go](https://golang.org/doc/install) 1.20+ (to build the provider plugin)
 
-See wiki: https://github.com/apache/cloudstack-terraform-provider/wiki
+See wiki: <https://github.com/apache/cloudstack-terraform-provider/wiki>
 
 ## Installing from Github Release
 
@@ -28,7 +28,7 @@ The valid `ARCH` options are:
 
 Steps for installation:
 
-```
+```bash
 RELEASE=0.5.0
 ARCH=darwin_arm64
 mkdir -p ~/.terraform.d/plugins/local/cloudstack/cloudstack/${RELEASE}/${ARCH}
@@ -39,7 +39,7 @@ mv cloudstack-terraform-provider_${RELEASE}/cloudstack-terraform-provider_v${REL
 
 To use the locally installed provider, please use the following in your main.tf etc, and then run `terraform init`:
 
-```
+```sh
 terraform {
   required_providers {
     cloudstack = {
@@ -79,7 +79,7 @@ User hitting installation issue using registry can install using the local insta
 
 ## Documentation
 
-For more details on how to use the provider, click [here](website/) or visit https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs
+For more details on how to use the provider, visit [website](website/) or visit <https://registry.terraform.io/providers/cloudstack/cloudstack/latest/docs>
 
 ## Developing the Provider
 
@@ -88,8 +88,8 @@ If you wish to work on the provider, you'll first need [Go](http://www.golang.or
 Clone repository to: `$GOPATH/src/github.com/apache/cloudstack-terraform-provider`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/apache; cd $GOPATH/src/github.com/apache
-$ git clone git@github.com:apache/cloudstack-terraform-provider
+mkdir -p $GOPATH/src/github.com/apache; cd $GOPATH/src/github.com/apache
+git clone git@github.com:apache/cloudstack-terraform-provider
 ```
 
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
@@ -97,9 +97,9 @@ To compile the provider, run `make build`. This will build the provider and put 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/apache/cloudstack-terraform-provider
-$ make build
-$ ls $GOPATH/bin/terraform-provider-cloudstack
+cd $GOPATH/src/github.com/apache/cloudstack-terraform-provider
+make build
+ls $GOPATH/bin/terraform-provider-cloudstack
 ```
 
 Once the build is ready, you have to copy the binary into Terraform locally (version appended).
@@ -108,9 +108,9 @@ On Linux and Mac this path is at ~/.terraform.d/plugins,
 On Windows at %APPDATA%\terraform.d\plugins,
 
 ```sh
-$  cd ~
-$  mkdir -p ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
-$  cp $GOPATH/bin/terraform-provider-cloudstack ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.4.0/linux_amd64
+cd ~
+mkdir -p ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.5.0/linux_amd64
+cp $GOPATH/bin/terraform-provider-cloudstack ~/.terraform.d/plugins/localdomain/provider/cloudstack/0.5.0/linux_amd64
 ```
 
 ## Testing the Provider
@@ -118,7 +118,7 @@ $  cp $GOPATH/bin/terraform-provider-cloudstack ~/.terraform.d/plugins/localdoma
 In order to test the provider, you can simply run `make test`.
 
 ```sh
-$ make test
+make test
 ```
 
 In order to run the full suite of Acceptance tests you will need to run the CloudStack Simulator. Please follow these steps to prepare an environment for running the Acceptance tests:
@@ -137,7 +137,7 @@ or
 docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.20.1.0
 ```
 
-When Docker started the container you can go to http://localhost:8080/client and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
+When Docker started the container you can go to <http://localhost:8080/client> and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
 
 Once the login page is shown and you can login, you need to provision a simulated data-center:
 
@@ -148,29 +148,28 @@ docker exec -it simulator python /root/tools/marvin/marvin/deployDataCenter.py -
 If you refresh the client or login again, you will now get passed the initial welcome screen and be able to go to your account details and retrieve the API key and secret. Export those together with the URL:
 
 ```sh
-$ export CLOUDSTACK_API_URL=http://localhost:8080/client/api
-$ export CLOUDSTACK_API_KEY=r_gszj7e0ttr_C6CP5QU_1IV82EIOtK4o_K9i_AltVztfO68wpXihKs2Tms6tCMDY4HDmbqHc-DtTamG5x112w
-$ export CLOUDSTACK_SECRET_KEY=tsfMDShFe94f4JkJfEh6_tZZ--w5jqEW7vGL2tkZGQgcdbnxNoq9fRmwAtU5MEGGXOrDlNA6tfvGK14fk_MB6w
+export CLOUDSTACK_API_URL=http://localhost:8080/client/api
+export CLOUDSTACK_API_KEY=r_gszj7e0ttr_C6CP5QU_1IV82EIOtK4o_K9i_AltVztfO68wpXihKs2Tms6tCMDY4HDmbqHc-DtTamG5x112w
+export CLOUDSTACK_SECRET_KEY=tsfMDShFe94f4JkJfEh6_tZZ--w5jqEW7vGL2tkZGQgcdbnxNoq9fRmwAtU5MEGGXOrDlNA6tfvGK14fk_MB6w
 ```
 
 In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`. When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply running:
 
 ```sh
-$ make testacc
+make testacc
 ```
 
 To execute specific test:
 
 ```sh
-$ make testacc TESTARGS='-run ^TestAccCloudStackNetworkACLRule_update$'
+make testacc TESTARGS='-run ^TestAccCloudStackNetworkACLRule_update$'
 ```
 
 ## Sample Terraform configuration when testing locally
 
-Below is an example configuration to initialize provider and create a Virtual Machine instance
+Below is an example configuration to initialize provider and create a Virtual Machine instance `provider.tf`
 
 ```sh
-$ cat provider.tf
 terraform {
   required_providers {
     cloudstack = {
@@ -199,48 +198,52 @@ resource "cloudstack_instance" "web" {
 ## Releasing Terraform Provider
 
 The CloudStack Terraform Provider release process requires `goreleaser` to be performed
-by a committer or a PMC member of the project: https://goreleaser.com/install
+by a committer or a PMC member of the project: <https://goreleaser.com/install>
 
 Check and ensure TF provider passes builds, GA and run this for local checks:
-```
+
+```sh
 goreleaser release --snapshot --clean
 ```
 
-Next, create a personalised Github token: https://github.com/settings/tokens/new?scopes=repo,write:packages
+Next, create a personalised Github token: <https://github.com/settings/tokens/new?scopes=repo,write:packages>
 
-```
+```sh
 export GITHUB_TOKEN="YOUR_GH_TOKEN"
 ```
 
 Note: Due to how the Terraform registry works, it require the repo to be named in a certain way.
-For this reason, the builds are published via https://github.com/cloudstack/terraform-provider-cloudstack/releases
+For this reason, the builds are published via <https://github.com/cloudstack/terraform-provider-cloudstack/releases>
 
 To do this, add the following remote for publishing builds:
 
-```
+```sh
 git remote add cloudstack git@github.com:cloudstack/terraform-provider-cloudstack.git
 ```
 
 Finally tag the release, for example and push to Github:
 
-```
+```sh
 git tag -a v0.5.0-pre -m "v0.5.0-pre Alpha Release for testing purposes"
 git push cloudstack v0.5.0-pre
 ```
 
 Run goreleaser to release them:
-```
+
+```sh
 goreleaser release --clean
 ```
 
 Or, just release using:
-```
+
+```sh
 goreleaser release
 ```
 
 For testing or to push on other repos, you need to fix repo path in the
 `.goreleaser.yml` and run:
-```
+
+```sh
 goreleaser release --clean --skip-validate
 ```
 
