@@ -236,28 +236,28 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		p.SetEndip(endip)
 	}
 
-	m, err := parseCIDRv6(d, no.Specifyipranges)
+	m6, err := parseCIDRv6(d, no.Specifyipranges)
 	if err != nil {
 		return err
 	}
 
-	if m != nil {
-		if ip6cidr, ok := m["ip6cidr"]; ok {
+	if m6 != nil {
+		if ip6cidr, ok := m6["ip6cidr"]; ok {
 			p.SetIp6cidr(ip6cidr)
 		}
 
 		// Only set the start IPv6 if we have one
-		if startipv6, ok := m["startipv6"]; ok {
+		if startipv6, ok := m6["startipv6"]; ok {
 			p.SetStartipv6(startipv6)
 		}
 
 		// Only set the ipv6 gateway if we have one
-		if ip6gateway, ok := m["ip6gateway"]; ok {
-			p.SetIp6Gateway(ip6gateway)
+		if ip6gateway, ok := m6["ip6gateway"]; ok {
+			p.SetIp6gateway(ip6gateway)
 		}
 
 		// Only set the end IPv6 if we have one
-		if endipv6, ok := m["endipv6"]; ok {
+		if endipv6, ok := m6["endipv6"]; ok {
 			p.SetEndipv6(endipv6)
 		}
 	}
@@ -359,12 +359,12 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
 
-	if n.Ip6cidr = "" {
+	if n.Ip6cidr == "" {
 		n.Ip6cidr = none
 	}
 	d.Set("ip6cidr", n.Ip6cidr)
 
-	if n.Ip6gateway = "" {
+	if n.Ip6gateway == "" {
 		n.Ip6gateway = none
 	}
 	d.Set("ip6gateway", n.Ip6gateway)
@@ -432,11 +432,6 @@ func resourceCloudStackNetworkUpdate(d *schema.ResourceData, meta interface{}) e
 	// Check if the cidr is changed
 	if d.HasChange("cidr") {
 		p.SetGuestvmcidr(d.Get("cidr").(string))
-	}
-
-	// Check if the ip6cidr is changed
-	if d.HasChange("ip6cidr") {
-		p.SetGuestvmip6cidr(d.Get("ip6cidr").(string))
 	}
 
 	// Check if the network domain is changed
@@ -544,7 +539,7 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 	m := make(map[string]string, 4)
 
 	cidr := d.Get("ip6cidr").(string)
-	ip, ipnet, err := net.ParseCIDR(cidr)
+	_, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse cidr %s: %s", cidr, err)
 	}
@@ -552,7 +547,7 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 	if gateway, ok := d.GetOk("ip6gateway"); ok {
 		m["ip6gateway"] = gateway.(string)
 	} else {
-		m["ip6gateway"] = ipnet.IP
+		m["ip6gateway"] = ipnet.IP.String()
 	}
 
 	if startip, ok := d.GetOk("startip"); ok {
@@ -565,7 +560,7 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 
 		myip := make(net.IP, len(ip16))
 		copy(myip, ip16)
-		myip[range ip16 - 1] = 2;
+		myip[len(ip16)-1] = 2
 		m["startip"] = myip.String()
 	}
 
