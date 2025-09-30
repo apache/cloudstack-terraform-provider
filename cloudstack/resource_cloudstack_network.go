@@ -237,15 +237,13 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// IPv6 support
-	if _, ok := d.GetOk("ip6cidr"); ok {
+	if ip6cidr, ok := d.GetOk("ip6cidr"); ok && ip6cidr.(string) != none {
 		m6, err := parseCIDRv6(d, no.Specifyipranges)
 		if err != nil {
 			return err
 		}
 
-		if ip6cidr, ok := m6["ip6cidr"]; ok {
-			p.SetIp6cidr(ip6cidr)
-		}
+		p.SetIp6cidr(ip6cidr)
 
 		// Only set the start IPv6 if we have one
 		if startipv6, ok := m6["startipv6"]; ok {
