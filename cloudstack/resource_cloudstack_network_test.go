@@ -165,6 +165,26 @@ func TestAccCloudStackNetwork_importProject(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNetwork_L2(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_L2,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					testAccCheckCloudStackNetworkL2Attributes(&network),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackNetworkExists(
 	n string, network *cloudstack.Network) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -238,6 +258,27 @@ func testAccCheckCloudStackNetworkVPCAttributes(
 
 		if network.Networkofferingname != "DefaultIsolatedNetworkOfferingForVpcNetworks" {
 			return fmt.Errorf("Bad network offering: %s", network.Networkofferingname)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackNetworkL2Attributes(
+	network *cloudstack.Network) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if network.Name != "terraform-l2-network" {
+			return fmt.Errorf("Bad name: %s", network.Name)
+		}
+
+		if network.Displaytext != "terraform-l2-network" {
+			return fmt.Errorf("Bad display name: %s", network.Displaytext)
+		}
+
+		// L2 networks should not have a CIDR
+		if network.Cidr != "" {
+			return fmt.Errorf("L2 network should not have CIDR, got: %s", network.Cidr)
 		}
 
 		return nil
@@ -376,4 +417,14 @@ resource "cloudstack_network" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   acl_id = cloudstack_network_acl.bar.id
   zone = cloudstack_vpc.foo.zone
+}`
+
+const testAccCloudStackNetwork_L2 = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-l2-network"
+  display_text = "terraform-l2-network"
+  type = "L2"
+  network_offering = "DefaultSharedNetworkOffering"
+  zone = "Sandbox-simulator"
+  vlan = 100
 }`

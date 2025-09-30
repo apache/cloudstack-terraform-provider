@@ -163,10 +163,7 @@ func resourceCloudStackConfigurationCreate(d *schema.ResourceData, meta interfac
 		d.SetId(v.(string))
 	}
 
-	resourceCloudStackConfigurationUpdate(d, meta)
-
-	return nil
-
+	return resourceCloudStackConfigurationUpdate(d, meta)
 }
 
 func resourceCloudStackConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -201,9 +198,7 @@ func resourceCloudStackConfigurationUpdate(d *schema.ResourceData, meta interfac
 		return err
 	}
 
-	resourceCloudStackConfigurationRead(d, meta)
-
-	return nil
+	return resourceCloudStackConfigurationRead(d, meta)
 }
 
 func resourceCloudStackConfigurationDelete(d *schema.ResourceData, meta interface{}) error {
