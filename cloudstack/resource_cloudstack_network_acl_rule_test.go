@@ -97,7 +97,7 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.action", "allow"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.0.cidr_list.0", "172.16.100.0/24"),
+						"cloudstack_network_acl_rule.foo", "rule.0.cidr_list.0", "172.18.100.0/24"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.0.protocol", "tcp"),
 					resource.TestCheckResourceAttr(
@@ -113,7 +113,7 @@ func TestAccCloudStackNetworkACLRule_update(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.cidr_list.#", "1"),
 					resource.TestCheckResourceAttr(
-						"cloudstack_network_acl_rule.foo", "rule.1.cidr_list.0", "172.18.100.0/24"),
+						"cloudstack_network_acl_rule.foo", "rule.1.cidr_list.0", "172.16.100.0/24"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl_rule.foo", "rule.1.icmp_code", "-1"),
 					resource.TestCheckResourceAttr(
