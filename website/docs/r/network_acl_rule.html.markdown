@@ -13,18 +13,30 @@ Creates network ACL rules for a given network ACL.
 ## Example Usage
 
 ```hcl
-resource "cloudstack_network_acl_rule" "default" {
+rresource "cloudstack_network_acl_rule" "default" {
   acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
 
   rule {
     action       = "allow"
     cidr_list    = ["10.0.0.0/8"]
     protocol     = "tcp"
-    ports        = ["80", "1000-2000"]
+    port         = "80-443" # preferred, string, supports single port or range
     traffic_type = "ingress"
   }
 }
 ```
+# Deprecated example (do not use in new configs)
+resource "cloudstack_network_acl_rule" "deprecated" {
+  acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
+
+  rule {
+    action       = "allow"
+    cidr_list    = ["10.0.0.0/8"]
+    protocol     = "tcp"
+    ports        = ["80", "1000-2000"] # deprecated, use 'port' instead
+    traffic_type = "ingress"
+  }
+}
 
 ## Argument Reference
 
@@ -64,8 +76,12 @@ The `rule` block supports:
 * `icmp_code` - (Optional) The ICMP code to allow, or `-1` to allow `any`. This
     can only be specified if the protocol is ICMP. (defaults 0)
 
-* `ports` - (Optional) List of ports and/or port ranges to allow. This can only
+* `port` - (Optional, string) The port or port range to allow. Preferred for new configs.
+    Use a single port (e.g. "80") or a range (e.g. "1000-2000"). Required for tcp or udp protocols. Cannot be used with ports.
+
+* `ports` - (Optional, Deprecated) List of ports and/or port ranges to allow. This can only
     be specified if the protocol is TCP, UDP, ALL or a valid protocol number.
+    **Deprecated**: Use port (string) instead. ports will be removed in a future version.
 
 * `traffic_type` - (Optional) The traffic type for the rule. Valid options are:
     `ingress` or `egress` (defaults ingress).
@@ -92,3 +108,6 @@ When importing into a project you need to prefix the import ID with the project 
 ```shell
 terraform import cloudstack_network_acl_rule.default my-project/e8b5982a-1b50-4ea9-9920-6ea2290c7359
 ```
+
+### Deprecation Notice:
+The `ports` attribute is deprecated and will be removed in a future version. Use `port` (string) instead for all new configurations.
