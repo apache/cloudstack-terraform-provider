@@ -294,7 +294,9 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 		}
 		log.Printf("[WARN] 'ports' is deprecated. Use 'port' instead.")
 	} else {
-		return fmt.Errorf("Parameter port is required for protocol 'tcp' or 'udp'. Use 'port' (string) for new configs.")
+		if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
+			return fmt.Errorf("Parameter port is required for protocol 'tcp' or 'udp'. Use 'port' (string) for new configs.")
+		}
 	}
 	if portStr != "" {
 		m := splitPorts.FindStringSubmatch(portStr)
