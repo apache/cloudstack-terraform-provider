@@ -99,10 +99,16 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 						},
 
 						"ports": {
-							Type:     schema.TypeSet,
+							Type:       schema.TypeSet,
+							Optional:   true,
+							Elem:       &schema.Schema{Type: schema.TypeString},
+							Set:        schema.HashString,
+							Deprecated: "Use 'port' instead. The 'ports' field is deprecated and will be removed in a future version.",
+						},
+
+						"port": {
+							Type:     schema.TypeString,
 							Optional: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							Set:      schema.HashString,
 						},
 
 						"traffic_type": {
@@ -299,42 +305,19 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 		log.Printf("[DEBUG] Created ALL rule with ID=%s", r.(*cloudstack.CreateNetworkACLResponse).Id)
 	}
 
-	// If protocol is TCP or UDP, create the rule (with or without ports)
+	// If protocol is TCP or UDP, create the rule (with or without port)
 	if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
-		ps, ok := rule["ports"].(*schema.Set)
-		if !ok || ps == nil {
-			log.Printf("[DEBUG] No ports specified for TCP/UDP rule, creating rule for all ports")
-			ps = &schema.Set{F: schema.HashString}
-		}
+		portStr, hasPort := rule["port"].(string)
 
-		// Create an empty schema.Set to hold all processed ports
-		ports := &schema.Set{F: schema.HashString}
-		log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule", ps.Len())
+		if hasPort && portStr != "" {
+			// Handle single port
+			log.Printf("[DEBUG] Processing single port for TCP/UDP rule: %s", portStr)
 
-		if ps.Len() == 0 {
-			// Create a rule for all ports
-			r, err := Retry(4, retryableACLCreationFunc(cs, p))
-			if err != nil {
-				log.Printf("[ERROR] Failed to create TCP/UDP rule for all ports: %v", err)
-				return err
-			}
-			uuids["all_ports"] = r.(*cloudstack.CreateNetworkACLResponse).Id
-			rule["uuids"] = uuids
-			log.Printf("[DEBUG] Created TCP/UDP rule for all ports with ID=%s", r.(*cloudstack.CreateNetworkACLResponse).Id)
-		} else {
-			// Process specified ports
-			for _, port := range ps.List() {
-				if _, ok := uuids[port.(string)]; ok {
-					ports.Add(port)
-					rule["ports"] = ports
-					log.Printf("[DEBUG] Port %s already has UUID, skipping", port.(string))
-					continue
-				}
-
-				m := splitPorts.FindStringSubmatch(port.(string))
+			if _, ok := uuids[portStr]; !ok {
+				m := splitPorts.FindStringSubmatch(portStr)
 				if m == nil {
-					log.Printf("[ERROR] Invalid port format: %s", port.(string))
-					return fmt.Errorf("%q is not a valid port value. Valid options are '80' or '80-90'", port.(string))
+					log.Printf("[ERROR] Invalid port format: %s", portStr)
+					return fmt.Errorf("%q is not a valid port value. Valid options are '80' or '80-90'", portStr)
 				}
 
 				startPort, err := strconv.Atoi(m[1])
@@ -354,20 +337,31 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 
 				p.SetStartport(startPort)
 				p.SetEndport(endPort)
-				log.Printf("[DEBUG] Set ports start=%d, end=%d", startPort, endPort)
+				log.Printf("[DEBUG] Set port start=%d, end=%d", startPort, endPort)
 
 				r, err := Retry(4, retryableACLCreationFunc(cs, p))
 				if err != nil {
-					log.Printf("[ERROR] Failed to create TCP/UDP rule for port %s: %v", port.(string), err)
+					log.Printf("[ERROR] Failed to create TCP/UDP rule for port %s: %v", portStr, err)
 					return err
 				}
 
-				ports.Add(port)
-				rule["ports"] = ports
-				uuids[port.(string)] = r.(*cloudstack.CreateNetworkACLResponse).Id
+				uuids[portStr] = r.(*cloudstack.CreateNetworkACLResponse).Id
 				rule["uuids"] = uuids
-				log.Printf("[DEBUG] Created TCP/UDP rule for port %s with ID=%s", port.(string), r.(*cloudstack.CreateNetworkACLResponse).Id)
+				log.Printf("[DEBUG] Created TCP/UDP rule for port %s with ID=%s", portStr, r.(*cloudstack.CreateNetworkACLResponse).Id)
+			} else {
+				log.Printf("[DEBUG] Port %s already has UUID, skipping", portStr)
 			}
+		} else {
+			// No port specified - create rule for all ports
+			log.Printf("[DEBUG] No port specified for TCP/UDP rule, creating rule for all ports")
+			r, err := Retry(4, retryableACLCreationFunc(cs, p))
+			if err != nil {
+				log.Printf("[ERROR] Failed to create TCP/UDP rule for all ports: %v", err)
+				return err
+			}
+			uuids["all_ports"] = r.(*cloudstack.CreateNetworkACLResponse).Id
+			rule["uuids"] = uuids
+			log.Printf("[DEBUG] Created TCP/UDP rule for all ports with ID=%s", r.(*cloudstack.CreateNetworkACLResponse).Id)
 		}
 	}
 
@@ -507,29 +501,71 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 			}
 
 			if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
-				ps, ok := rule["ports"].(*schema.Set)
-				if !ok || ps == nil {
-					log.Printf("[DEBUG] No ports specified for TCP/UDP rule, initializing empty set")
-					ps = &schema.Set{F: schema.HashString}
-				}
+				// Check for deprecated ports field first (for backward compatibility)
+				ps, hasPortsSet := rule["ports"].(*schema.Set)
+				portStr, hasPort := rule["port"].(string)
 
-				// Create an empty schema.Set to hold all ports
-				ports := &schema.Set{F: schema.HashString}
-				log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule", ps.Len())
+				if hasPortsSet && ps != nil && ps.Len() > 0 {
+					// Handle deprecated ports field (multiple ports)
+					log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule (deprecated field)", ps.Len())
 
-				// Loop through all ports and retrieve their info
-				for _, port := range ps.List() {
-					id, ok := uuids[port.(string)]
+					// Create an empty schema.Set to hold all ports
+					ports := &schema.Set{F: schema.HashString}
+
+					// Loop through all ports and retrieve their info
+					for _, port := range ps.List() {
+						id, ok := uuids[port.(string)]
+						if !ok {
+							log.Printf("[DEBUG] No UUID for port %s, skipping", port.(string))
+							continue
+						}
+
+						// Get the rule
+						r, ok := ruleMap[id.(string)]
+						if !ok {
+							log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", port.(string), id.(string))
+							delete(uuids, port.(string))
+							continue
+						}
+
+						// Delete the known rule so only unknown rules remain in the ruleMap
+						delete(ruleMap, id.(string))
+
+						// Create a set with all CIDR's
+						cidrs := &schema.Set{F: schema.HashString}
+						for _, cidr := range strings.Split(r.Cidrlist, ",") {
+							cidrs.Add(cidr)
+						}
+
+						// Update the values
+						rule["action"] = strings.ToLower(r.Action)
+						rule["protocol"] = r.Protocol
+						rule["traffic_type"] = strings.ToLower(r.Traffictype)
+						rule["cidr_list"] = cidrs
+						ports.Add(port)
+						log.Printf("[DEBUG] Added port %s to TCP/UDP rule", port.(string))
+					}
+
+					// Add this rule to the rules set with ports
+					rule["ports"] = ports
+					rules.Add(rule)
+					log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state: %+v", rule)
+
+				} else if hasPort && portStr != "" {
+					// Handle new port field (single port)
+					log.Printf("[DEBUG] Processing single port for TCP/UDP rule: %s", portStr)
+
+					id, ok := uuids[portStr]
 					if !ok {
-						log.Printf("[DEBUG] No UUID for port %s, skipping", port.(string))
+						log.Printf("[DEBUG] No UUID for port %s, skipping rule", portStr)
 						continue
 					}
 
 					// Get the rule
 					r, ok := ruleMap[id.(string)]
 					if !ok {
-						log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", port.(string), id.(string))
-						delete(uuids, port.(string))
+						log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", portStr, id.(string))
+						delete(uuids, portStr)
 						continue
 					}
 
@@ -547,20 +583,44 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 					rule["protocol"] = r.Protocol
 					rule["traffic_type"] = strings.ToLower(r.Traffictype)
 					rule["cidr_list"] = cidrs
-					ports.Add(port)
-					log.Printf("[DEBUG] Added port %s to TCP/UDP rule", port.(string))
-				}
+					rule["port"] = portStr
+					rules.Add(rule)
+					log.Printf("[DEBUG] Added TCP/UDP rule with single port to state: %+v", rule)
 
-				// If there is at least one port found, add this rule to the rules set
-				if ports.Len() > 0 {
-					rule["ports"] = ports
-					rules.Add(rule)
-					log.Printf("[DEBUG] Added TCP/UDP rule to state: %+v", rule)
 				} else {
-					// Add the rule even if no ports are specified, as ports are optional
-					rule["ports"] = ports
+					// Handle rule with no port (all ports)
+					log.Printf("[DEBUG] Processing TCP/UDP rule with no port specified")
+
+					id, ok := uuids["all_ports"]
+					if !ok {
+						log.Printf("[DEBUG] No UUID for all_ports, skipping rule")
+						continue
+					}
+
+					// Get the rule
+					r, ok := ruleMap[id.(string)]
+					if !ok {
+						log.Printf("[DEBUG] TCP/UDP rule for all_ports with ID %s not found, removing UUID", id.(string))
+						delete(uuids, "all_ports")
+						continue
+					}
+
+					// Delete the known rule so only unknown rules remain in the ruleMap
+					delete(ruleMap, id.(string))
+
+					// Create a set with all CIDR's
+					cidrs := &schema.Set{F: schema.HashString}
+					for _, cidr := range strings.Split(r.Cidrlist, ",") {
+						cidrs.Add(cidr)
+					}
+
+					// Update the values
+					rule["action"] = strings.ToLower(r.Action)
+					rule["protocol"] = r.Protocol
+					rule["traffic_type"] = strings.ToLower(r.Traffictype)
+					rule["cidr_list"] = cidrs
 					rules.Add(rule)
-					log.Printf("[DEBUG] Added TCP/UDP rule with no ports to state: %+v", rule)
+					log.Printf("[DEBUG] Added TCP/UDP rule with no port to state: %+v", rule)
 				}
 			}
 		}
@@ -791,19 +851,26 @@ func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interfac
 		// No additional test are needed
 		log.Printf("[DEBUG] Protocol 'all' validated")
 	case "tcp", "udp":
-		if ports, ok := rule["ports"].(*schema.Set); ok {
-			log.Printf("[DEBUG] Found %d ports for TCP/UDP", ports.Len())
-			for _, port := range ports.List() {
-				m := splitPorts.FindStringSubmatch(port.(string))
-				if m == nil {
-					log.Printf("[ERROR] Invalid port format: %s", port.(string))
-					return fmt.Errorf(
-						"%q is not a valid port value. Valid options are '80' or '80-90'", port.(string))
-				}
+		// Check if deprecated ports field is used (not allowed for new configurations)
+		portsSet, hasPortsSet := rule["ports"].(*schema.Set)
+		portStr, hasPort := rule["port"].(string)
+
+		if hasPortsSet && portsSet.Len() > 0 {
+			log.Printf("[ERROR] Deprecated ports field used in new configuration")
+			return fmt.Errorf("The 'ports' field is deprecated. Use 'port' instead for new configurations.")
+		}
+
+		// Validate the new port field if used
+		if hasPort && portStr != "" {
+			log.Printf("[DEBUG] Found port for TCP/UDP: %s", portStr)
+			m := splitPorts.FindStringSubmatch(portStr)
+			if m == nil {
+				log.Printf("[ERROR] Invalid port format: %s", portStr)
+				return fmt.Errorf(
+					"%q is not a valid port value. Valid options are '80' or '80-90'", portStr)
 			}
 		} else {
-			log.Printf("[DEBUG] No ports specified for TCP/UDP, assuming empty set")
-			// Allow empty ports for TCP/UDP (your config has no ports)
+			log.Printf("[DEBUG] No port specified for TCP/UDP, allowing empty port")
 		}
 	default:
 		_, err := strconv.ParseInt(protocol, 0, 0)
