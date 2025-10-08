@@ -509,10 +509,7 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 					// Handle deprecated ports field (multiple ports)
 					log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule (deprecated field)", ps.Len())
 
-					// Create an empty list to hold all ports
 					var ports []interface{}
-
-					// Loop through all ports and retrieve their info
 					for _, port := range ps.List() {
 						id, ok := uuids[port.(string)]
 						if !ok {
@@ -520,7 +517,6 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 							continue
 						}
 
-						// Get the rule
 						r, ok := ruleMap[id.(string)]
 						if !ok {
 							log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", port.(string), id.(string))
@@ -531,13 +527,11 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 						// Delete the known rule so only unknown rules remain in the ruleMap
 						delete(ruleMap, id.(string))
 
-						// Create a list with all CIDR's
 						var cidrs []interface{}
 						for _, cidr := range strings.Split(r.Cidrlist, ",") {
 							cidrs = append(cidrs, cidr)
 						}
 
-						// Update the values
 						rule["action"] = strings.ToLower(r.Action)
 						rule["protocol"] = r.Protocol
 						rule["traffic_type"] = strings.ToLower(r.Traffictype)
@@ -546,7 +540,6 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 						log.Printf("[DEBUG] Added port %s to TCP/UDP rule", port.(string))
 					}
 
-					// Add this rule to the rules list with ports
 					rule["ports"] = schema.NewSet(schema.HashString, ports)
 					rules = append(rules, rule)
 					log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state: %+v", rule)
@@ -570,13 +563,11 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 					// Delete the known rule so only unknown rules remain in the ruleMap
 					delete(ruleMap, id.(string))
 
-					// Create a list with all CIDR's
 					var cidrs []interface{}
 					for _, cidr := range strings.Split(r.Cidrlist, ",") {
 						cidrs = append(cidrs, cidr)
 					}
 
-					// Update the values
 					rule["action"] = strings.ToLower(r.Action)
 					rule["protocol"] = r.Protocol
 					rule["traffic_type"] = strings.ToLower(r.Traffictype)
@@ -603,13 +594,11 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 
 					delete(ruleMap, id.(string))
 
-					// Create a list with all CIDR's
 					var cidrs []interface{}
 					for _, cidr := range strings.Split(r.Cidrlist, ",") {
 						cidrs = append(cidrs, cidr)
 					}
 
-					// Update the values
 					rule["action"] = strings.ToLower(r.Action)
 					rule["protocol"] = r.Protocol
 					rule["traffic_type"] = strings.ToLower(r.Traffictype)
@@ -972,6 +961,14 @@ func ruleNeedsUpdate(oldRule, newRule map[string]interface{}) bool {
 		return true
 	}
 
+	// Check rule_number
+	oldRuleNum, oldHasRuleNum := oldRule["rule_number"].(int)
+	newRuleNum, newHasRuleNum := newRule["rule_number"].(int)
+	if oldHasRuleNum != newHasRuleNum || (oldHasRuleNum && newHasRuleNum && oldRuleNum != newRuleNum) {
+		log.Printf("[DEBUG] Rule number changed: %d -> %d", oldRuleNum, newRuleNum)
+		return true
+	}
+
 	oldDesc, oldHasDesc := oldRule["description"].(string)
 	newDesc, newHasDesc := newRule["description"].(string)
 	if oldHasDesc != newHasDesc || (oldHasDesc && newHasDesc && oldDesc != newDesc) {
@@ -1054,6 +1051,12 @@ func updateNetworkACLRule(cs *cloudstack.CloudStackClient, oldRule, newRule map[
 		p.SetProtocol(newRule["protocol"].(string))
 
 		p.SetTraffictype(newRule["traffic_type"].(string))
+
+		// Set rule number if provided and non-zero
+		if ruleNum, ok := newRule["rule_number"].(int); ok && ruleNum > 0 {
+			p.SetNumber(ruleNum)
+			log.Printf("[DEBUG] Set rule_number=%d", ruleNum)
+		}
 
 		protocol := newRule["protocol"].(string)
 		switch protocol {
