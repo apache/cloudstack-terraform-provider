@@ -369,6 +369,99 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 	return nil
 }
 
+func processTCPUDPRule(rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL, uuids map[string]interface{}, rules *[]interface{}) {
+	// Check for deprecated ports field first (for backward compatibility)
+	ps, hasPortsSet := rule["ports"].(*schema.Set)
+	portStr, hasPort := rule["port"].(string)
+
+	if hasPortsSet && ps.Len() > 0 {
+		log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule (deprecated field)", ps.Len())
+
+		var ports []interface{}
+		for _, port := range ps.List() {
+			if processPortForRule(port.(string), rule, ruleMap, uuids) {
+				ports = append(ports, port)
+				log.Printf("[DEBUG] Added port %s to TCP/UDP rule", port.(string))
+			}
+		}
+
+		if len(ports) > 0 {
+			rule["ports"] = schema.NewSet(schema.HashString, ports)
+			*rules = append(*rules, rule)
+			log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state: %+v", rule)
+		}
+
+	} else if hasPort && portStr != "" {
+		log.Printf("[DEBUG] Processing single port for TCP/UDP rule: %s", portStr)
+
+		if processPortForRule(portStr, rule, ruleMap, uuids) {
+			rule["port"] = portStr
+			*rules = append(*rules, rule)
+			log.Printf("[DEBUG] Added TCP/UDP rule with single port to state: %+v", rule)
+		}
+
+	} else {
+		log.Printf("[DEBUG] Processing TCP/UDP rule with no port specified")
+
+		id, ok := uuids["all_ports"]
+		if !ok {
+			log.Printf("[DEBUG] No UUID for all_ports, skipping rule")
+			return
+		}
+
+		r, ok := ruleMap[id.(string)]
+		if !ok {
+			log.Printf("[DEBUG] TCP/UDP rule for all_ports with ID %s not found, removing UUID", id.(string))
+			delete(uuids, "all_ports")
+			return
+		}
+
+		delete(ruleMap, id.(string))
+
+		var cidrs []interface{}
+		for _, cidr := range strings.Split(r.Cidrlist, ",") {
+			cidrs = append(cidrs, cidr)
+		}
+
+		rule["action"] = strings.ToLower(r.Action)
+		rule["protocol"] = r.Protocol
+		rule["traffic_type"] = strings.ToLower(r.Traffictype)
+		rule["cidr_list"] = cidrs
+		*rules = append(*rules, rule)
+		log.Printf("[DEBUG] Added TCP/UDP rule with no port to state: %+v", rule)
+	}
+}
+
+func processPortForRule(portStr string, rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL, uuids map[string]interface{}) bool {
+	id, ok := uuids[portStr]
+	if !ok {
+		log.Printf("[DEBUG] No UUID for port %s, skipping", portStr)
+		return false
+	}
+
+	r, ok := ruleMap[id.(string)]
+	if !ok {
+		log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", portStr, id.(string))
+		delete(uuids, portStr)
+		return false
+	}
+
+	// Delete the known rule so only unknown rules remain in the ruleMap
+	delete(ruleMap, id.(string))
+
+	var cidrs []interface{}
+	for _, cidr := range strings.Split(r.Cidrlist, ",") {
+		cidrs = append(cidrs, cidr)
+	}
+
+	rule["action"] = strings.ToLower(r.Action)
+	rule["protocol"] = r.Protocol
+	rule["traffic_type"] = strings.ToLower(r.Traffictype)
+	rule["cidr_list"] = cidrs
+
+	return true
+}
+
 func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	log.Printf("[DEBUG] Entering resourceCloudStackNetworkACLRuleRead with acl_id=%s", d.Id())
@@ -501,111 +594,8 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 			}
 
 			if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
-				// Check for deprecated ports field first (for backward compatibility)
-				ps, hasPortsSet := rule["ports"].(*schema.Set)
-				portStr, hasPort := rule["port"].(string)
-
-				if hasPortsSet && ps.Len() > 0 {
-					// Handle deprecated ports field (multiple ports)
-					log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule (deprecated field)", ps.Len())
-
-					var ports []interface{}
-					for _, port := range ps.List() {
-						id, ok := uuids[port.(string)]
-						if !ok {
-							log.Printf("[DEBUG] No UUID for port %s, skipping", port.(string))
-							continue
-						}
-
-						r, ok := ruleMap[id.(string)]
-						if !ok {
-							log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", port.(string), id.(string))
-							delete(uuids, port.(string))
-							continue
-						}
-
-						// Delete the known rule so only unknown rules remain in the ruleMap
-						delete(ruleMap, id.(string))
-
-						var cidrs []interface{}
-						for _, cidr := range strings.Split(r.Cidrlist, ",") {
-							cidrs = append(cidrs, cidr)
-						}
-
-						rule["action"] = strings.ToLower(r.Action)
-						rule["protocol"] = r.Protocol
-						rule["traffic_type"] = strings.ToLower(r.Traffictype)
-						rule["cidr_list"] = cidrs
-						ports = append(ports, port)
-						log.Printf("[DEBUG] Added port %s to TCP/UDP rule", port.(string))
-					}
-
-					rule["ports"] = schema.NewSet(schema.HashString, ports)
-					rules = append(rules, rule)
-					log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state: %+v", rule)
-
-				} else if hasPort && portStr != "" {
-					log.Printf("[DEBUG] Processing single port for TCP/UDP rule: %s", portStr)
-
-					id, ok := uuids[portStr]
-					if !ok {
-						log.Printf("[DEBUG] No UUID for port %s, skipping rule", portStr)
-						continue
-					}
-
-					r, ok := ruleMap[id.(string)]
-					if !ok {
-						log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", portStr, id.(string))
-						delete(uuids, portStr)
-						continue
-					}
-
-					// Delete the known rule so only unknown rules remain in the ruleMap
-					delete(ruleMap, id.(string))
-
-					var cidrs []interface{}
-					for _, cidr := range strings.Split(r.Cidrlist, ",") {
-						cidrs = append(cidrs, cidr)
-					}
-
-					rule["action"] = strings.ToLower(r.Action)
-					rule["protocol"] = r.Protocol
-					rule["traffic_type"] = strings.ToLower(r.Traffictype)
-					rule["cidr_list"] = cidrs
-					rule["port"] = portStr
-					rules = append(rules, rule)
-					log.Printf("[DEBUG] Added TCP/UDP rule with single port to state: %+v", rule)
-
-				} else {
-					log.Printf("[DEBUG] Processing TCP/UDP rule with no port specified")
-
-					id, ok := uuids["all_ports"]
-					if !ok {
-						log.Printf("[DEBUG] No UUID for all_ports, skipping rule")
-						continue
-					}
-
-					r, ok := ruleMap[id.(string)]
-					if !ok {
-						log.Printf("[DEBUG] TCP/UDP rule for all_ports with ID %s not found, removing UUID", id.(string))
-						delete(uuids, "all_ports")
-						continue
-					}
-
-					delete(ruleMap, id.(string))
-
-					var cidrs []interface{}
-					for _, cidr := range strings.Split(r.Cidrlist, ",") {
-						cidrs = append(cidrs, cidr)
-					}
-
-					rule["action"] = strings.ToLower(r.Action)
-					rule["protocol"] = r.Protocol
-					rule["traffic_type"] = strings.ToLower(r.Traffictype)
-					rule["cidr_list"] = cidrs
-					rules = append(rules, rule)
-					log.Printf("[DEBUG] Added TCP/UDP rule with no port to state: %+v", rule)
-				}
+				uuids := rule["uuids"].(map[string]interface{})
+				processTCPUDPRule(rule, ruleMap, uuids, &rules)
 			}
 		}
 	}
