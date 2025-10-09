@@ -12,6 +12,8 @@ Creates network ACL rules for a given network ACL.
 
 ## Example Usage
 
+### Basic Example with Port
+
 ```hcl
 resource "cloudstack_network_acl_rule" "default" {
   acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
@@ -20,11 +22,111 @@ resource "cloudstack_network_acl_rule" "default" {
     action       = "allow"
     cidr_list    = ["10.0.0.0/8"]
     protocol     = "tcp"
-    ports        = ["80", "1000-2000"]
+    port         = "80"
     traffic_type = "ingress"
   }
 }
 ```
+
+### Example with Port Range
+
+```hcl
+resource "cloudstack_network_acl_rule" "port_range" {
+  acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
+
+  rule {
+    action       = "allow" 
+    cidr_list    = ["192.168.1.0/24"]
+    protocol     = "tcp"
+    port         = "8000-8010"
+    traffic_type = "ingress"
+  }
+}
+```
+
+### Example with No Port (Allow All Ports)
+
+```hcl
+resource "cloudstack_network_acl_rule" "all_ports" {
+  acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
+
+  rule {
+    action       = "allow"
+    cidr_list    = ["10.0.0.0/16"]
+    protocol     = "tcp"
+    traffic_type = "ingress"
+    description  = "Allow all TCP traffic from internal network"
+  }
+}
+```
+
+### Example with ICMP
+
+```hcl
+resource "cloudstack_network_acl_rule" "icmp" {
+  acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
+
+  rule {
+    action       = "allow"
+    cidr_list    = ["0.0.0.0/0"]
+    protocol     = "icmp"
+    icmp_type    = 8
+    icmp_code    = 0
+    traffic_type = "ingress"
+    description  = "Allow ping"
+  }
+}
+```
+
+### Complete Example with Multiple Rules
+
+```hcl
+resource "cloudstack_network_acl_rule" "web_server" {
+  acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
+
+  # HTTP traffic
+  rule {
+    rule_number  = 10
+    action       = "allow"
+    cidr_list    = ["0.0.0.0/0"]
+    protocol     = "tcp"
+    port         = "80"
+    traffic_type = "ingress"
+    description  = "Allow HTTP"
+  }
+
+  # HTTPS traffic
+  rule {
+    rule_number  = 20
+    action       = "allow"
+    cidr_list    = ["0.0.0.0/0"]
+    protocol     = "tcp"
+    port         = "443"
+    traffic_type = "ingress"
+    description  = "Allow HTTPS"
+  }
+
+  # SSH from management network
+  rule {
+    rule_number  = 30
+    action       = "allow"
+    cidr_list    = ["192.168.100.0/24"]
+    protocol     = "tcp"
+    port         = "22"
+    traffic_type = "ingress"
+    description  = "Allow SSH from management"
+  }
+
+  # Allow all outbound traffic
+  rule {
+    rule_number  = 100
+    action       = "allow"
+    cidr_list    = ["0.0.0.0/0"]
+    protocol     = "tcp"
+    traffic_type = "egress"
+    description  = "Allow all outbound TCP"
+  }
+}
 
 ## Argument Reference
 
@@ -64,8 +166,15 @@ The `rule` block supports:
 * `icmp_code` - (Optional) The ICMP code to allow, or `-1` to allow `any`. This
     can only be specified if the protocol is ICMP. (defaults 0)
 
-* `ports` - (Optional) List of ports and/or port ranges to allow. This can only
-    be specified if the protocol is TCP, UDP, ALL or a valid protocol number.
+* `port` - (Optional) Port or port range to allow. This can only be specified if 
+    the protocol is TCP, UDP, ALL or a valid protocol number. Valid formats are:
+    - Single port: `"80"`
+    - Port range: `"8000-8010"`
+    - If not specified for TCP/UDP, allows all ports for that protocol
+
+* `ports` - (Optional) **DEPRECATED**: Use `port` instead. List of ports and/or 
+    port ranges to allow. This field is deprecated and will be removed in a future 
+    version. For backward compatibility only.
 
 * `traffic_type` - (Optional) The traffic type for the rule. Valid options are:
     `ingress` or `egress` (defaults ingress).
