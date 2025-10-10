@@ -155,6 +155,8 @@ func Provider() *schema.Provider {
 			"cloudstack_account":                        resourceCloudStackAccount(),
 			"cloudstack_project":                        resourceCloudStackProject(),
 			"cloudstack_user":                           resourceCloudStackUser(),
+			"cloudstack_user_data":                      resourceCloudStackUserData(),
+			"cloudstack_user_data_template_link":        resourceCloudStackUserDataTemplateLink(),
 			"cloudstack_domain":                         resourceCloudStackDomain(),
 			"cloudstack_network_service_provider":       resourceCloudStackNetworkServiceProvider(),
 			"cloudstack_role":                           resourceCloudStackRole(),
