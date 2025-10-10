@@ -83,6 +83,7 @@ func Provider() *schema.Provider {
 			"cloudstack_autoscale_vm_profile": dataSourceCloudstackAutoscaleVMProfile(),
 			"cloudstack_condition":            dataSourceCloudstackCondition(),
 			"cloudstack_counter":              dataSourceCloudstackCounter(),
+			"cloudstack_user_data":            dataSourceCloudstackUserData(),
 			"cloudstack_template":             dataSourceCloudstackTemplate(),
 			"cloudstack_ssh_keypair":          dataSourceCloudstackSSHKeyPair(),
 			"cloudstack_instance":             dataSourceCloudstackInstance(),
