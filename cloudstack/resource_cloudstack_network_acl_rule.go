@@ -307,6 +307,12 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 
 	// If protocol is TCP or UDP, create the rule (with or without port)
 	if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
+		// Check if deprecated ports field is used and reject it
+		if portsSet, hasPortsSet := rule["ports"].(*schema.Set); hasPortsSet && portsSet.Len() > 0 {
+			log.Printf("[ERROR] Attempt to create rule with deprecated ports field")
+			return fmt.Errorf("The 'ports' field is no longer supported for creating new rules. Please use the 'port' field with separate rules for each port/range.")
+		}
+
 		portStr, hasPort := rule["port"].(string)
 
 		if hasPort && portStr != "" {
@@ -427,6 +433,7 @@ func processTCPUDPRule(rule map[string]interface{}, ruleMap map[string]*cloudsta
 		rule["protocol"] = r.Protocol
 		rule["traffic_type"] = strings.ToLower(r.Traffictype)
 		rule["cidr_list"] = cidrs
+		rule["rule_number"] = r.Number
 		*rules = append(*rules, rule)
 		log.Printf("[DEBUG] Added TCP/UDP rule with no port to state: %+v", rule)
 	}
@@ -458,6 +465,7 @@ func processPortForRule(portStr string, rule map[string]interface{}, ruleMap map
 	rule["protocol"] = r.Protocol
 	rule["traffic_type"] = strings.ToLower(r.Traffictype)
 	rule["cidr_list"] = cidrs
+	rule["rule_number"] = r.Number
 
 	return true
 }
@@ -556,6 +564,7 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 				rule["icmp_code"] = r.Icmpcode
 				rule["traffic_type"] = strings.ToLower(r.Traffictype)
 				rule["cidr_list"] = cidrs
+				rule["rule_number"] = r.Number
 				rules = append(rules, rule)
 				log.Printf("[DEBUG] Added ICMP rule to state: %+v", rule)
 			}
@@ -589,6 +598,7 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 				rule["protocol"] = r.Protocol
 				rule["traffic_type"] = strings.ToLower(r.Traffictype)
 				rule["cidr_list"] = cidrs
+				rule["rule_number"] = r.Number
 				rules = append(rules, rule)
 				log.Printf("[DEBUG] Added ALL rule to state: %+v", rule)
 			}
@@ -760,13 +770,13 @@ func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interfac
 		// No additional test are needed
 		log.Printf("[DEBUG] Protocol 'all' validated")
 	case "tcp", "udp":
-		// Check if deprecated ports field is used (not allowed for new configurations)
+		// Check if deprecated ports field is used (not allowed for any operations)
 		portsSet, hasPortsSet := rule["ports"].(*schema.Set)
 		portStr, hasPort := rule["port"].(string)
 
 		if hasPortsSet && portsSet.Len() > 0 {
-			log.Printf("[ERROR] Deprecated ports field used in new configuration")
-			return fmt.Errorf("The 'ports' field is deprecated. Use 'port' instead for new configurations.")
+			log.Printf("[ERROR] Deprecated ports field used - no longer supported")
+			return fmt.Errorf("The 'ports' field is no longer supported. Please migrate to using the 'port' field with separate rules for each port/range.")
 		}
 
 		// Validate the new port field if used
