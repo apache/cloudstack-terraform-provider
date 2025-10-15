@@ -140,6 +140,15 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
+			"service_offering_details": {
+				Description: "Service offering details for GPU configuration and other advanced settings",
+				Type:        schema.TypeMap,
+				Optional:    true,
+				ForceNew:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -216,6 +225,14 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetTags(v.(string))
 	}
 
+	if details, ok := d.GetOk("service_offering_details"); ok {
+		serviceOfferingDetails := make(map[string]string)
+		for k, v := range details.(map[string]interface{}) {
+			serviceOfferingDetails[k] = v.(string)
+		}
+		p.SetServiceofferingdetails(serviceOfferingDetails)
+	}
+
 	log.Printf("[DEBUG] Creating Service Offering %s", name)
 	s, err := cs.ServiceOffering.CreateServiceOffering(p)
 
@@ -264,6 +281,7 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 		"max_memory":     getIntFromDetails(s.Serviceofferingdetails, "maxmemory"),
 		"encrypt_root":   s.Encryptroot,
 		"storage_tags":   s.Storagetags,
+		"service_offering_details": getServiceOfferingDetails(s.Serviceofferingdetails),
 	}
 
 	for k, v := range fields {
@@ -380,4 +398,29 @@ func getIntFromDetails(details map[string]string, key string) interface{} {
 		}
 	}
 	return nil
+}
+
+// getServiceOfferingDetails extracts custom service offering details while excluding 
+// built-in details that are handled as separate schema fields
+func getServiceOfferingDetails(details map[string]string) map[string]interface{} {
+	if details == nil {
+		return make(map[string]interface{})
+	}
+	
+	// List of built-in details that are handled as separate schema fields
+	builtInKeys := map[string]bool{
+		"mincpunumber": true,
+		"maxcpunumber": true,
+		"minmemory":    true,
+		"maxmemory":    true,
+	}
+	
+	result := make(map[string]interface{})
+	for k, v := range details {
+		if !builtInKeys[k] {
+			result[k] = v
+		}
+	}
+	
+	return result
 }
