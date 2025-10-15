@@ -12,10 +12,30 @@ A `cloudstack_service_offering` resource manages a service offering within Cloud
 
 ## Example Usage
 
+### Basic Service Offering
+
 ```hcl
 resource "cloudstack_service_offering" "example" {
     name = "example-service-offering"
     display_text = "Example Service Offering"
+    cpu_number = 2
+    memory = 4096
+}
+```
+
+### GPU Service Offering
+
+```hcl
+resource "cloudstack_service_offering" "gpu_offering" {
+    name = "gpu-a6000"
+    display_text = "GPU A6000 Instance"
+    cpu_number = 4
+    memory = 16384
+    
+    service_offering_details = {
+        pciDevice = "Group of NVIDIA A6000 GPUs"
+        vgpuType  = "A6000-8A"
+    }
 }
 ```
 
@@ -68,6 +88,9 @@ The following arguments are supported:
     Changing this forces a new resource to be created.
 
 * `storage_tags` - (Optional) Storage tags to associate with the service offering.
+
+* `service_offering_details` - (Optional) A map of service offering details for GPU configuration and other advanced settings. Common keys include `pciDevice` and `vgpuType` for GPU offerings.
+    Changing this forces a new resource to be created.
 
 ## Attributes Reference
 
