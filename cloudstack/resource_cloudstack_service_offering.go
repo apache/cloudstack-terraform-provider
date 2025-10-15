@@ -265,22 +265,22 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.SetId(s.Id)
 
 	fields := map[string]interface{}{
-		"name":           s.Name,
-		"display_text":   s.Displaytext,
-		"cpu_number":     s.Cpunumber,
-		"cpu_speed":      s.Cpuspeed,
-		"host_tags":      s.Hosttags,
-		"limit_cpu_use":  s.Limitcpuuse,
-		"memory":         s.Memory,
-		"offer_ha":       s.Offerha,
-		"storage_type":   s.Storagetype,
-		"customized":     s.Iscustomized,
-		"min_cpu_number": getIntFromDetails(s.Serviceofferingdetails, "mincpunumber"),
-		"max_cpu_number": getIntFromDetails(s.Serviceofferingdetails, "maxcpunumber"),
-		"min_memory":     getIntFromDetails(s.Serviceofferingdetails, "minmemory"),
-		"max_memory":     getIntFromDetails(s.Serviceofferingdetails, "maxmemory"),
-		"encrypt_root":   s.Encryptroot,
-		"storage_tags":   s.Storagetags,
+		"name":                     s.Name,
+		"display_text":             s.Displaytext,
+		"cpu_number":               s.Cpunumber,
+		"cpu_speed":                s.Cpuspeed,
+		"host_tags":                s.Hosttags,
+		"limit_cpu_use":            s.Limitcpuuse,
+		"memory":                   s.Memory,
+		"offer_ha":                 s.Offerha,
+		"storage_type":             s.Storagetype,
+		"customized":               s.Iscustomized,
+		"min_cpu_number":           getIntFromDetails(s.Serviceofferingdetails, "mincpunumber"),
+		"max_cpu_number":           getIntFromDetails(s.Serviceofferingdetails, "maxcpunumber"),
+		"min_memory":               getIntFromDetails(s.Serviceofferingdetails, "minmemory"),
+		"max_memory":               getIntFromDetails(s.Serviceofferingdetails, "maxmemory"),
+		"encrypt_root":             s.Encryptroot,
+		"storage_tags":             s.Storagetags,
 		"service_offering_details": getServiceOfferingDetails(s.Serviceofferingdetails),
 	}
 
@@ -400,13 +400,13 @@ func getIntFromDetails(details map[string]string, key string) interface{} {
 	return nil
 }
 
-// getServiceOfferingDetails extracts custom service offering details while excluding 
+// getServiceOfferingDetails extracts custom service offering details while excluding
 // built-in details that are handled as separate schema fields
 func getServiceOfferingDetails(details map[string]string) map[string]interface{} {
 	if details == nil {
 		return make(map[string]interface{})
 	}
-	
+
 	// List of built-in details that are handled as separate schema fields
 	builtInKeys := map[string]bool{
 		"mincpunumber": true,
@@ -414,13 +414,13 @@ func getServiceOfferingDetails(details map[string]string) map[string]interface{}
 		"minmemory":    true,
 		"maxmemory":    true,
 	}
-	
+
 	result := make(map[string]interface{})
 	for k, v := range details {
 		if !builtInKeys[k] {
 			result[k] = v
 		}
 	}
-	
+
 	return result
 }
