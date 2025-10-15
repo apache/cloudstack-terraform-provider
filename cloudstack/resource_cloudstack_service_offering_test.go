@@ -151,6 +151,7 @@ resource "cloudstack_service_offering" "gpu" {
   display_text = "GPU Test"
   cpu_number   = 4
   memory       = 16384
+  cpu_speed		= 1000
   
   service_offering_details = {
     pciDevice = "Group of NVIDIA A6000 GPUs"
