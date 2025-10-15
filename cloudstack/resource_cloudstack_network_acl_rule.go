@@ -44,6 +44,63 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceCloudStackNetworkACLRuleImport,
 		},
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+			// Force replacement for migration from deprecated 'ports' to 'port' field
+			if diff.HasChange("rule") {
+				oldRules, newRules := diff.GetChange("rule")
+				oldRulesList := oldRules.([]interface{})
+				newRulesList := newRules.([]interface{})
+
+				log.Printf("[DEBUG] CustomizeDiff: checking %d old rules -> %d new rules for migration", len(oldRulesList), len(newRulesList))
+
+				// Check if ANY old rule uses deprecated 'ports' field
+				hasDeprecatedPorts := false
+				for i, oldRule := range oldRulesList {
+					oldRuleMap := oldRule.(map[string]interface{})
+					protocol := oldRuleMap["protocol"].(string)
+
+					if protocol == "tcp" || protocol == "udp" {
+						if portsSet, hasPortsSet := oldRuleMap["ports"].(*schema.Set); hasPortsSet && portsSet.Len() > 0 {
+							log.Printf("[DEBUG] CustomizeDiff: OLD rule %d has deprecated ports field with %d ports: %v", i, portsSet.Len(), portsSet.List())
+							hasDeprecatedPorts = true
+							break
+						}
+					}
+				}
+
+				// Check if ANY new rule uses new 'port' field
+				hasNewPortFormat := false
+				for i, newRule := range newRulesList {
+					newRuleMap := newRule.(map[string]interface{})
+					protocol := newRuleMap["protocol"].(string)
+
+					if protocol == "tcp" || protocol == "udp" {
+						if portStr, hasPort := newRuleMap["port"].(string); hasPort && portStr != "" {
+							log.Printf("[DEBUG] CustomizeDiff: NEW rule %d has port field: %s", i, portStr)
+							hasNewPortFormat = true
+							break
+						}
+					}
+				}
+
+				// Force replacement if migrating from deprecated ports to new port format
+				if hasDeprecatedPorts && hasNewPortFormat {
+					log.Printf("[DEBUG] CustomizeDiff: MIGRATION DETECTED - old rules use deprecated 'ports', new rules use 'port' - FORCING REPLACEMENT")
+					diff.ForceNew("rule")
+					return nil
+				}
+
+				// Also force replacement if old rules have deprecated ports but new rules don't use ports at all
+				if hasDeprecatedPorts && !hasNewPortFormat {
+					log.Printf("[DEBUG] CustomizeDiff: POTENTIAL MIGRATION - old rules use deprecated 'ports' but new rules don't - FORCING REPLACEMENT")
+					diff.ForceNew("rule")
+					return nil
+				}
+
+				log.Printf("[DEBUG] CustomizeDiff: No migration detected - hasDeprecatedPorts=%t, hasNewPortFormat=%t", hasDeprecatedPorts, hasNewPortFormat)
+			}
+			return nil
+		},
 
 		Schema: map[string]*schema.Schema{
 			"acl_id": {
@@ -376,25 +433,26 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 }
 
 func processTCPUDPRule(rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL, uuids map[string]interface{}, rules *[]interface{}) {
-	// Check for deprecated ports field first (for backward compatibility)
+	// Check for deprecated ports field first (for reading existing state during migration)
 	ps, hasPortsSet := rule["ports"].(*schema.Set)
 	portStr, hasPort := rule["port"].(string)
 
 	if hasPortsSet && ps.Len() > 0 {
-		log.Printf("[DEBUG] Processing %d ports for TCP/UDP rule (deprecated field)", ps.Len())
+		log.Printf("[DEBUG] Processing deprecated ports field with %d ports during state read", ps.Len())
 
-		var ports []interface{}
+		// Process each port in the deprecated ports set during state read
 		for _, port := range ps.List() {
-			if processPortForRule(port.(string), rule, ruleMap, uuids) {
-				ports = append(ports, port)
-				log.Printf("[DEBUG] Added port %s to TCP/UDP rule", port.(string))
+			portStr := port.(string)
+
+			if processPortForRule(portStr, rule, ruleMap, uuids) {
+				log.Printf("[DEBUG] Processed deprecated port %s during state read", portStr)
 			}
 		}
 
-		if len(ports) > 0 {
-			rule["ports"] = schema.NewSet(schema.HashString, ports)
+		// Only add the rule once with all processed ports
+		if len(uuids) > 0 {
 			*rules = append(*rules, rule)
-			log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state: %+v", rule)
+			log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state during read: %+v", rule)
 		}
 
 	} else if hasPort && portStr != "" {
@@ -658,6 +716,17 @@ func resourceCloudStackNetworkACLRuleUpdate(d *schema.ResourceData, meta interfa
 		oldRules := o.([]interface{})
 		newRules := n.([]interface{})
 
+		log.Printf("[DEBUG] Rule list changed: %d old rules -> %d new rules", len(oldRules), len(newRules))
+
+		// Check for migration from deprecated 'ports' to 'port' field
+		migrationDetected := isPortsMigration(oldRules, newRules)
+
+		if migrationDetected {
+			log.Printf("[DEBUG] Migration detected - performing complete rule replacement")
+
+			return performPortsMigration(d, meta, oldRules, newRules)
+		}
+
 		log.Printf("[DEBUG] Rule list changed, performing efficient updates")
 		err := updateNetworkACLRules(d, meta, oldRules, newRules)
 		if err != nil {
@@ -770,13 +839,14 @@ func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interfac
 		// No additional test are needed
 		log.Printf("[DEBUG] Protocol 'all' validated")
 	case "tcp", "udp":
-		// Check if deprecated ports field is used (not allowed for any operations)
+		// The deprecated 'ports' field is no longer supported in any scenario
 		portsSet, hasPortsSet := rule["ports"].(*schema.Set)
 		portStr, hasPort := rule["port"].(string)
 
+		// Block deprecated ports field completely
 		if hasPortsSet && portsSet.Len() > 0 {
-			log.Printf("[ERROR] Deprecated ports field used - no longer supported")
-			return fmt.Errorf("The 'ports' field is no longer supported. Please migrate to using the 'port' field with separate rules for each port/range.")
+			log.Printf("[ERROR] Attempt to use deprecated ports field")
+			return fmt.Errorf("The 'ports' field is no longer supported. Please use the 'port' field instead.")
 		}
 
 		// Validate the new port field if used
@@ -860,89 +930,142 @@ func updateNetworkACLRules(d *schema.ResourceData, meta interface{}, oldRules, n
 	cs := meta.(*cloudstack.CloudStackClient)
 	log.Printf("[DEBUG] Updating ACL rules: %d old rules, %d new rules", len(oldRules), len(newRules))
 
-	oldRuleMap := make(map[string]map[string]interface{})
-	newRuleMap := make(map[string]map[string]interface{})
+	log.Printf("[DEBUG] Performing normal rule updates")
+	return performNormalRuleUpdates(d, meta, cs, oldRules, newRules)
+}
 
-	for _, rule := range oldRules {
-		ruleMap := rule.(map[string]interface{})
-		key := createRuleKey(ruleMap)
-		oldRuleMap[key] = ruleMap
-		log.Printf("[DEBUG] Old rule key: %s", key)
-	}
+func performNormalRuleUpdates(d *schema.ResourceData, meta interface{}, cs *cloudstack.CloudStackClient, oldRules, newRules []interface{}) error {
+	rulesToUpdate := make(map[string]map[string]interface{}) // UUID -> new rule mapping
+	rulesToDelete := make([]map[string]interface{}, 0)
+	rulesToCreate := make([]map[string]interface{}, 0)
 
-	for _, rule := range newRules {
-		ruleMap := rule.(map[string]interface{})
-		key := createRuleKey(ruleMap)
-		newRuleMap[key] = ruleMap
-		log.Printf("[DEBUG] New rule key: %s", key)
-	}
+	// Track which new rules match existing old rules
+	usedNewRules := make(map[int]bool)
 
-	for key, oldRule := range oldRuleMap {
-		if _, exists := newRuleMap[key]; !exists {
-			log.Printf("[DEBUG] Deleting rule: %s", key)
-			err := deleteNetworkACLRule(d, meta, oldRule)
-			if err != nil {
-				return fmt.Errorf("failed to delete rule %s: %v", key, err)
+	// For each old rule, try to find a matching new rule
+	for _, oldRule := range oldRules {
+		oldRuleMap := oldRule.(map[string]interface{})
+		foundMatch := false
+
+		for newIdx, newRule := range newRules {
+			if usedNewRules[newIdx] {
+				continue
 			}
+
+			newRuleMap := newRule.(map[string]interface{})
+			log.Printf("[DEBUG] Comparing old rule %+v with new rule %+v", oldRuleMap, newRuleMap)
+			if rulesMatch(oldRuleMap, newRuleMap) {
+				log.Printf("[DEBUG] Found matching new rule for old rule")
+
+				if oldUUIDs, ok := oldRuleMap["uuids"].(map[string]interface{}); ok {
+					newRuleMap["uuids"] = oldUUIDs
+				}
+
+				if ruleNeedsUpdate(oldRuleMap, newRuleMap) {
+					log.Printf("[DEBUG] Rule needs updating")
+					if uuids, ok := oldRuleMap["uuids"].(map[string]interface{}); ok {
+						for _, uuid := range uuids {
+							if uuid != nil {
+								rulesToUpdate[uuid.(string)] = newRuleMap
+								break
+							}
+						}
+					}
+				}
+
+				usedNewRules[newIdx] = true
+				foundMatch = true
+				break
+			}
+		}
+
+		if !foundMatch {
+			log.Printf("[DEBUG] Old rule has no match, will be deleted")
+			rulesToDelete = append(rulesToDelete, oldRuleMap)
 		}
 	}
 
-	var rulesToCreate []interface{}
-	for key, newRule := range newRuleMap {
-		if _, exists := oldRuleMap[key]; !exists {
-			log.Printf("[DEBUG] Creating new rule: %s", key)
-			rulesToCreate = append(rulesToCreate, newRule)
+	for newIdx, newRule := range newRules {
+		if !usedNewRules[newIdx] {
+			newRuleMap := newRule.(map[string]interface{})
+			log.Printf("[DEBUG] New rule has no match, will be created")
+			rulesToCreate = append(rulesToCreate, newRuleMap)
+		}
+	}
+
+	for _, ruleToDelete := range rulesToDelete {
+		log.Printf("[DEBUG] Deleting unmatched old rule")
+		err := deleteNetworkACLRule(d, meta, ruleToDelete)
+		if err != nil {
+			return fmt.Errorf("failed to delete old rule: %v", err)
+		}
+	}
+
+	for uuid, newRule := range rulesToUpdate {
+		log.Printf("[DEBUG] Updating rule with UUID %s", uuid)
+
+		tempOldRule := make(map[string]interface{})
+		tempOldRule["uuids"] = map[string]interface{}{"update": uuid}
+
+		err := updateNetworkACLRule(cs, tempOldRule, newRule)
+		if err != nil {
+			return fmt.Errorf("failed to update rule UUID %s: %v", uuid, err)
 		}
 	}
 
 	if len(rulesToCreate) > 0 {
+		log.Printf("[DEBUG] Creating %d new rules", len(rulesToCreate))
+
 		var createdRules []interface{}
-		err := createNetworkACLRules(d, meta, &createdRules, rulesToCreate)
+		var rulesToCreateInterface []interface{}
+		for _, rule := range rulesToCreate {
+			rulesToCreateInterface = append(rulesToCreateInterface, rule)
+		}
+
+		err := createNetworkACLRules(d, meta, &createdRules, rulesToCreateInterface)
 		if err != nil {
 			return fmt.Errorf("failed to create new rules: %v", err)
-		}
-	}
-
-	for key, newRule := range newRuleMap {
-		if oldRule, exists := oldRuleMap[key]; exists {
-			if ruleNeedsUpdate(oldRule, newRule) {
-				log.Printf("[DEBUG] Updating rule: %s", key)
-				err := updateNetworkACLRule(cs, oldRule, newRule)
-				if err != nil {
-					return fmt.Errorf("failed to update rule %s: %v", key, err)
-				}
-			}
 		}
 	}
 
 	return nil
 }
 
-func createRuleKey(rule map[string]interface{}) string {
-	protocol := rule["protocol"].(string)
-	trafficType := rule["traffic_type"].(string)
-
-	if protocol == "icmp" {
-		icmpType := rule["icmp_type"].(int)
-		icmpCode := rule["icmp_code"].(int)
-		return fmt.Sprintf("%s-%s-icmp-%d-%d", protocol, trafficType, icmpType, icmpCode)
+func rulesMatch(oldRule, newRule map[string]interface{}) bool {
+	if oldRule["protocol"].(string) != newRule["protocol"].(string) ||
+		oldRule["traffic_type"].(string) != newRule["traffic_type"].(string) ||
+		oldRule["action"].(string) != newRule["action"].(string) {
+		return false
 	}
 
-	if protocol == "all" {
-		return fmt.Sprintf("%s-%s-all", protocol, trafficType)
-	}
+	protocol := newRule["protocol"].(string)
 
 	if protocol == "tcp" || protocol == "udp" {
-		portStr, hasPort := rule["port"].(string)
-		if hasPort && portStr != "" {
-			return fmt.Sprintf("%s-%s-port-%s", protocol, trafficType, portStr)
-		} else {
-			return fmt.Sprintf("%s-%s-noport", protocol, trafficType)
+		oldPort, oldHasPort := oldRule["port"].(string)
+		newPort, newHasPort := newRule["port"].(string)
+
+		if oldHasPort && newHasPort {
+			return oldPort == newPort
 		}
+
+		if oldHasPort != newHasPort {
+			return false
+		}
+
+		return true
 	}
 
-	// For numeric protocols
-	return fmt.Sprintf("%s-%s", protocol, trafficType)
+	switch protocol {
+	case "icmp":
+		return oldRule["icmp_type"].(int) == newRule["icmp_type"].(int) &&
+			oldRule["icmp_code"].(int) == newRule["icmp_code"].(int)
+
+	case "all":
+		return true
+
+	default:
+		return true
+	}
 }
 
 func ruleNeedsUpdate(oldRule, newRule map[string]interface{}) bool {
@@ -1098,5 +1221,198 @@ func updateNetworkACLRule(cs *cloudstack.CloudStackClient, oldRule, newRule map[
 		log.Printf("[DEBUG] Successfully updated ACL rule %s", uuid.(string))
 	}
 
+	return nil
+}
+
+func hasDeprecatedPortsInOldRules(oldRules []interface{}) bool {
+	for _, oldRule := range oldRules {
+		oldRuleMap := oldRule.(map[string]interface{})
+		protocol := oldRuleMap["protocol"].(string)
+
+		if protocol == "tcp" || protocol == "udp" {
+			if portsSet, hasPortsSet := oldRuleMap["ports"].(*schema.Set); hasPortsSet && portsSet.Len() > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func containsMixedPortFields(oldRules, newRules []interface{}) bool {
+	hasDeprecatedInOld := hasDeprecatedPortsInOldRules(oldRules)
+	hasNewInNew := hasPortFieldInNewRules(newRules)
+
+	hasDeprecatedInNew := hasDeprecatedPortsInOldRules(newRules)
+
+	// Migration detected if:
+	// 1. Old rules have deprecated ports OR
+	// 2. We have a mix of deprecated and new port fields anywhere
+	return hasDeprecatedInOld || (hasDeprecatedInNew && hasNewInNew)
+}
+
+// Checks if any new rule uses the new 'port' field
+func hasPortFieldInNewRules(newRules []interface{}) bool {
+	for _, newRule := range newRules {
+		newRuleMap := newRule.(map[string]interface{})
+		protocol := newRuleMap["protocol"].(string)
+
+		if protocol == "tcp" || protocol == "udp" {
+			if portStr, hasPort := newRuleMap["port"].(string); hasPort && portStr != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Detects if we're migrating from deprecated 'ports' to 'port' field
+func isPortsMigration(oldRules, newRules []interface{}) bool {
+	log.Printf("[DEBUG] Migration detection: checking %d old rules and %d new rules", len(oldRules), len(newRules))
+
+	hasDeprecatedPorts := false
+	hasNewPortFormat := false
+
+	for i, oldRule := range oldRules {
+		oldRuleMap := oldRule.(map[string]interface{})
+		protocol := oldRuleMap["protocol"].(string)
+		log.Printf("[DEBUG] Migration detection: old rule %d has protocol %s", i, protocol)
+
+		if protocol == "tcp" || protocol == "udp" {
+			if portsSet, hasPortsSet := oldRuleMap["ports"].(*schema.Set); hasPortsSet && portsSet.Len() > 0 {
+				log.Printf("[DEBUG] Migration detection: old rule %d has deprecated ports field with %d ports", i, portsSet.Len())
+				hasDeprecatedPorts = true
+			}
+
+			oldPort, oldHasPort := oldRuleMap["port"].(string)
+			if !oldHasPort || oldPort == "" {
+				log.Printf("[DEBUG] Migration detection: old rule %d has no port field, checking if new rules use port field", i)
+				for j, newRule := range newRules {
+					newRuleMap := newRule.(map[string]interface{})
+					newProtocol := newRuleMap["protocol"].(string)
+					if newProtocol == protocol {
+						if newPortStr, newHasPort := newRuleMap["port"].(string); newHasPort && newPortStr != "" {
+							log.Printf("[DEBUG] Migration detection: new rule %d has port field '%s' while old rule had none - potential migration", j, newPortStr)
+							hasDeprecatedPorts = true
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for i, newRule := range newRules {
+		newRuleMap := newRule.(map[string]interface{})
+		protocol := newRuleMap["protocol"].(string)
+		log.Printf("[DEBUG] Migration detection: new rule %d has protocol %s", i, protocol)
+
+		if protocol == "tcp" || protocol == "udp" {
+			if portStr, hasPort := newRuleMap["port"].(string); hasPort && portStr != "" {
+				log.Printf("[DEBUG] Migration detection: new rule %d has port field with value: %s", i, portStr)
+				hasNewPortFormat = true
+			}
+
+			if portsSet, hasPortsSet := newRuleMap["ports"].(*schema.Set); hasPortsSet && portsSet.Len() > 0 {
+				log.Printf("[DEBUG] Migration detection: new rule %d still has deprecated ports, not a migration", i)
+				return false
+			}
+		}
+	}
+
+	migrationDetected := hasDeprecatedPorts && hasNewPortFormat
+	log.Printf("[DEBUG] Migration detection result: hasDeprecatedPorts=%t, hasNewPortFormat=%t, migrationDetected=%t", hasDeprecatedPorts, hasNewPortFormat, migrationDetected)
+
+	// Migration is detected if:
+	// 1. We have old rules with deprecated ports OR no port field AND
+	// 2. We have new rules with port format (no deprecated ports)
+	return migrationDetected
+}
+
+func performPortsMigration(d *schema.ResourceData, meta interface{}, oldRules, newRules []interface{}) error {
+	log.Printf("[DEBUG] Starting ports->port migration")
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Build a map of all UUIDs that need to be deleted
+	uuidsToDelete := make([]string, 0)
+
+	for _, oldRule := range oldRules {
+		oldRuleMap := oldRule.(map[string]interface{})
+		uuids, ok := oldRuleMap["uuids"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		for key, uuid := range uuids {
+			if key != "%" && uuid != nil {
+				uuidStr := uuid.(string)
+				if uuidStr != "" {
+					uuidsToDelete = append(uuidsToDelete, uuidStr)
+				}
+			}
+		}
+	}
+
+	log.Printf("[DEBUG] Total UUIDs to delete: %d", len(uuidsToDelete))
+
+	// Delete all old rules by UUID and wait for completion
+	for _, uuidToDelete := range uuidsToDelete {
+		p := cs.NetworkACL.NewDeleteNetworkACLParams(uuidToDelete)
+		_, err := cs.NetworkACL.DeleteNetworkACL(p)
+
+		if err != nil {
+			if strings.Contains(err.Error(), fmt.Sprintf(
+				"Invalid parameter id value=%s due to incorrect long value format, "+
+					"or entity does not exist", uuidToDelete)) {
+				continue
+			}
+
+			return fmt.Errorf("failed to delete old rule UUID %s during migration: %v", uuidToDelete, err)
+		}
+	}
+
+	// Wait a moment for CloudStack to process the deletions
+	if len(uuidsToDelete) > 0 {
+		log.Printf("[DEBUG] Waiting for CloudStack to process %d rule deletions", len(uuidsToDelete))
+		time.Sleep(3 * time.Second)
+
+		for _, uuidToCheck := range uuidsToDelete {
+			listParams := cs.NetworkACL.NewListNetworkACLsParams()
+			listParams.SetId(uuidToCheck)
+
+			listResp, err := cs.NetworkACL.ListNetworkACLs(listParams)
+			if err == nil && listResp.Count > 0 {
+				time.Sleep(2 * time.Second)
+				break
+			}
+		}
+	}
+
+	// Create all new rules with fresh UUIDs
+	if len(newRules) > 0 {
+		log.Printf("[DEBUG] Creating %d new rules with port field", len(newRules))
+
+		var rulesToCreate []interface{}
+		for _, newRule := range newRules {
+			newRuleMap := newRule.(map[string]interface{})
+
+			cleanRule := make(map[string]interface{})
+			for k, v := range newRuleMap {
+				cleanRule[k] = v
+			}
+			cleanRule["uuids"] = make(map[string]interface{})
+
+			rulesToCreate = append(rulesToCreate, cleanRule)
+		}
+
+		var createdRules []interface{}
+		err := createNetworkACLRules(d, meta, &createdRules, rulesToCreate)
+		if err != nil {
+			return fmt.Errorf("failed to create new rules during migration: %v", err)
+		}
+
+		log.Printf("[DEBUG] Successfully created %d new rules during migration", len(createdRules))
+	}
+
+	log.Printf("[DEBUG] Ports->port migration completed successfully")
 	return nil
 }
