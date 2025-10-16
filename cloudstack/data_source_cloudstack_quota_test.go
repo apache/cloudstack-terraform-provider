@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -31,7 +32,7 @@ func TestAccCloudStackQuotaDataSource_basic(t *testing.T) {
 	resourceName := "data.cloudstack_quota.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckQuotaSupport(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -49,7 +50,7 @@ func TestAccCloudStackQuotaDataSource_withFilters(t *testing.T) {
 	resourceName := "data.cloudstack_quota.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckQuotaSupport(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -67,7 +68,7 @@ func TestAccCloudStackQuotaEnabledDataSource_basic(t *testing.T) {
 	resourceName := "data.cloudstack_quota_enabled.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckQuotaSupport(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -85,7 +86,7 @@ func TestAccCloudStackQuotaTariffDataSource_basic(t *testing.T) {
 	resourceName := "data.cloudstack_quota_tariff.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckQuotaSupport(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -103,7 +104,7 @@ func TestAccCloudStackQuotaTariffDataSource_withFilters(t *testing.T) {
 	resourceName := "data.cloudstack_quota_tariff.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckQuotaSupport(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -160,6 +161,18 @@ func testAccCheckCloudStackQuotaTariffDataSourceExists(n string) resource.TestCh
 		}
 
 		return nil
+	}
+}
+
+func testAccPreCheckQuotaSupport(t *testing.T) {
+	testAccPreCheck(t)
+	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+	// Try to check if quota is enabled to verify if the feature is available
+	p := cs.Quota.NewQuotaIsEnabledParams()
+	_, err := cs.Quota.QuotaIsEnabled(p)
+	if err != nil {
+		t.Skipf("Quota feature not supported or not enabled in this CloudStack instance: %v", err)
 	}
 }
 

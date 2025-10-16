@@ -33,7 +33,7 @@ func TestAccCloudStackQuotaTariff_basic(t *testing.T) {
 	var quotaTariff cloudstack.QuotaTariffList
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckQuotaSupport(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackQuotaTariffDestroy,
 		Steps: []resource.TestStep{
@@ -54,7 +54,7 @@ func TestAccCloudStackQuotaTariff_update(t *testing.T) {
 	var quotaTariff cloudstack.QuotaTariffList
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckQuotaSupport(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackQuotaTariffDestroy,
 		Steps: []resource.TestStep{
@@ -83,7 +83,7 @@ func TestAccCloudStackQuotaTariff_import(t *testing.T) {
 	resourceName := "cloudstack_quota_tariff.test"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckQuotaSupport(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackQuotaTariffDestroy,
 		Steps: []resource.TestStep{
@@ -179,7 +179,7 @@ resource "cloudstack_quota_tariff" "test" {
 // Test validation errors
 func TestAccCloudStackQuotaTariff_validation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckQuotaSupport(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
@@ -199,7 +199,7 @@ func TestAccCloudStackQuotaTariff_activationRules(t *testing.T) {
 	var quotaTariff cloudstack.QuotaTariffList
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckQuotaSupport(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackQuotaTariffDestroy,
 		Steps: []resource.TestStep{
@@ -219,7 +219,7 @@ func TestAccCloudStackQuotaTariff_complexActivationRules(t *testing.T) {
 	var quotaTariff cloudstack.QuotaTariffList
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckQuotaSupport(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackQuotaTariffDestroy,
 		Steps: []resource.TestStep{
