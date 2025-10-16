@@ -245,6 +245,9 @@ func createNetworkACLRules(d *schema.ResourceData, meta interface{}, rules *[]in
 	log.Printf("[DEBUG] Creating %d network ACL rules", len(nrs))
 	var errs *multierror.Error
 
+	results := make([]map[string]interface{}, len(nrs))
+	var mu sync.Mutex
+
 	var wg sync.WaitGroup
 	wg.Add(len(nrs))
 
@@ -263,10 +266,12 @@ func createNetworkACLRules(d *schema.ResourceData, meta interface{}, rules *[]in
 			err := createNetworkACLRule(d, meta, rule)
 			if err != nil {
 				log.Printf("[ERROR] Failed to create rule #%d: %v", index+1, err)
+				mu.Lock()
 				errs = multierror.Append(errs, fmt.Errorf("rule #%d: %v", index+1, err))
+				mu.Unlock()
 			} else if len(rule["uuids"].(map[string]interface{})) > 0 {
-				log.Printf("[DEBUG] Successfully created rule #%d, adding to rules list", index+1)
-				*rules = append(*rules, rule)
+				log.Printf("[DEBUG] Successfully created rule #%d, storing at index %d", index+1, index)
+				results[index] = rule
 			} else {
 				log.Printf("[WARN] Rule #%d created but has no UUIDs", index+1)
 			}
@@ -280,6 +285,13 @@ func createNetworkACLRules(d *schema.ResourceData, meta interface{}, rules *[]in
 	if err := errs.ErrorOrNil(); err != nil {
 		log.Printf("[ERROR] Errors occurred while creating rules: %v", err)
 		return err
+	}
+
+	for i, result := range results {
+		if result != nil {
+			*rules = append(*rules, result)
+			log.Printf("[DEBUG] Added rule #%d to final rules list", i+1)
+		}
 	}
 
 	log.Printf("[DEBUG] Successfully created all rules")
@@ -1411,6 +1423,11 @@ func performPortsMigration(d *schema.ResourceData, meta interface{}, oldRules, n
 		}
 
 		log.Printf("[DEBUG] Successfully created %d new rules during migration", len(createdRules))
+
+		if err := d.Set("rule", createdRules); err != nil {
+			return fmt.Errorf("failed to update state with migrated rules: %v", err)
+		}
+		log.Printf("[DEBUG] Updated Terraform state with %d migrated rules", len(createdRules))
 	}
 
 	log.Printf("[DEBUG] Ports->port migration completed successfully")
