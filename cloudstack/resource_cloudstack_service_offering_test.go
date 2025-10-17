@@ -33,6 +33,8 @@ const (
 	testServiceOfferingBasic        = testServiceOfferingResourceName + ".test1"
 	testServiceOfferingGPU          = testServiceOfferingResourceName + ".gpu"
 	testServiceOfferingCustom       = testServiceOfferingResourceName + ".custom"
+	testServiceOfferingDiskOpt      = testServiceOfferingResourceName + ".disk_optimized"
+	testServiceOfferingHighPriority = testServiceOfferingResourceName + ".high_priority"
 )
 
 func TestAccServiceOfferingBasic(t *testing.T) {
@@ -270,5 +272,84 @@ resource "cloudstack_service_offering" "gpu" {
     pciDevice = "Group of NVIDIA A6000 GPUs"
     vgpuType  = "A6000-8A"
   }
+}
+`
+
+func TestAccServiceOfferingDiskOptimized(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingDiskOptimizedConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingDiskOpt, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "name", "disk_optimized_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "cpu_number", "4"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "cpu_speed", "2000"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "memory", "4096"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "root_disk_size", "100"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "provisioning_type", "thin"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "encrypt_root", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "min_iops", "1000"),
+					resource.TestCheckResourceAttr(testServiceOfferingDiskOpt, "max_iops", "5000"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingDiskOptimizedConfig = `
+resource "cloudstack_service_offering" "disk_optimized" {
+  name              = "disk_optimized_offering"
+  display_text      = "Disk Optimized Test"
+  cpu_number        = 4
+  cpu_speed         = 2000
+  memory            = 4096
+  storage_type      = "shared"
+  root_disk_size    = 100
+  provisioning_type = "thin"
+  encrypt_root      = true
+  min_iops          = 1000
+  max_iops          = 5000
+}
+`
+
+func TestAccServiceOfferingHighPriority(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingHighPriorityConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingHighPriority, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingHighPriority, "name", "high_priority_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingHighPriority, "limit_cpu_use", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingHighPriority, "is_volatile", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingHighPriority, "customized_iops", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingHighPriority, "tags", "production,tier1"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingHighPriorityConfig = `
+resource "cloudstack_service_offering" "high_priority" {
+  name            = "high_priority_offering"
+  display_text    = "High Priority Parameters Test"
+  cpu_number      = 4
+  cpu_speed       = 3000
+  memory          = 8192
+  storage_type    = "shared"
+  limit_cpu_use   = true
+  is_volatile     = true
+  customized_iops = true
+  tags            = "production,tier1"
 }
 `

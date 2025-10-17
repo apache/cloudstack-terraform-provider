@@ -86,6 +86,147 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Optional:    true,
 				ForceNew:    true,
 			},
+
+			// Behavior settings
+			"offer_ha": {
+				Description: "Whether to offer HA to the VMs created with this offering",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			"dynamic_scaling_enabled": {
+				Description: "Whether to enable dynamic scaling",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			// Disk configuration
+			"root_disk_size": {
+				Description: "Root disk size in GB",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"provisioning_type": {
+				Description: "Provisioning type: thin, sparse, or fat",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			// Security
+			"encrypt_root": {
+				Description: "Whether to encrypt the root disk or not",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			}, // Customized Offering Limits
+			"min_cpu_number": {
+				Description: "Minimum number of CPUs for customized offerings",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"max_cpu_number": {
+				Description: "Maximum number of CPUs for customized offerings",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"min_memory": {
+				Description: "Minimum memory in MB for customized offerings",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"max_memory": {
+				Description: "Maximum memory in MB for customized offerings",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			// IOPS Limits
+			"min_iops": {
+				Description: "Minimum IOPS",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"max_iops": {
+				Description: "Maximum IOPS",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			// GPU Display
+			"gpu_display": {
+				Description: "Whether to display GPU in UI or not",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			// High Priority Parameters
+			"limit_cpu_use": {
+				Description: "Restrict CPU usage to the service offering value",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			"is_volatile": {
+				Description: "True if the virtual machine needs to be volatile (root disk destroyed on stop)",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			"customized_iops": {
+				Description: "Whether compute offering iops is custom or not",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true, // CloudStack returns default value
+				ForceNew:    true,
+			},
+
+			"tags": {
+				Description: "Comma-separated list of tags for the service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"domain_id": {
+				Description: "The ID(s) of the domain(s) to which the service offering belongs",
+				Type:        schema.TypeList,
+				Optional:    true,
+				ForceNew:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+
+			"zone_id": {
+				Description: "The ID(s) of the zone(s) this service offering belongs to",
+				Type:        schema.TypeList,
+				Optional:    true,
+				ForceNew:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -135,6 +276,94 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 	// Set GPU count
 	if v, ok := d.GetOk("gpu_count"); ok {
 		p.SetGpucount(v.(int))
+	}
+
+	// Set GPU display
+	if v, ok := d.GetOk("gpu_display"); ok {
+		p.SetGpudisplay(v.(bool))
+	}
+
+	// High Availability
+	if v, ok := d.GetOk("offer_ha"); ok {
+		p.SetOfferha(v.(bool))
+	}
+
+	// Dynamic Scaling
+	if v, ok := d.GetOk("dynamic_scaling_enabled"); ok {
+		p.SetDynamicscalingenabled(v.(bool))
+	}
+
+	// Disk Configuration
+	if v, ok := d.GetOk("root_disk_size"); ok {
+		p.SetRootdisksize(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("provisioning_type"); ok {
+		p.SetProvisioningtype(v.(string))
+	}
+
+	// Security
+	if v, ok := d.GetOk("encrypt_root"); ok {
+		p.SetEncryptroot(v.(bool))
+	}
+
+	// Customized Offering Limits
+	if v, ok := d.GetOk("min_cpu_number"); ok {
+		p.SetMincpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_cpu_number"); ok {
+		p.SetMaxcpunumber(v.(int))
+	}
+
+	if v, ok := d.GetOk("min_memory"); ok {
+		p.SetMinmemory(v.(int))
+	}
+
+	if v, ok := d.GetOk("max_memory"); ok {
+		p.SetMaxmemory(v.(int))
+	}
+
+	// IOPS Limits
+	if v, ok := d.GetOk("min_iops"); ok {
+		p.SetMiniops(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("max_iops"); ok {
+		p.SetMaxiops(int64(v.(int)))
+	}
+
+	// High Priority Parameters
+	if v, ok := d.GetOk("limit_cpu_use"); ok {
+		p.SetLimitcpuuse(v.(bool))
+	}
+
+	if v, ok := d.GetOk("is_volatile"); ok {
+		p.SetIsvolatile(v.(bool))
+	}
+
+	if v, ok := d.GetOk("customized_iops"); ok {
+		p.SetCustomizediops(v.(bool))
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		p.SetTags(v.(string))
+	}
+
+	if v, ok := d.GetOk("domain_id"); ok {
+		domains := make([]string, 0)
+		for _, d := range v.([]interface{}) {
+			domains = append(domains, d.(string))
+		}
+		p.SetDomainid(domains)
+	}
+
+	if v, ok := d.GetOk("zone_id"); ok {
+		zones := make([]string, 0)
+		for _, z := range v.([]interface{}) {
+			zones = append(zones, z.(string))
+		}
+		p.SetZoneid(zones)
 	}
 
 	// Handle service offering details (custom configurations only, GPU is separate)
@@ -193,16 +422,62 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("gpu_count", so.Gpucount)
 	}
 
-	// Set service offering details (excluding GPU-related keys)
+	// Set computed fields (CloudStack returns default values)
+	d.Set("gpu_display", so.Gpudisplay)
+	d.Set("offer_ha", so.Offerha)
+	d.Set("dynamic_scaling_enabled", so.Dynamicscalingenabled)
+	d.Set("encrypt_root", so.Encryptroot)
+	d.Set("provisioning_type", so.Provisioningtype)
+
+	if so.Rootdisksize > 0 {
+		d.Set("root_disk_size", int(so.Rootdisksize))
+	}
+
+	// IOPS limits (min/max CPU and memory are write-only, not returned by API)
+	if so.Miniops > 0 {
+		d.Set("min_iops", int(so.Miniops))
+	}
+
+	if so.Maxiops > 0 {
+		d.Set("max_iops", int(so.Maxiops))
+	}
+
+	// High Priority Parameters
+	d.Set("limit_cpu_use", so.Limitcpuuse)
+	d.Set("is_volatile", so.Isvolatile)
+	d.Set("customized_iops", so.Iscustomizediops)
+
+	// Tags field is write-only, not returned by API - skip setting
+
+	// Domain and Zone IDs
+	if so.Domainid != "" {
+		d.Set("domain_id", []string{so.Domainid})
+	}
+
+	if so.Zoneid != "" {
+		d.Set("zone_id", []string{so.Zoneid})
+	}
+
+	// Set service offering details (excluding system-managed keys)
 	if so.Serviceofferingdetails != nil {
 		details := make(map[string]string)
+		// List of keys that are set via dedicated schema fields and should not appear in serviceofferingdetails
+		systemKeys := map[string]bool{
+			"pciDevice":    true, // GPU card
+			"vgpuType":     true, // vGPU profile
+			"mincpunumber": true, // min_cpu_number parameter
+			"maxcpunumber": true, // max_cpu_number parameter
+			"minmemory":    true, // min_memory parameter
+			"maxmemory":    true, // max_memory parameter
+		}
 		for k, v := range so.Serviceofferingdetails {
-			// Skip GPU-related keys as they're handled above
-			if k != "pciDevice" && k != "vgpuType" {
+			if !systemKeys[k] {
 				details[k] = v
 			}
 		}
-		if len(details) > 0 {
+		// Only set if user originally configured service_offering_details
+		// This prevents drift from CloudStack's internal detail keys
+		if _, ok := d.GetOk("service_offering_details"); ok && len(details) > 0 {
 			d.Set("service_offering_details", details)
 		}
 	}
