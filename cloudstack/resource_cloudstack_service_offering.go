@@ -68,6 +68,24 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				ForceNew:    true,
 				Default:     false,
 			},
+			"gpu_card": {
+				Description: "GPU card name (e.g., 'Tesla P100 Auto Created')",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"gpu_type": {
+				Description: "GPU profile/type (e.g., 'passthrough', 'GRID V100-8Q')",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
+			"gpu_count": {
+				Description: "Number of GPUs",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				ForceNew:    true,
+			},
 		},
 	}
 }
@@ -106,7 +124,20 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetCustomized(v.(bool))
 	}
 
-	// Handle service offering details
+	// Handle GPU parameters
+	// GPU configuration uses dedicated API parameters (not serviceofferingdetails)
+
+	// Set vGPU profile ID (UUID)
+	if v, ok := d.GetOk("gpu_type"); ok {
+		p.SetVgpuprofileid(v.(string))
+	}
+
+	// Set GPU count
+	if v, ok := d.GetOk("gpu_count"); ok {
+		p.SetGpucount(v.(int))
+	}
+
+	// Handle service offering details (custom configurations only, GPU is separate)
 	if v, ok := d.GetOk("service_offering_details"); ok {
 		details := make(map[string]string)
 		for key, value := range v.(map[string]interface{}) {
@@ -147,8 +178,33 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("storage_type", so.Storagetype)
 	d.Set("customized", so.Iscustomized)
 
+	// Set GPU fields from dedicated response fields
+	// Use gpucardname (not gpucardid) to match what user provides in terraform config
+	if so.Gpucardname != "" {
+		d.Set("gpu_card", so.Gpucardname)
+	}
+
+	// Use vgpuprofileid (UUID) as configured
+	if so.Vgpuprofileid != "" {
+		d.Set("gpu_type", so.Vgpuprofileid)
+	}
+
+	if so.Gpucount > 0 {
+		d.Set("gpu_count", so.Gpucount)
+	}
+
+	// Set service offering details (excluding GPU-related keys)
 	if so.Serviceofferingdetails != nil {
-		d.Set("service_offering_details", so.Serviceofferingdetails)
+		details := make(map[string]string)
+		for k, v := range so.Serviceofferingdetails {
+			// Skip GPU-related keys as they're handled above
+			if k != "pciDevice" && k != "vgpuType" {
+				details[k] = v
+			}
+		}
+		if len(details) > 0 {
+			d.Set("service_offering_details", details)
+		}
 	}
 
 	return nil
