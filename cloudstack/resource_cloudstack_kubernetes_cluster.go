@@ -393,14 +393,21 @@ func resourceCloudStackKubernetesClusterRead(d *schema.ResourceData, meta interf
 	d.Set("control_nodes_size", cluster.Controlnodes)
 	d.Set("size", cluster.Size)
 	d.Set("autoscaling_enabled", cluster.Autoscalingenabled)
-	d.Set("min_size", cluster.Minsize)
-	d.Set("max_size", cluster.Maxsize)
+	if cluster.Autoscalingenabled {
+		d.Set("min_size", cluster.Minsize)
+		d.Set("max_size", cluster.Maxsize)
+	}
 	d.Set("keypair", cluster.Keypair)
 	d.Set("network_id", cluster.Networkid)
 	d.Set("ip_address", cluster.Ipaddress)
 	d.Set("state", cluster.State)
-	d.Set("account", cluster.Account)
-	d.Set("domain_id", cluster.Domainid)
+	if _, ok := d.GetOk("account"); ok {
+		d.Set("account", cluster.Account)
+	}
+	if _, ok := d.GetOk("domain_id"); ok {
+		d.Set("domain_id", cluster.Domainid)
+	}
+
 	d.Set("etcd_nodes_size", cluster.Etcdnodes)
 	d.Set("cni_configuration_id", cluster.Cniconfigurationid)
 
