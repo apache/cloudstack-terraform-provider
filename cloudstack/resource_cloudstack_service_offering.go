@@ -62,11 +62,10 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				},
 			},
 			"customized": {
-				Description: "Whether service offering allows custom CPU/memory or not",
+				Description: "Whether service offering allows custom CPU/memory or not. If not specified, CloudStack automatically determines based on cpu_number and memory presence: creates customizable offering (true) when cpu_number/memory are omitted, or fixed offering (false) when they are provided.",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				ForceNew:    true,
-				Default:     false,
 			},
 			"gpu_card": {
 				Description: "GPU card name (e.g., 'Tesla P100 Auto Created')",
@@ -373,9 +372,9 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated - defines fundamental VM type
 			},
 
-			// Final Parameters - Complete SDK Coverage (Phase 5)
 			"disk_offering_id": {
 				Description: "The ID of the disk offering to associate with this service offering",
 				Type:        schema.TypeString,
@@ -451,8 +450,24 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetStoragetype(v.(string))
 	}
 
-	if v, ok := d.GetOk("customized"); ok {
+	// Handle customized parameter with CloudStack UI logic:
+	// 1. If user explicitly sets customized, use that value
+	// 2. If user provides cpu_number AND memory without customized, default to false (Fixed Offering)
+	// 3. If none specified, CloudStack creates Custom unconstrained (customized=true)
+	if v, ok := d.GetOkExists("customized"); ok {
+		// User explicitly configured customized
 		p.SetCustomized(v.(bool))
+	} else {
+		// User didn't specify customized - check if cpu/memory are provided
+		_, hasCpuNumber := d.GetOk("cpu_number")
+		_, hasMemory := d.GetOk("memory")
+
+		if hasCpuNumber && hasMemory {
+			// Both cpu and memory provided → Fixed Offering (customized=false)
+			p.SetCustomized(false)
+		}
+		// If neither provided → CloudStack will default to Custom unconstrained (customized=true)
+		// Don't send customized parameter, let CloudStack decide
 	}
 
 	// Handle GPU parameters
@@ -556,7 +571,6 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetZoneid(zones)
 	}
 
-	// IOPS/Bandwidth Parameters (Phase 2)
 	if v, ok := d.GetOk("disk_iops_read_rate"); ok {
 		p.SetIopsreadrate(int64(v.(int)))
 	}
@@ -605,7 +619,6 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetByteswriteratemaxlength(int64(v.(int)))
 	}
 
-	// Hypervisor Parameters (Phase 3)
 	if v, ok := d.GetOk("hypervisor_snapshot_reserve"); ok {
 		p.SetHypervisorsnapshotreserve(v.(int))
 	}
@@ -622,7 +635,6 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetStoragepolicy(v.(string))
 	}
 
-	// Low Priority Parameters (Phase 4)
 	if v, ok := d.GetOk("network_rate"); ok {
 		p.SetNetworkrate(v.(int))
 	}
@@ -635,7 +647,6 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetSystemvmtype(v.(string))
 	}
 
-	// Final Parameters - Complete SDK Coverage (Phase 5)
 	if v, ok := d.GetOk("disk_offering_id"); ok {
 		p.SetDiskofferingid(v.(string))
 	}
@@ -664,7 +675,6 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetLeaseexpiryaction(v.(string))
 	}
 
-	// Handle service offering details (custom configurations only, GPU is separate)
 	if v, ok := d.GetOk("service_offering_details"); ok {
 		details := make(map[string]string)
 		for key, value := range v.(map[string]interface{}) {
@@ -703,7 +713,12 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("memory", so.Memory)
 	d.Set("host_tags", so.Hosttags)
 	d.Set("storage_type", so.Storagetype)
-	d.Set("customized", so.Iscustomized)
+
+	// Only set customized if it was explicitly configured by user
+	// When not configured, CloudStack auto-determines based on cpu/memory presence
+	if _, ok := d.GetOkExists("customized"); ok {
+		d.Set("customized", so.Iscustomized)
+	}
 
 	// Set GPU fields from dedicated response fields
 	// Use gpucardname (not gpucardid) to match what user provides in terraform config

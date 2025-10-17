@@ -641,3 +641,202 @@ resource "cloudstack_service_offering" "complete" {
   }
 }
 `
+
+// =============================================================================
+// Tests for the 3 CloudStack Service Offering Types (UI Patterns)
+// =============================================================================
+
+const (
+	testServiceOfferingTypeFixed               = testServiceOfferingResourceName + ".type_fixed"
+	testServiceOfferingTypeCustomConstrained   = testServiceOfferingResourceName + ".type_custom_constrained"
+	testServiceOfferingTypeCustomUnconstrained = testServiceOfferingResourceName + ".type_custom_unconstrained"
+)
+
+// Test Type 1: Fixed Offering (CPU/memory fixed - matches CloudStack UI "Fixed Offering")
+func TestAccServiceOfferingTypeFixed(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingTypeFixedConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingTypeFixed, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "name", "ui-fixed-offering-test"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "display_text", "UI Fixed Offering Test - 2 CPU, 4GB RAM"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "cpu_number", "2"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "cpu_speed", "2000"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "memory", "4096"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "customized", "false"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "storage_type", "shared"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingTypeFixedConfig = `
+resource "cloudstack_service_offering" "type_fixed" {
+  name         = "ui-fixed-offering-test"
+  display_text = "UI Fixed Offering Test - 2 CPU, 4GB RAM"
+  cpu_number   = 2
+  cpu_speed    = 2000
+  memory       = 4096
+  storage_type = "shared"
+  # customized defaults to false when cpu_number and memory are provided
+  # This matches CloudStack UI "Fixed Offering" option
+}
+`
+
+// Test Type 2: Custom Constrained (customizable with limits - matches CloudStack UI "Custom constrained")
+func TestAccServiceOfferingTypeCustomConstrained(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingTypeCustomConstrainedConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingTypeCustomConstrained, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "name", "ui-custom-constrained-test"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "display_text", "UI Custom Constrained Test - 2-8 CPU, 4-32GB RAM"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "customized", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "cpu_speed", "2000"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "min_cpu_number", "2"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "max_cpu_number", "8"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "min_memory", "4096"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "max_memory", "32768"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "storage_type", "shared"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingTypeCustomConstrainedConfig = `
+resource "cloudstack_service_offering" "type_custom_constrained" {
+  name           = "ui-custom-constrained-test"
+  display_text   = "UI Custom Constrained Test - 2-8 CPU, 4-32GB RAM"
+  customized     = true
+  cpu_speed      = 2000
+  min_cpu_number = 2
+  max_cpu_number = 8
+  min_memory     = 4096
+  max_memory     = 32768
+  storage_type   = "shared"
+  # This matches CloudStack UI "Custom constrained" option
+}
+`
+
+// Test Type 3: Custom Unconstrained (fully customizable - matches CloudStack UI "Custom unconstrained")
+func TestAccServiceOfferingTypeCustomUnconstrained(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingTypeCustomUnconstrainedConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingTypeCustomUnconstrained, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomUnconstrained, "name", "ui-custom-unconstrained-test"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomUnconstrained, "display_text", "UI Custom Unconstrained Test - User Defined"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomUnconstrained, "customized", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomUnconstrained, "storage_type", "shared"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingTypeCustomUnconstrainedConfig = `
+resource "cloudstack_service_offering" "type_custom_unconstrained" {
+  name         = "ui-custom-unconstrained-test"
+  display_text = "UI Custom Unconstrained Test - User Defined"
+  customized   = true
+  storage_type = "shared"
+  # This matches CloudStack UI "Custom unconstrained" option
+}
+`
+
+// Test All Three UI Types Together (comprehensive test)
+func TestAccServiceOfferingAllUITypes(t *testing.T) {
+	var soFixed, soConstrained, soUnconstrained cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingAllUITypesConfig,
+				Check: resource.ComposeTestCheckFunc(
+					// Fixed Offering
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingTypeFixed, &soFixed),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "customized", "false"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "cpu_number", "2"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeFixed, "memory", "4096"),
+
+					// Custom Constrained
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingTypeCustomConstrained, &soConstrained),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "customized", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "min_cpu_number", "2"),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomConstrained, "max_cpu_number", "8"),
+
+					// Custom Unconstrained
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingTypeCustomUnconstrained, &soUnconstrained),
+					resource.TestCheckResourceAttr(testServiceOfferingTypeCustomUnconstrained, "customized", "true"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingAllUITypesConfig = `
+# Type 1: Fixed Offering (CloudStack UI: "Fixed Offering")
+resource "cloudstack_service_offering" "type_fixed" {
+  name         = "ui-fixed-all-test"
+  display_text = "UI Fixed Offering - All Types Test"
+  cpu_number   = 2
+  cpu_speed    = 2000
+  memory       = 4096
+  storage_type = "shared"
+}
+
+# Type 2: Custom Constrained (CloudStack UI: "Custom constrained")
+resource "cloudstack_service_offering" "type_custom_constrained" {
+  name           = "ui-custom-constrained-all-test"
+  display_text   = "UI Custom Constrained - All Types Test"
+  customized     = true
+  cpu_speed      = 2000
+  min_cpu_number = 2
+  max_cpu_number = 8
+  min_memory     = 4096
+  max_memory     = 32768
+  storage_type   = "shared"
+}
+
+# Type 3: Custom Unconstrained (CloudStack UI: "Custom unconstrained")
+resource "cloudstack_service_offering" "type_custom_unconstrained" {
+  name         = "ui-custom-unconstrained-all-test"
+  display_text = "UI Custom Unconstrained - All Types Test"
+  customized   = true
+  storage_type = "shared"
+}
+`
+
+// =============================================================================
+// Tests for the 3 CloudStack Service Offering Types
+// =============================================================================
+
+const (
+	testServiceOfferingFixed               = testServiceOfferingResourceName + ".fixed"
+	testServiceOfferingCustomConstrained   = testServiceOfferingResourceName + ".custom_constrained"
+	testServiceOfferingCustomUnconstrained = testServiceOfferingResourceName + ".custom_unconstrained"
+)
+
+// Test Type 1: Fixed Offering (CPU/memory fixed)
