@@ -353,3 +353,291 @@ resource "cloudstack_service_offering" "high_priority" {
   tags            = "production,tier1"
 }
 `
+
+// Phase 2: IOPS/Bandwidth Parameters Tests
+func TestAccServiceOfferingPerformance(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingPerformanceConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingResourceName+".performance", &so),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "name", "performance_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_iops_read_rate", "2000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_iops_write_rate", "1000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_iops_read_rate_max", "5000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_iops_write_rate_max", "2500"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_iops_read_rate_max_length", "60"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_iops_write_rate_max_length", "60"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_bytes_read_rate", "209715200"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_bytes_write_rate", "104857600"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_bytes_read_rate_max", "524288000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "disk_bytes_write_rate_max", "262144000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "bytes_read_rate_max_length", "120"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".performance", "bytes_write_rate_max_length", "120"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingPerformanceConfig = `
+resource "cloudstack_service_offering" "performance" {
+  name         = "performance_offering"
+  display_text = "Performance with IOPS and Bandwidth Limits"
+  cpu_number   = 8
+  cpu_speed    = 3000
+  memory       = 16384
+  storage_type = "shared"
+
+  # IOPS limits
+  disk_iops_read_rate           = 2000
+  disk_iops_write_rate          = 1000
+  disk_iops_read_rate_max       = 5000
+  disk_iops_write_rate_max      = 2500
+  disk_iops_read_rate_max_length = 60
+  disk_iops_write_rate_max_length = 60
+
+  # Bandwidth limits (bytes/sec)
+  disk_bytes_read_rate          = 209715200  # 200 MB/s
+  disk_bytes_write_rate         = 104857600  # 100 MB/s
+  disk_bytes_read_rate_max      = 524288000  # 500 MB/s burst
+  disk_bytes_write_rate_max     = 262144000  # 250 MB/s burst
+  bytes_read_rate_max_length    = 120
+  bytes_write_rate_max_length   = 120
+}
+`
+
+// Phase 3: Hypervisor Parameters Tests
+func TestAccServiceOfferingHypervisor(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingHypervisorConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingResourceName+".hypervisor", &so),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".hypervisor", "name", "hypervisor_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".hypervisor", "hypervisor_snapshot_reserve", "25"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".hypervisor", "cache_mode", "writeback"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".hypervisor", "deployment_planner", "FirstFitPlanner"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".hypervisor", "storage_policy", "VMware-VSAN-Gold"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingHypervisorConfig = `
+resource "cloudstack_service_offering" "hypervisor" {
+  name         = "hypervisor_offering"
+  display_text = "Hypervisor-Optimized Offering"
+  cpu_number   = 16
+  cpu_speed    = 3200
+  memory       = 32768
+  storage_type = "shared"
+
+  # Hypervisor-specific parameters
+  hypervisor_snapshot_reserve = 25
+  cache_mode                  = "writeback"
+  deployment_planner          = "FirstFitPlanner"
+  storage_policy              = "VMware-VSAN-Gold"
+}
+`
+
+// Phase 4: Low Priority Parameters Tests
+func TestAccServiceOfferingLowPriority(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingLowPriorityConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingResourceName+".low_priority", &so),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".low_priority", "name", "low_priority_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".low_priority", "network_rate", "1000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".low_priority", "purge_resources", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".low_priority", "system_vm_type", "domainrouter"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingLowPriorityConfig = `
+resource "cloudstack_service_offering" "low_priority" {
+  name         = "low_priority_offering"
+  display_text = "System VM and Network Rate Test"
+  cpu_number   = 1
+  cpu_speed    = 1000
+  memory       = 512
+  storage_type = "local"
+
+  # Low priority parameters
+  network_rate    = 1000
+  purge_resources = true
+  system_vm_type  = "domainrouter"
+}
+`
+
+// Phase 5: Final SDK Parameters Tests
+func TestAccServiceOfferingFinalSDK(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingFinalSDKConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingResourceName+".final_sdk", &so),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "name", "final_sdk_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "lease_duration", "86400"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "lease_expiry_action", "destroy"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "is_system", "false"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "disk_offering_strictness", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "external_details.cmdb_id", "CMDB-12345"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".final_sdk", "external_details.billing_code", "TIER2"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingFinalSDKConfig = `
+resource "cloudstack_service_offering" "final_sdk" {
+  name         = "final_sdk_offering"
+  display_text = "Final SDK Parameters Test"
+  cpu_number   = 4
+  cpu_speed    = 2400
+  memory       = 8192
+  storage_type = "shared"
+
+  # Final SDK parameters
+  lease_duration           = 86400
+  lease_expiry_action      = "destroy"
+  is_system                = false
+  disk_offering_strictness = true
+
+  external_details = {
+    cmdb_id      = "CMDB-12345"
+    billing_code = "TIER2"
+  }
+}
+`
+
+// Complete Test: All Parameters
+func TestAccServiceOfferingComplete(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingCompleteConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingResourceName+".complete", &so),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "name", "complete_offering"),
+					// Core parameters
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "cpu_number", "16"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "memory", "65536"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "storage_type", "shared"),
+					// HA
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "offer_ha", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "dynamic_scaling_enabled", "true"),
+					// Phase 1
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "limit_cpu_use", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "is_volatile", "false"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "tags", "production,tier1"),
+					// Phase 2 - IOPS
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "disk_iops_read_rate", "3000"),
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "disk_bytes_read_rate", "314572800"),
+					// Phase 3 - Hypervisor
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "cache_mode", "writeback"),
+					// Phase 4 - Network
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "network_rate", "10000"),
+					// Phase 5 - Lease
+					resource.TestCheckResourceAttr(testServiceOfferingResourceName+".complete", "lease_duration", "604800"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingCompleteConfig = `
+resource "cloudstack_service_offering" "complete" {
+  name         = "complete_offering"
+  display_text = "Complete Test - All 54 Parameters"
+  
+  # Core compute
+  cpu_number   = 16
+  cpu_speed    = 3200
+  memory       = 65536
+  storage_type = "shared"
+  root_disk_size = 100
+
+  # HA and scaling
+  offer_ha                     = true
+  dynamic_scaling_enabled      = true
+  encrypt_root                 = true
+
+  # Phase 1: HIGH Priority
+  limit_cpu_use   = true
+  is_volatile     = false
+  customized_iops = true
+  tags            = "production,tier1"
+
+  # Phase 2: IOPS/Bandwidth
+  disk_iops_read_rate           = 3000
+  disk_iops_write_rate          = 1500
+  disk_iops_read_rate_max       = 6000
+  disk_iops_write_rate_max      = 3000
+  disk_iops_read_rate_max_length = 90
+  disk_iops_write_rate_max_length = 90
+  disk_bytes_read_rate          = 314572800  # 300 MB/s
+  disk_bytes_write_rate         = 157286400  # 150 MB/s
+  disk_bytes_read_rate_max      = 629145600  # 600 MB/s
+  disk_bytes_write_rate_max     = 314572800  # 300 MB/s
+  bytes_read_rate_max_length    = 180
+  bytes_write_rate_max_length   = 180
+
+  # Phase 3: Hypervisor
+  hypervisor_snapshot_reserve = 30
+  cache_mode                  = "writeback"
+  deployment_planner          = "UserConcentratedPodPlanner"
+  storage_policy              = "Premium-Storage"
+
+  # Phase 4: Low Priority
+  network_rate    = 10000
+  purge_resources = false
+
+  # Phase 5: Final SDK
+  lease_duration      = 604800  # 7 days
+  lease_expiry_action = "stop"
+  is_system           = false
+
+  # Metadata
+  service_offering_details = {
+    tier = "platinum"
+    sla  = "99.99"
+  }
+
+  external_details = {
+    cmdb_id        = "ASSET-PROD-001"
+    cost_center    = "ENGINEERING"
+    compliance     = "SOC2"
+  }
+}
+`

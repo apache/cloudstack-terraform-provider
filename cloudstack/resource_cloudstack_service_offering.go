@@ -819,15 +819,22 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	// Note: system_vm_type is write-only, not returned by API
 
 	// Final Parameters - Complete SDK Coverage (Phase 5)
-	if so.Diskofferingid != "" {
+	// Only set disk_offering_id if it was explicitly configured by user
+	if _, ok := d.GetOk("disk_offering_id"); ok {
 		d.Set("disk_offering_id", so.Diskofferingid)
 	}
 
-	d.Set("disk_offering_strictness", so.Diskofferingstrictness)
+	// Only set disk_offering_strictness if it was explicitly configured
+	if _, ok := d.GetOk("disk_offering_strictness"); ok {
+		d.Set("disk_offering_strictness", so.Diskofferingstrictness)
+	}
 
 	// Note: external_details is write-only, not returned by API
 
-	d.Set("is_system", so.Issystem)
+	// Only set is_system if it was explicitly configured
+	if _, ok := d.GetOk("is_system"); ok {
+		d.Set("is_system", so.Issystem)
+	}
 
 	if so.Leaseduration > 0 {
 		d.Set("lease_duration", so.Leaseduration)
