@@ -554,8 +554,8 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
 	setValueOrID(d, "project", vm.Project, vm.Projectid)
 	setValueOrID(d, "zone", vm.Zonename, vm.Zoneid)
-	d.Set("uefi", vm.Boottype == "UEFI")
-	if vm.Boottype == "UEFI" && vm.Bootmode != "" {
+	d.Set("uefi", strings.EqualFold(vm.Boottype, "UEFI"))
+	if strings.EqualFold(vm.Boottype, "UEFI") && vm.Bootmode != "" {
 		d.Set("boot_mode", vm.Bootmode)
 	}
 
