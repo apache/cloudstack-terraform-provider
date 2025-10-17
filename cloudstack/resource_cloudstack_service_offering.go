@@ -416,6 +416,15 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 			},
+			"service_offering_details": {
+				Description: "Service offering details for GPU configuration and other advanced settings",
+				Type:        schema.TypeMap,
+				Optional:    true,
+				ForceNew:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -555,12 +564,28 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetTags(v.(string))
 	}
 
+<<<<<<< HEAD
 	if v, ok := d.GetOk("domain_id"); ok {
 		domains := make([]string, 0)
 		for _, d := range v.([]interface{}) {
 			domains = append(domains, d.(string))
 		}
 		p.SetDomainid(domains)
+=======
+	if details, ok := d.GetOk("service_offering_details"); ok {
+		serviceOfferingDetails := make(map[string]string)
+		for k, v := range details.(map[string]interface{}) {
+			serviceOfferingDetails[k] = v.(string)
+		}
+		p.SetServiceofferingdetails(serviceOfferingDetails)
+	}
+
+	log.Printf("[DEBUG] Creating Service Offering %s", name)
+	s, err := cs.ServiceOffering.CreateServiceOffering(p)
+
+	if err != nil {
+		return err
+>>>>>>> origin/main
 	}
 
 	if v, ok := d.GetOk("zone_id"); ok {
@@ -714,10 +739,31 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("host_tags", so.Hosttags)
 	d.Set("storage_type", so.Storagetype)
 
+<<<<<<< HEAD
 	// Only set customized if it was explicitly configured by user
 	// When not configured, CloudStack auto-determines based on cpu/memory presence
 	if _, ok := d.GetOkExists("customized"); ok {
 		d.Set("customized", so.Iscustomized)
+=======
+	fields := map[string]interface{}{
+		"name":                     s.Name,
+		"display_text":             s.Displaytext,
+		"cpu_number":               s.Cpunumber,
+		"cpu_speed":                s.Cpuspeed,
+		"host_tags":                s.Hosttags,
+		"limit_cpu_use":            s.Limitcpuuse,
+		"memory":                   s.Memory,
+		"offer_ha":                 s.Offerha,
+		"storage_type":             s.Storagetype,
+		"customized":               s.Iscustomized,
+		"min_cpu_number":           getIntFromDetails(s.Serviceofferingdetails, "mincpunumber"),
+		"max_cpu_number":           getIntFromDetails(s.Serviceofferingdetails, "maxcpunumber"),
+		"min_memory":               getIntFromDetails(s.Serviceofferingdetails, "minmemory"),
+		"max_memory":               getIntFromDetails(s.Serviceofferingdetails, "maxmemory"),
+		"encrypt_root":             s.Encryptroot,
+		"storage_tags":             s.Storagetags,
+		"service_offering_details": getServiceOfferingDetails(s.Serviceofferingdetails),
+>>>>>>> origin/main
 	}
 
 	// Set GPU fields from dedicated response fields
@@ -938,3 +984,44 @@ func resourceCloudStackServiceOfferingDelete(d *schema.ResourceData, meta interf
 
 	return nil
 }
+<<<<<<< HEAD
+=======
+
+// getIntFromDetails extracts an integer value from the service offering details map.
+func getIntFromDetails(details map[string]string, key string) interface{} {
+	if details == nil {
+		return nil
+	}
+	if val, ok := details[key]; ok {
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+		}
+	}
+	return nil
+}
+
+// getServiceOfferingDetails extracts custom service offering details while excluding
+// built-in details that are handled as separate schema fields
+func getServiceOfferingDetails(details map[string]string) map[string]interface{} {
+	if details == nil {
+		return make(map[string]interface{})
+	}
+
+	// List of built-in details that are handled as separate schema fields
+	builtInKeys := map[string]bool{
+		"mincpunumber": true,
+		"maxcpunumber": true,
+		"minmemory":    true,
+		"maxmemory":    true,
+	}
+
+	result := make(map[string]interface{})
+	for k, v := range details {
+		if !builtInKeys[k] {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+>>>>>>> origin/main
