@@ -229,11 +229,13 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 			},
 
 			// IOPS/Bandwidth parameters (Phase 2)
+			// Note: CloudStack API does not support updating these after creation
 			"disk_iops_read_rate": {
 				Description: "IO requests read rate of the disk offering",
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_iops_write_rate": {
@@ -241,6 +243,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_iops_read_rate_max": {
@@ -248,6 +251,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_iops_write_rate_max": {
@@ -255,6 +259,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_iops_read_rate_max_length": {
@@ -262,6 +267,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_iops_write_rate_max_length": {
@@ -269,6 +275,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_bytes_read_rate": {
@@ -276,6 +283,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_bytes_write_rate": {
@@ -283,6 +291,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_bytes_read_rate_max": {
@@ -290,6 +299,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"disk_bytes_write_rate_max": {
@@ -297,6 +307,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"bytes_read_rate_max_length": {
@@ -304,6 +315,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"bytes_write_rate_max_length": {
@@ -311,9 +323,8 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
-			},
-
-			// Hypervisor Parameters (Phase 3)
+				ForceNew:    true, // Cannot be updated after creation
+			}, // Hypervisor Parameters (Phase 3)
 			"hypervisor_snapshot_reserve": {
 				Description: "Hypervisor snapshot reserve space as a percent of a volume (for managed storage using Xen or VMware)",
 				Type:        schema.TypeInt,
@@ -348,6 +359,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true, // Cannot be updated after creation
 			},
 
 			"purge_resources": {
@@ -355,9 +367,8 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Computed:    true,
-			},
-
-			"system_vm_type": {
+				ForceNew:    true, // Cannot be updated after creation
+			}, "system_vm_type": {
 				Description: "The system VM type. Possible values: domainrouter, consoleproxy, secondarystoragevm",
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -844,27 +855,24 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("lease_expiry_action", so.Leaseexpiryaction)
 	}
 
-	// Set service offering details (excluding system-managed keys)
+	// Set service offering details (only user-configured keys)
 	if so.Serviceofferingdetails != nil {
-		details := make(map[string]string)
-		// List of keys that are set via dedicated schema fields and should not appear in serviceofferingdetails
-		systemKeys := map[string]bool{
-			"pciDevice":    true, // GPU card
-			"vgpuType":     true, // vGPU profile
-			"mincpunumber": true, // min_cpu_number parameter
-			"maxcpunumber": true, // max_cpu_number parameter
-			"minmemory":    true, // min_memory parameter
-			"maxmemory":    true, // max_memory parameter
-		}
-		for k, v := range so.Serviceofferingdetails {
-			if !systemKeys[k] {
-				details[k] = v
+		// Only process if user originally configured service_offering_details
+		if configuredDetails, ok := d.GetOk("service_offering_details"); ok {
+			details := make(map[string]string)
+			configuredMap := configuredDetails.(map[string]interface{})
+
+			// Only include keys that the user explicitly configured
+			// This prevents drift from CloudStack-managed keys like "External:*", "purge.db.entities", etc.
+			for userKey := range configuredMap {
+				if cloudValue, exists := so.Serviceofferingdetails[userKey]; exists {
+					details[userKey] = cloudValue
+				}
 			}
-		}
-		// Only set if user originally configured service_offering_details
-		// This prevents drift from CloudStack's internal detail keys
-		if _, ok := d.GetOk("service_offering_details"); ok && len(details) > 0 {
-			d.Set("service_offering_details", details)
+
+			if len(details) > 0 {
+				d.Set("service_offering_details", details)
+			}
 		}
 	}
 
