@@ -122,3 +122,40 @@ resource "cloudstack_service_offering" "custom" {
   storage_tags     = "production,ssd"
 }
 `
+
+func TestAccCloudStackServiceOffering_gpu(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOffering_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists("cloudstack_service_offering.gpu", &so),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "name", "gpu_service_offering"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "display_text", "GPU Test"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "cpu_number", "4"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "memory", "16384"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "service_offering_details.pciDevice", "Group of NVIDIA A6000 GPUs"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "service_offering_details.vgpuType", "A6000-8A"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOffering_gpu = `
+resource "cloudstack_service_offering" "gpu" {
+  name         = "gpu_service_offering"
+  display_text = "GPU Test"
+  cpu_number   = 4
+  memory       = 16384
+  cpu_speed		= 1000
+  
+  service_offering_details = {
+    pciDevice = "Group of NVIDIA A6000 GPUs"
+    vgpuType  = "A6000-8A"
+  }
+}
+`

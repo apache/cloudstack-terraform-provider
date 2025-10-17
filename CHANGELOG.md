@@ -1,5 +1,9 @@
 ## 0.4.0 (Unreleased)
 
+FEATURES:
+
+* **New Resource Attribute**: `cloudstack_service_offering` now supports `service_offering_details` for GPU configuration and other advanced settings [GH-246]
+
 IMPROVEMENTS:
 
 * Restore support for managing resource tags as CloudStack 4.11.3+ and 4.12+ support tags again [GH-65]
