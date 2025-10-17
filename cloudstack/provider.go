@@ -101,6 +101,9 @@ func Provider() *schema.Provider {
 			"cloudstack_role":                 dataSourceCloudstackRole(),
 			"cloudstack_cluster":              dataSourceCloudstackCluster(),
 			"cloudstack_limits":               dataSourceCloudStackLimits(),
+			"cloudstack_quota":                dataSourceCloudStackQuota(),
+			"cloudstack_quota_enabled":        dataSourceCloudStackQuotaEnabled(),
+			"cloudstack_quota_tariff":         dataSourceCloudStackQuotaTariff(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -160,6 +163,7 @@ func Provider() *schema.Provider {
 			"cloudstack_role":                           resourceCloudStackRole(),
 			"cloudstack_limits":                         resourceCloudStackLimits(),
 			"cloudstack_snapshot_policy":                resourceCloudStackSnapshotPolicy(),
+			"cloudstack_quota_tariff":                   resourceCloudStackQuotaTariff(),
 		},
 
 		ConfigureFunc: providerConfigure,
