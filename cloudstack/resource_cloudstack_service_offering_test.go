@@ -28,32 +28,112 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccCloudStackServiceOffering_basic(t *testing.T) {
+const (
+	testServiceOfferingResourceName = "cloudstack_service_offering"
+	testServiceOfferingBasic        = testServiceOfferingResourceName + ".test1"
+	testServiceOfferingGPU          = testServiceOfferingResourceName + ".gpu"
+	testServiceOfferingCustom       = testServiceOfferingResourceName + ".custom"
+)
+
+func TestAccServiceOfferingBasic(t *testing.T) {
 	var so cloudstack.ServiceOffering
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudStackServiceOffering_basic,
+				Config: testAccCloudStackServiceOfferingBasicConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackServiceOfferingExists("cloudstack_service_offering.test1", &so),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.test1", "cpu_number", "2"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.test1", "cpu_speed", "2200"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.test1", "memory", "8096"),
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingBasic, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "cpu_number", "2"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "cpu_speed", "2200"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "memory", "8096"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "storage_type", "shared"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "offer_ha", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "limit_cpu_use", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "disk_iops_read_rate", "10000"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "disk_iops_write_rate", "10000"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "min_iops", "5000"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "max_iops", "15000"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "dynamic_scaling_enabled", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "is_volatile", "false"),
+					resource.TestCheckResourceAttr(testServiceOfferingBasic, "root_disk_size", "50"),
 				),
 			},
 		},
 	})
 }
 
-const testAccCloudStackServiceOffering_basic = `
+func TestAccServiceOfferingWithGPU(t *testing.T) {
+	var so cloudstack.ServiceOffering
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOfferingGPUConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingGPU, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "name", "gpu_offering_1"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "cpu_number", "4"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "cpu_speed", "2400"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "memory", "16384"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "gpu_count", "1"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "gpu_display", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "storage_type", "shared"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "offer_ha", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "disk_iops_read_rate", "20000"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "disk_iops_write_rate", "20000"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "min_iops", "10000"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "max_iops", "30000"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "dynamic_scaling_enabled", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "root_disk_size", "100"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackServiceOfferingBasicConfig = `
 resource "cloudstack_service_offering" "test1" {
-  name 			= "service_offering_1"
-  display_text 	= "Test"
-  cpu_number	= 2
-  cpu_speed		= 2200
-  memory        = 8096
+  name                     = "service_offering_1"
+  display_text            = "Test Basic Offering"
+  cpu_number             = 2
+  cpu_speed              = 2200
+  memory                 = 8096
+  storage_type           = "shared"
+  offer_ha               = true
+  limit_cpu_use         = true
+  disk_iops_read_rate   = 10000
+  disk_iops_write_rate  = 10000
+  min_iops              = 5000
+  max_iops              = 15000
+  dynamic_scaling_enabled = true
+  is_volatile           = false
+  root_disk_size        = 50
+}
+`
+
+const testAccCloudStackServiceOfferingGPUConfig = `
+resource "cloudstack_service_offering" "gpu" {
+  name                     = "gpu_offering_1"
+  display_text            = "Test GPU Offering"
+  cpu_number             = 4
+  cpu_speed              = 2400
+  memory                 = 16384
+  gpu_count              = 1
+  gpu_display            = true
+  storage_type           = "shared"
+  offer_ha               = true
+  disk_iops_read_rate   = 20000
+  disk_iops_write_rate  = 20000
+  min_iops              = 10000
+  max_iops              = 30000
+  dynamic_scaling_enabled = true
+  is_volatile           = false
+  root_disk_size        = 100
 }
 `
 
@@ -71,11 +151,15 @@ func testAccCheckCloudStackServiceOfferingExists(n string, so *cloudstack.Servic
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
 		resp, _, err := cs.ServiceOffering.GetServiceOfferingByID(rs.Primary.ID)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error getting service offering: %s", err)
+		}
+
+		if resp == nil {
+			return fmt.Errorf("Service offering (%s) not found", rs.Primary.ID)
 		}
 
 		if resp.Id != rs.Primary.ID {
-			return fmt.Errorf("Service offering not found")
+			return fmt.Errorf("Service offering not found: expected ID %s, got %s", rs.Primary.ID, resp.Id)
 		}
 
 		*so = *resp
@@ -84,31 +168,59 @@ func testAccCheckCloudStackServiceOfferingExists(n string, so *cloudstack.Servic
 	}
 }
 
-func TestAccCloudStackServiceOffering_customized(t *testing.T) {
+func testAccCheckCloudStackServiceOfferingDestroy(s *terraform.State) error {
+	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != testServiceOfferingResourceName {
+			continue
+		}
+
+		if rs.Primary.ID == "" {
+			continue
+		}
+
+		resp, _, err := cs.ServiceOffering.GetServiceOfferingByID(rs.Primary.ID)
+		if err != nil {
+			// CloudStack returns 431 error code when the resource doesn't exist
+			// Just return nil in this case as the resource is gone
+			return nil
+		}
+
+		if resp != nil {
+			return fmt.Errorf("Service offering %s still exists", rs.Primary.ID)
+		}
+	}
+
+	return nil
+}
+
+func TestAccServiceOfferingCustomized(t *testing.T) {
 	var so cloudstack.ServiceOffering
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudStackServiceOffering_customized,
+				Config: testAccCloudStackServiceOfferingCustomConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackServiceOfferingExists("cloudstack_service_offering.custom", &so),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "customized", "true"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "min_cpu_number", "1"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "max_cpu_number", "8"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "min_memory", "1024"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "max_memory", "16384"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "cpu_speed", "1000"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "encrypt_root", "true"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.custom", "storage_tags", "production,ssd"),
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingCustom, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "customized", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "min_cpu_number", "1"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "max_cpu_number", "8"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "min_memory", "1024"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "max_memory", "16384"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "cpu_speed", "1000"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "encrypt_root", "true"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "storage_tags", "production,ssd"),
 				),
 			},
 		},
 	})
 }
 
-const testAccCloudStackServiceOffering_customized = `
+const testAccCloudStackServiceOfferingCustomConfig = `
 resource "cloudstack_service_offering" "custom" {
   name             = "custom_service_offering"
   display_text     = "Custom Test"
@@ -123,35 +235,36 @@ resource "cloudstack_service_offering" "custom" {
 }
 `
 
-func TestAccCloudStackServiceOffering_gpu(t *testing.T) {
+func TestAccServiceOfferingWithVGPU(t *testing.T) {
 	var so cloudstack.ServiceOffering
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackServiceOfferingDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCloudStackServiceOffering_gpu,
+				Config: testAccCloudStackServiceOfferingVGPUConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackServiceOfferingExists("cloudstack_service_offering.gpu", &so),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "name", "gpu_service_offering"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "display_text", "GPU Test"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "cpu_number", "4"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "memory", "16384"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "service_offering_details.pciDevice", "Group of NVIDIA A6000 GPUs"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering.gpu", "service_offering_details.vgpuType", "A6000-8A"),
+					testAccCheckCloudStackServiceOfferingExists(testServiceOfferingGPU, &so),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "name", "gpu_service_offering"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "display_text", "GPU Test"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "cpu_number", "4"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "memory", "16384"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "service_offering_details.pciDevice", "Group of NVIDIA A6000 GPUs"),
+					resource.TestCheckResourceAttr(testServiceOfferingGPU, "service_offering_details.vgpuType", "A6000-8A"),
 				),
 			},
 		},
 	})
 }
 
-const testAccCloudStackServiceOffering_gpu = `
+const testAccCloudStackServiceOfferingVGPUConfig = `
 resource "cloudstack_service_offering" "gpu" {
   name         = "gpu_service_offering"
   display_text = "GPU Test"
   cpu_number   = 4
   memory       = 16384
-  cpu_speed		= 1000
+  cpu_speed    = 1000
   
   service_offering_details = {
     pciDevice = "Group of NVIDIA A6000 GPUs"
