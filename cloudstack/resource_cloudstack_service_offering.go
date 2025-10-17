@@ -227,6 +227,185 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				ForceNew:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
+
+			// IOPS/Bandwidth parameters (Phase 2)
+			"disk_iops_read_rate": {
+				Description: "IO requests read rate of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_iops_write_rate": {
+				Description: "IO requests write rate of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_iops_read_rate_max": {
+				Description: "IO requests read rate max of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_iops_write_rate_max": {
+				Description: "IO requests write rate max of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_iops_read_rate_max_length": {
+				Description: "Burst duration in seconds for read rate max",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_iops_write_rate_max_length": {
+				Description: "Burst duration in seconds for write rate max",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_bytes_read_rate": {
+				Description: "Bytes read rate of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_bytes_write_rate": {
+				Description: "Bytes write rate of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_bytes_read_rate_max": {
+				Description: "Bytes read rate max of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"disk_bytes_write_rate_max": {
+				Description: "Bytes write rate max of the disk offering",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"bytes_read_rate_max_length": {
+				Description: "Burst duration in seconds for bytes read rate max",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"bytes_write_rate_max_length": {
+				Description: "Burst duration in seconds for bytes write rate max",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			// Hypervisor Parameters (Phase 3)
+			"hypervisor_snapshot_reserve": {
+				Description: "Hypervisor snapshot reserve space as a percent of a volume (for managed storage using Xen or VMware)",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"cache_mode": {
+				Description: "The cache mode to use for the disk offering. Valid values: none, writeback, writethrough",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"deployment_planner": {
+				Description: "Deployment planner heuristics to use for the service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"storage_policy": {
+				Description: "Name of the storage policy (for VMware)",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			// Low Priority Parameters (Phase 4)
+			"network_rate": {
+				Description: "Data transfer rate in megabits per second allowed",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"purge_resources": {
+				Description: "Whether to purge resources on deletion",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"system_vm_type": {
+				Description: "The system VM type. Possible values: domainrouter, consoleproxy, secondarystoragevm",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			// Final Parameters - Complete SDK Coverage (Phase 5)
+			"disk_offering_id": {
+				Description: "The ID of the disk offering to associate with this service offering",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"disk_offering_strictness": {
+				Description: "Whether to strictly enforce the disk offering (requires disk_offering_id)",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"external_details": {
+				Description: "External system metadata (CMDB, billing, etc.)",
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+
+			"is_system": {
+				Description: "Whether this is a system VM offering (WARNING: For CloudStack internal use)",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+			},
+
+			"lease_duration": {
+				Description: "Lease duration in seconds (for temporary offerings with auto-cleanup)",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
+
+			"lease_expiry_action": {
+				Description: "Action when lease expires. Possible values: destroy, stop",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -366,6 +545,114 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 		p.SetZoneid(zones)
 	}
 
+	// IOPS/Bandwidth Parameters (Phase 2)
+	if v, ok := d.GetOk("disk_iops_read_rate"); ok {
+		p.SetIopsreadrate(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_iops_write_rate"); ok {
+		p.SetIopswriterate(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_iops_read_rate_max"); ok {
+		p.SetIopsreadratemax(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_iops_write_rate_max"); ok {
+		p.SetIopswriteratemax(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_iops_read_rate_max_length"); ok {
+		p.SetIopsreadratemaxlength(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_iops_write_rate_max_length"); ok {
+		p.SetIopswriteratemaxlength(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_bytes_read_rate"); ok {
+		p.SetBytesreadrate(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_bytes_write_rate"); ok {
+		p.SetByteswriterate(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_bytes_read_rate_max"); ok {
+		p.SetBytesreadratemax(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("disk_bytes_write_rate_max"); ok {
+		p.SetByteswriteratemax(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("bytes_read_rate_max_length"); ok {
+		p.SetBytesreadratemaxlength(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOk("bytes_write_rate_max_length"); ok {
+		p.SetByteswriteratemaxlength(int64(v.(int)))
+	}
+
+	// Hypervisor Parameters (Phase 3)
+	if v, ok := d.GetOk("hypervisor_snapshot_reserve"); ok {
+		p.SetHypervisorsnapshotreserve(v.(int))
+	}
+
+	if v, ok := d.GetOk("cache_mode"); ok {
+		p.SetCachemode(v.(string))
+	}
+
+	if v, ok := d.GetOk("deployment_planner"); ok {
+		p.SetDeploymentplanner(v.(string))
+	}
+
+	if v, ok := d.GetOk("storage_policy"); ok {
+		p.SetStoragepolicy(v.(string))
+	}
+
+	// Low Priority Parameters (Phase 4)
+	if v, ok := d.GetOk("network_rate"); ok {
+		p.SetNetworkrate(v.(int))
+	}
+
+	if v, ok := d.GetOk("purge_resources"); ok {
+		p.SetPurgeresources(v.(bool))
+	}
+
+	if v, ok := d.GetOk("system_vm_type"); ok {
+		p.SetSystemvmtype(v.(string))
+	}
+
+	// Final Parameters - Complete SDK Coverage (Phase 5)
+	if v, ok := d.GetOk("disk_offering_id"); ok {
+		p.SetDiskofferingid(v.(string))
+	}
+
+	if v, ok := d.GetOk("disk_offering_strictness"); ok {
+		p.SetDiskofferingstrictness(v.(bool))
+	}
+
+	if v, ok := d.GetOk("external_details"); ok {
+		extDetails := make(map[string]string)
+		for key, value := range v.(map[string]interface{}) {
+			extDetails[key] = value.(string)
+		}
+		p.SetExternaldetails(extDetails)
+	}
+
+	if v, ok := d.GetOk("is_system"); ok {
+		p.SetIssystem(v.(bool))
+	}
+
+	if v, ok := d.GetOk("lease_duration"); ok {
+		p.SetLeaseduration(v.(int))
+	}
+
+	if v, ok := d.GetOk("lease_expiry_action"); ok {
+		p.SetLeaseexpiryaction(v.(string))
+	}
+
 	// Handle service offering details (custom configurations only, GPU is separate)
 	if v, ok := d.GetOk("service_offering_details"); ok {
 		details := make(map[string]string)
@@ -456,6 +743,98 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 
 	if so.Zoneid != "" {
 		d.Set("zone_id", []string{so.Zoneid})
+	}
+
+	// IOPS/Bandwidth Parameters (Phase 2)
+	if so.DiskIopsReadRate > 0 {
+		d.Set("disk_iops_read_rate", int(so.DiskIopsReadRate))
+	}
+
+	if so.DiskIopsWriteRate > 0 {
+		d.Set("disk_iops_write_rate", int(so.DiskIopsWriteRate))
+	}
+
+	if so.DiskIopsReadRateMax > 0 {
+		d.Set("disk_iops_read_rate_max", int(so.DiskIopsReadRateMax))
+	}
+
+	if so.DiskIopsWriteRateMax > 0 {
+		d.Set("disk_iops_write_rate_max", int(so.DiskIopsWriteRateMax))
+	}
+
+	if so.DiskIopsReadRateMaxLength > 0 {
+		d.Set("disk_iops_read_rate_max_length", int(so.DiskIopsReadRateMaxLength))
+	}
+
+	if so.DiskIopsWriteRateMaxLength > 0 {
+		d.Set("disk_iops_write_rate_max_length", int(so.DiskIopsWriteRateMaxLength))
+	}
+
+	if so.DiskBytesReadRate > 0 {
+		d.Set("disk_bytes_read_rate", int(so.DiskBytesReadRate))
+	}
+
+	if so.DiskBytesWriteRate > 0 {
+		d.Set("disk_bytes_write_rate", int(so.DiskBytesWriteRate))
+	}
+
+	if so.DiskBytesReadRateMax > 0 {
+		d.Set("disk_bytes_read_rate_max", int(so.DiskBytesReadRateMax))
+	}
+
+	if so.DiskBytesWriteRateMax > 0 {
+		d.Set("disk_bytes_write_rate_max", int(so.DiskBytesWriteRateMax))
+	}
+
+	if so.DiskBytesReadRateMaxLength > 0 {
+		d.Set("bytes_read_rate_max_length", int(so.DiskBytesReadRateMaxLength))
+	}
+
+	if so.DiskBytesWriteRateMaxLength > 0 {
+		d.Set("bytes_write_rate_max_length", int(so.DiskBytesWriteRateMaxLength))
+	}
+
+	// Hypervisor Parameters (Phase 3)
+	if so.Hypervisorsnapshotreserve > 0 {
+		d.Set("hypervisor_snapshot_reserve", so.Hypervisorsnapshotreserve)
+	}
+
+	if so.CacheMode != "" {
+		d.Set("cache_mode", so.CacheMode)
+	}
+
+	if so.Deploymentplanner != "" {
+		d.Set("deployment_planner", so.Deploymentplanner)
+	}
+
+	// Note: storage_policy field doesn't exist in ServiceOffering response
+	// This is a write-only parameter for VMware environments
+
+	// Low Priority Parameters (Phase 4)
+	if so.Networkrate > 0 {
+		d.Set("network_rate", so.Networkrate)
+	}
+
+	// Note: purge_resources is write-only, not returned by API
+	// Note: system_vm_type is write-only, not returned by API
+
+	// Final Parameters - Complete SDK Coverage (Phase 5)
+	if so.Diskofferingid != "" {
+		d.Set("disk_offering_id", so.Diskofferingid)
+	}
+
+	d.Set("disk_offering_strictness", so.Diskofferingstrictness)
+
+	// Note: external_details is write-only, not returned by API
+
+	d.Set("is_system", so.Issystem)
+
+	if so.Leaseduration > 0 {
+		d.Set("lease_duration", so.Leaseduration)
+	}
+
+	if so.Leaseexpiryaction != "" {
+		d.Set("lease_expiry_action", so.Leaseexpiryaction)
 	}
 
 	// Set service offering details (excluding system-managed keys)
