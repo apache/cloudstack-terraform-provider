@@ -104,6 +104,8 @@ The following arguments are supported:
 
 * `uefi` - (Optional) When set, will boot the instance in UEFI/Legacy mode (defaults false)
 
+* `boot_mode` - (Optional) The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.
+
 ## Attributes Reference
 
 The following attributes are exported:

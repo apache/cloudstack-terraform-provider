@@ -188,6 +188,7 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Secure", "Legacy"}, true),
 				ForceNew:     true,
+				Description:  "The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.",
 			},
 
 			"start_vm": {
