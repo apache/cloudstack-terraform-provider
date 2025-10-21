@@ -33,4 +33,4 @@ jobs:
           java -jar apache-rat-0.17/apache-rat-0.17.jar -d . -E .rat-excludes > rat-report.txt
           cat rat-report.txt
           # Fail if unapproved licenses are found
-          grep -qe '^0 Unknown Licenses' rat-report.txt && exit 0 || exit 1
+          grep -qe '^\s*Unapproved:\s*0\s*A count of unapproved licenses.$' rat-report.txt && exit 0 || exit 1
