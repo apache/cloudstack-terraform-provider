@@ -29,6 +29,7 @@ import (
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCloudStackInstance() *schema.Resource {
@@ -182,6 +183,14 @@ func resourceCloudStackInstance() *schema.Resource {
 				Default:  false,
 			},
 
+			"boot_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Secure", "Legacy"}, true),
+				ForceNew:     true,
+				Description:  "The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.",
+			},
+
 			"start_vm": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -262,6 +271,10 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return e.Error()
 	}
 
+	if bootMode, hasBoot := d.GetOk("boot_mode"); hasBoot && !d.Get("uefi").(bool) {
+		return fmt.Errorf("boot_mode can only be specified when uefi is true, got boot_mode=%s with uefi=false", bootMode.(string))
+	}
+
 	// Create a new parameter struct
 	p := cs.VirtualMachine.NewDeployVirtualMachineParams(serviceofferingid, templateid, zone.Id)
 	p.SetStartvm(d.Get("start_vm").(bool))
@@ -331,7 +344,11 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	if d.Get("uefi").(bool) {
 		p.SetBoottype("UEFI")
-		p.SetBootmode("Legacy")
+		if bootmode, ok := d.GetOk("boot_mode"); ok {
+			p.SetBootmode(bootmode.(string))
+		} else {
+			p.SetBootmode("Legacy")
+		}
 	}
 
 	if zone.Networktype == "Advanced" {
@@ -538,6 +555,10 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
 	setValueOrID(d, "project", vm.Project, vm.Projectid)
 	setValueOrID(d, "zone", vm.Zonename, vm.Zoneid)
+	d.Set("uefi", strings.EqualFold(vm.Boottype, "UEFI"))
+	if strings.EqualFold(vm.Boottype, "UEFI") && vm.Bootmode != "" {
+		d.Set("boot_mode", vm.Bootmode)
+	}
 
 	return nil
 }
