@@ -48,6 +48,24 @@ The following arguments are supported:
 * `other_deploy_params` - (Optional) A mapping of additional params used when
     creating new instances.
 
+* `counter_param_list` -  (Optional) Counter parameters for monitoring.
+
+* `user_data` - (Optional) User data for VM initialization.
+
+* `user_data_id` - (Optional) the ID of the Userdata.
+
+* `user_data_details` - (Optional) Additional user data details.
+
+* `autoscale_user_id` - (Optional) the ID of the user used to launch and destroy the VMs
+
+* `display` - (Optional) Whether the profile is displayed to end users.    
+
+* `account_name` - (Optional) account that will own the autoscale VM profile.    
+
+* `project_id` - (Optional) an optional project for the autoscale VM profile.    
+
+* `domain_id` - (Optional) The domain ID where the profile exists.
+
 * `metadata` - (Optional) A mapping of metadata key/values to assign to the
     resource.
 
