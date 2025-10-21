@@ -2,7 +2,7 @@ CHANGELOG.md
 CONTRIBUTING.md
 go.sum
 rat-report.txt
-apache-rat-0.16.1
+apache-rat-0.17
 .gitignore
 .rat-excludes
 .terraform-registry
