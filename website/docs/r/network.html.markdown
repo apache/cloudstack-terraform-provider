@@ -43,6 +43,18 @@ The following arguments are supported:
 * `endip` - (Optional) End of the IP block that will be available on the
     network. Defaults to the last available IP in the range.
 
+* `ip6cidr` - (Optional) The IPv6 CIDR block for the network.  Changing this
+    forces a new resource to be created.
+
+* `ip6gateway` - (Optional) IPv6 Gateway that will be provided to the instances
+    in this network. Defaults to the first usable IP in the range.
+
+* `startipv6` - (Optional) Start of the IPv6 block that will be available on the
+    network. Defaults to the second available IP in the range.
+
+* `endipv6` - (Optional) End of the IPv6 block that will be available on the
+    network. Defaults to the last available IP in the range.
+
 * `network_domain` - (Optional) DNS domain for the network.
 
 * `network_offering` - (Required) The name or ID of the network offering to use
