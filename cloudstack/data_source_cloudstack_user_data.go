@@ -32,10 +32,7 @@ func dataSourceCloudstackUserData() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceCloudstackUserDataRead,
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
+			"filter": dataSourceFiltersSchema(),
 			"account": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -124,7 +121,7 @@ func dataSourceCloudstackUserDataRead(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			d.Set("userdata", userdata.Userdata) // Fallback: use raw data
 		} else {
-			d.Set("userdata", decoded)
+			d.Set("userdata", string(decoded))
 		}
 	}
 	return nil

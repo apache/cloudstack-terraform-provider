@@ -131,7 +131,7 @@ func resourceCloudStackUserDataRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("name", userdata.UserData[0].Name)
-	d.Set("userdata", userdata.UserData[0])
+	d.Set("userdata", userdata.UserData[0].Userdata)
 	if d.Get("account").(string) != "" {
 		d.Set("account", userdata.UserData[0].Account)
 	}

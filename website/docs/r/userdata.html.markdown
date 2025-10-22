@@ -1,12 +1,12 @@
 ---
 layout: "cloudstack"
-page_title: "CloudStack: cloudstack_userdata"
-sidebar_current: "docs-cloudstack-resource-userdata"
+page_title: "CloudStack: cloudstack_user_data"
+sidebar_current: "docs-cloudstack-resource-user-data"
 description: |-
   Registers and manages user data in CloudStack for VM initialization.
 ---
 
-# cloudstack_userdata
+# cloudstack_user_data
 
 Registers user data in CloudStack that can be used to initialize virtual machines during deployment. User data typically contains scripts, configuration files, or other initialization data that should be executed when a VM starts.
 
@@ -15,7 +15,7 @@ Registers user data in CloudStack that can be used to initialize virtual machine
 ### Basic User Data
 
 ```hcl
-resource "cloudstack_userdata" "web_init" {
+resource "cloudstack_user_data" "web_init" {
   name = "web-server-init"
   
   userdata = base64encode(<<-EOF
@@ -32,7 +32,7 @@ resource "cloudstack_userdata" "web_init" {
 ### Parameterized User Data
 
 ```hcl
-resource "cloudstack_userdata" "app_init" {
+resource "cloudstack_user_data" "app_init" {
   name = "app-server-init"
   
   userdata = base64encode(<<-EOF
@@ -58,7 +58,7 @@ resource "cloudstack_userdata" "app_init" {
 ### Project-Scoped User Data
 
 ```hcl
-resource "cloudstack_userdata" "project_init" {
+resource "cloudstack_user_data" "project_init" {
   name       = "project-specific-init"
   project_id = "12345678-1234-1234-1234-123456789012"
   
@@ -111,7 +111,7 @@ resource "cloudstack_template" "web_template" {
   # ... other template arguments ...
   
   userdata_link {
-    userdata_id     = cloudstack_userdata.app_init.id
+    userdata_id     = cloudstack_user_data.app_init.id
     userdata_policy = "ALLOWOVERRIDE"  # Allow instance to override
   }
 }
@@ -124,9 +124,7 @@ resource "cloudstack_instance" "web_server" {
   name     = "web-server-01"
   # ... other instance arguments ...
   
-  userdata_id = cloudstack_userdata.app_init.id
-  
-  # Pass parameter values to the userdata script
+    userdata_id = cloudstack_user_data.app_init.id  # Pass parameter values to the userdata script
   userdata_details = {
     "app_name"    = "My Web Application"
     "environment" = "production"
@@ -140,7 +138,7 @@ resource "cloudstack_instance" "web_server" {
 User data can be imported using the user data ID:
 
 ```
-terraform import cloudstack_userdata.example 12345678-1234-1234-1234-123456789012
+terraform import cloudstack_user_data.example 12345678-1234-1234-1234-123456789012
 ```
 
 ## Notes
