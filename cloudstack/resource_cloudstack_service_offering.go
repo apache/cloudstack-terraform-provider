@@ -150,6 +150,8 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				},
 			},
 		},
+		DeprecationMessage: "cloudstack_service_offering is deprecated and will be removed in a future release. Please use the following resources instead: " +
+			"cloudstack_service_offering_constrained, cloudstack_service_offering_unconstrained or cloudstack_service_offering_fixed.",
 	}
 }
 
