@@ -180,6 +180,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Description: "Minimum IOPS",
 				Type:        schema.TypeInt,
 				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 
@@ -187,6 +188,7 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 				Description: "Maximum IOPS",
 				Type:        schema.TypeInt,
 				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 
@@ -760,11 +762,10 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 		d.Set("root_disk_size", int(so.Rootdisksize))
 	}
 
-	// IOPS limits (min/max CPU and memory are write-only, not returned by API)
+	// IOPS limits - only set if returned by API (> 0)
 	if so.Miniops > 0 {
 		d.Set("min_iops", int(so.Miniops))
 	}
-
 	if so.Maxiops > 0 {
 		d.Set("max_iops", int(so.Maxiops))
 	}
@@ -773,6 +774,7 @@ func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("limit_cpu_use", so.Limitcpuuse)
 	d.Set("is_volatile", so.Isvolatile)
 	d.Set("customized_iops", so.Iscustomizediops)
+	d.Set("customized", so.Iscustomized)
 
 	// Tags field is write-only, not returned by API - skip setting
 

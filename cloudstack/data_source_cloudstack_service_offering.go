@@ -110,7 +110,7 @@ func dataSourceCloudstackServiceOffering() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
-			"storage_tags": {
+			"tags": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -286,10 +286,17 @@ func serviceOfferingDescriptionAttributes(d *schema.ResourceData, serviceOfferin
 	d.Set("system_vm_type", serviceOffering.Systemvmtype)
 	d.Set("deployment_planner", serviceOffering.Deploymentplanner)
 	d.Set("offer_ha", serviceOffering.Offerha)
-	d.Set("storage_tags", serviceOffering.Storagetags)
+	d.Set("tags", serviceOffering.Storagetags)
 	d.Set("provisioning_type", serviceOffering.Provisioningtype)
-	d.Set("min_iops", serviceOffering.Miniops)
-	d.Set("max_iops", serviceOffering.Maxiops)
+
+	// IOPS limits - only set if returned by API (> 0)
+	if serviceOffering.Miniops > 0 {
+		d.Set("min_iops", int(serviceOffering.Miniops))
+	}
+	if serviceOffering.Maxiops > 0 {
+		d.Set("max_iops", int(serviceOffering.Maxiops))
+	}
+
 	d.Set("hypervisor_snapshot_reserve", serviceOffering.Hypervisorsnapshotreserve)
 	d.Set("disk_bytes_read_rate", serviceOffering.DiskBytesReadRate)
 	d.Set("disk_bytes_write_rate", serviceOffering.DiskBytesWriteRate)

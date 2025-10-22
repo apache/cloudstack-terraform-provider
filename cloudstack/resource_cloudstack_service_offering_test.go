@@ -215,7 +215,7 @@ func TestAccServiceOfferingCustomized(t *testing.T) {
 					resource.TestCheckResourceAttr(testServiceOfferingCustom, "max_memory", "16384"),
 					resource.TestCheckResourceAttr(testServiceOfferingCustom, "cpu_speed", "1000"),
 					resource.TestCheckResourceAttr(testServiceOfferingCustom, "encrypt_root", "true"),
-					resource.TestCheckResourceAttr(testServiceOfferingCustom, "storage_tags", "production,ssd"),
+					resource.TestCheckResourceAttr(testServiceOfferingCustom, "tags", "production,ssd"),
 				),
 			},
 		},
@@ -233,7 +233,7 @@ resource "cloudstack_service_offering" "custom" {
   max_memory       = 16384
   cpu_speed        = 1000
   encrypt_root     = true
-  storage_tags     = "production,ssd"
+  tags             = "production,ssd"
 }
 `
 
