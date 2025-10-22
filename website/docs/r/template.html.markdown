@@ -82,6 +82,10 @@ The following arguments are supported:
 
 * `for_cks` - (Optional) Set to `true` to indicate this template is for CloudStack Kubernetes Service (CKS). CKS templates have special requirements and capabilities. Defaults to `false`.
 
+### User Data Integration
+
+* `userdata_link` - (Optional) Link user data to this template. When specified, instances deployed from this template will inherit the linked user data. See [User Data Link](#user-data-link) below for more details.
+
 ### Template Properties
 
 * `is_dynamically_scalable` - (Optional) Set to indicate if the template contains tools to support dynamic scaling of VM cpu/memory. Defaults to `false`.
@@ -135,6 +139,70 @@ The following attributes are exported:
 * `account` - The account name owning the template.
 * `domain` - The domain name where the template belongs.
 * `project` - The project name if the template is assigned to a project.
+
+## User Data Link
+
+The `userdata_link` block supports the following arguments:
+
+* `userdata_id` - (Required) The ID of the user data to link to this template.
+* `userdata_policy` - (Required) The user data policy for instances deployed from this template. Valid values:
+  * `ALLOWOVERRIDE` - Allow instances to override the linked user data with their own
+  * `APPEND` - Append instance-specific user data to the template's linked user data  
+  * `DENYOVERRIDE` - Prevent instances from overriding the linked user data
+
+When a `userdata_link` is configured, the following additional attributes are exported:
+
+* `userdata_name` - The name of the linked user data
+* `userdata_params` - The parameters defined in the linked user data
+
+### Example Template with User Data
+
+```hcl
+# Create user data
+resource "cloudstack_userdata" "web_init" {
+  name = "web-server-initialization"
+  
+  userdata = base64encode(<<-EOF
+    #!/bin/bash
+    apt-get update
+    apt-get install -y nginx
+    echo "<h1>Welcome to $${app_name}!</h1>" > /var/www/html/index.html
+    systemctl enable nginx
+    systemctl start nginx
+  EOF
+  )
+  
+  params = ["app_name"]
+}
+
+# Create template with linked user data
+resource "cloudstack_template" "web_template" {
+  name         = "web-server-template"
+  display_text = "Web Server Template with Auto-Setup"
+  format       = "QCOW2"
+  hypervisor   = "KVM"
+  os_type      = "Ubuntu 20.04"
+  url          = "http://example.com/ubuntu-20.04.qcow2"
+  zone         = "zone1"
+  
+  userdata_link {
+    userdata_id     = cloudstack_userdata.web_init.id
+    userdata_policy = "ALLOWOVERRIDE"
+  }
+}
+
+# Deploy instance using template with user data
+resource "cloudstack_instance" "web_server" {
+  name     = "web-01"
+  template = cloudstack_template.web_template.id
+  # ... other arguments ...
+  
+  # Pass parameters to the linked user data
+  userdata_details = {
+    "app_name" = "Production Web App"
+  }
+}
+```
 
 ### Example CKS Template Usage
 

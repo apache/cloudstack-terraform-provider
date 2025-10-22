@@ -133,6 +133,37 @@ func resourceCloudStackTemplate() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"userdata_link": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"userdata_id": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The ID of the user data to link to the template.",
+						},
+						"userdata_policy": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "ALLOWOVERRIDE",
+							Description: "Override policy of the userdata. Possible values: ALLOWOVERRIDE, APPEND, DENYOVERRIDE. Default: ALLOWOVERRIDE",
+						},
+						"userdata_name": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The name of the linked user data.",
+						},
+						"userdata_params": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The parameters of the linked user data.",
+						},
+					},
+				},
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -224,6 +255,11 @@ func resourceCloudStackTemplateCreate(d *schema.ResourceData, meta interface{}) 
 		return fmt.Errorf("Error setting tags on the template %s: %s", name, err)
 	}
 
+	// Link userdata if specified
+	if err = linkUserdataToTemplate(cs, d, r.RegisterTemplate[0].Id); err != nil {
+		return fmt.Errorf("Error linking userdata to template %s: %s", name, err)
+	}
+
 	// Wait until the template is ready to use, or timeout with an error...
 	currentTime := time.Now().Unix()
 	timeout := int64(d.Get("is_ready_timeout").(int))
@@ -300,6 +336,11 @@ func resourceCloudStackTemplateRead(d *schema.ResourceData, meta interface{}) er
 	setValueOrID(d, "project", t.Project, t.Projectid)
 	setValueOrID(d, "zone", t.Zonename, t.Zoneid)
 
+	// Read userdata link information
+	if err := readUserdataFromTemplate(d, t); err != nil {
+		return fmt.Errorf("Error reading userdata link from template: %s", err)
+	}
+
 	return nil
 }
 
@@ -349,6 +390,12 @@ func resourceCloudStackTemplateUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	if d.HasChange("userdata_link") {
+		if err := updateUserdataLink(cs, d); err != nil {
+			return fmt.Errorf("Error updating userdata link for template %s: %s", name, err)
+		}
+	}
+
 	return resourceCloudStackTemplateRead(d, meta)
 }
 
@@ -379,6 +426,108 @@ func verifyTemplateParams(d *schema.ResourceData) error {
 	if format != "OVA" && format != "QCOW2" && format != "RAW" && format != "VHD" && format != "VMDK" {
 		return fmt.Errorf(
 			"%s is not a valid format. Valid options are 'OVA','QCOW2', 'RAW', 'VHD' and 'VMDK'", format)
+	}
+
+	return nil
+}
+
+func linkUserdataToTemplate(cs *cloudstack.CloudStackClient, d *schema.ResourceData, templateID string) error {
+	userdataLinks := d.Get("userdata_link").([]interface{})
+	if len(userdataLinks) == 0 {
+		return nil
+	}
+
+	userdataLink := userdataLinks[0].(map[string]interface{})
+
+	p := cs.Template.NewLinkUserDataToTemplateParams()
+	p.SetTemplateid(templateID)
+	p.SetUserdataid(userdataLink["userdata_id"].(string))
+
+	if policy, ok := userdataLink["userdata_policy"].(string); ok && policy != "" {
+		p.SetUserdatapolicy(policy)
+	}
+
+	_, err := cs.Template.LinkUserDataToTemplate(p)
+	return err
+}
+
+func readUserdataFromTemplate(d *schema.ResourceData, template *cloudstack.Template) error {
+	if template.Userdataid == "" {
+		d.Set("userdata_link", []interface{}{})
+		return nil
+	}
+
+	userdataLink := map[string]interface{}{
+		"userdata_id":     template.Userdataid,
+		"userdata_name":   template.Userdataname,
+		"userdata_params": template.Userdataparams,
+	}
+
+	if existingLinks := d.Get("userdata_link").([]interface{}); len(existingLinks) > 0 {
+		if existingLink, ok := existingLinks[0].(map[string]interface{}); ok {
+			if policy, exists := existingLink["userdata_policy"]; exists {
+				userdataLink["userdata_policy"] = policy
+			}
+		}
+	}
+
+	d.Set("userdata_link", []interface{}{userdataLink})
+	return nil
+}
+
+func updateUserdataLink(cs *cloudstack.CloudStackClient, d *schema.ResourceData) error {
+	templateID := d.Id()
+
+	oldLinks, newLinks := d.GetChange("userdata_link")
+	oldLinksSlice := oldLinks.([]interface{})
+	newLinksSlice := newLinks.([]interface{})
+
+	// Check if we're removing userdata link (had one before, now empty)
+	if len(oldLinksSlice) > 0 && len(newLinksSlice) == 0 {
+		unlinkP := cs.Template.NewLinkUserDataToTemplateParams()
+		unlinkP.SetTemplateid(templateID)
+
+		_, err := cs.Template.LinkUserDataToTemplate(unlinkP)
+		if err != nil {
+			return fmt.Errorf("Error unlinking userdata from template: %s", err)
+		}
+		log.Printf("[DEBUG] Unlinked userdata from template: %s", templateID)
+		return nil
+	}
+
+	if len(newLinksSlice) > 0 {
+		newLink := newLinksSlice[0].(map[string]interface{})
+
+		if len(oldLinksSlice) > 0 {
+			oldLink := oldLinksSlice[0].(map[string]interface{})
+
+			if oldLink["userdata_id"].(string) == newLink["userdata_id"].(string) {
+				oldPolicy := ""
+				newPolicy := ""
+
+				if p, ok := oldLink["userdata_policy"].(string); ok {
+					oldPolicy = p
+				}
+				if p, ok := newLink["userdata_policy"].(string); ok {
+					newPolicy = p
+				}
+
+				if oldPolicy == newPolicy {
+					log.Printf("[DEBUG] Userdata link unchanged, skipping API call")
+					return nil
+				}
+			}
+
+			unlinkP := cs.Template.NewLinkUserDataToTemplateParams()
+			unlinkP.SetTemplateid(templateID)
+
+			_, err := cs.Template.LinkUserDataToTemplate(unlinkP)
+			if err != nil {
+				log.Printf("[DEBUG] Error unlinking existing userdata (this may be normal): %s", err)
+			}
+		}
+
+		return linkUserdataToTemplate(cs, d, templateID)
 	}
 
 	return nil
