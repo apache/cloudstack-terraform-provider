@@ -212,6 +212,17 @@ func resourceCloudStackInstance() *schema.Resource {
 				},
 			},
 
+			"userdata_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"userdata_details": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+
 			"details": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -446,6 +457,20 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetUserdata(ud)
 	}
 
+	if userdataID, ok := d.GetOk("userdata_id"); ok {
+		p.SetUserdataid(userdataID.(string))
+	}
+
+	if userdataDetails, ok := d.GetOk("userdata_details"); ok {
+		udDetails := make(map[string]string)
+		index := 0
+		for k, v := range userdataDetails.(map[string]interface{}) {
+			udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
+			index++
+		}
+		p.SetUserdatadetails(udDetails)
+	}
+
 	// Create the new instance
 	r, err := cs.VirtualMachine.DeployVirtualMachine(p)
 	if err != nil {
@@ -560,6 +585,23 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("boot_mode", vm.Bootmode)
 	}
 
+	if vm.Userdataid != "" {
+		d.Set("userdata_id", vm.Userdataid)
+	}
+
+	if vm.Userdata != "" {
+		decoded, err := base64.StdEncoding.DecodeString(vm.Userdata)
+		if err != nil {
+			d.Set("user_data", vm.Userdata)
+		} else {
+			d.Set("user_data", string(decoded))
+		}
+	}
+
+	if vm.Userdatadetails != "" {
+		log.Printf("[DEBUG] Instance %s has userdata details: %s", vm.Name, vm.Userdatadetails)
+	}
+
 	return nil
 }
 
@@ -609,7 +651,8 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	// Attributes that require reboot to update
 	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") || d.HasChange("user_data") {
+		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") ||
+		d.HasChange("user_data") || d.HasChange("userdata_id") || d.HasChange("userdata_details") {
 
 		// Before we can actually make these changes, the virtual machine must be stopped
 		_, err := cs.VirtualMachine.StopVirtualMachine(
@@ -760,6 +803,40 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return fmt.Errorf(
 					"Error updating user_data for instance %s: %s", name, err)
+			}
+		}
+
+		if d.HasChange("userdata_id") {
+			log.Printf("[DEBUG] userdata_id changed for %s, starting update", name)
+
+			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+			if userdataID, ok := d.GetOk("userdata_id"); ok {
+				p.SetUserdataid(userdataID.(string))
+			}
+			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+			if err != nil {
+				return fmt.Errorf(
+					"Error updating userdata_id for instance %s: %s", name, err)
+			}
+		}
+
+		if d.HasChange("userdata_details") {
+			log.Printf("[DEBUG] userdata_details changed for %s, starting update", name)
+
+			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+			if userdataDetails, ok := d.GetOk("userdata_details"); ok {
+				udDetails := make(map[string]string)
+				index := 0
+				for k, v := range userdataDetails.(map[string]interface{}) {
+					udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
+					index++
+				}
+				p.SetUserdatadetails(udDetails)
+			}
+			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+			if err != nil {
+				return fmt.Errorf(
+					"Error updating userdata_details for instance %s: %s", name, err)
 			}
 		}
 

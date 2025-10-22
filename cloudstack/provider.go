@@ -104,6 +104,7 @@ func Provider() *schema.Provider {
 			"cloudstack_quota":                dataSourceCloudStackQuota(),
 			"cloudstack_quota_enabled":        dataSourceCloudStackQuotaEnabled(),
 			"cloudstack_quota_tariff":         dataSourceCloudStackQuotaTariff(),
+			"cloudstack_user_data":            dataSourceCloudstackUserData(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -164,6 +165,7 @@ func Provider() *schema.Provider {
 			"cloudstack_limits":                         resourceCloudStackLimits(),
 			"cloudstack_snapshot_policy":                resourceCloudStackSnapshotPolicy(),
 			"cloudstack_quota_tariff":                   resourceCloudStackQuotaTariff(),
+			"cloudstack_userdata":                       resourceCloudStackUserData(),
 		},
 
 		ConfigureFunc: providerConfigure,
