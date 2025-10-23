@@ -1,5 +1,4 @@
 ---
-subcategory: "Snapshot"
 layout: "cloudstack"
 page_title: "CloudStack: cloudstack_snapshot_policy"
 sidebar_current: "docs-cloudstack-resource-snapshot-policy"

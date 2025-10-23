@@ -1,5 +1,4 @@
 ---
-subcategory: "CloudStack"
 layout: "cloudstack"
 page_title: "CloudStack: cloudstack_project"
 description: |-

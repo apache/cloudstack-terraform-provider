@@ -1,5 +1,4 @@
 ---
-subcategory: "Cluster"
 layout: "cloudstack"
 page_title: "CloudStack: cloudstack_cluster"
 description: |-
