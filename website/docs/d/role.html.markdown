@@ -1,5 +1,4 @@
 ---
-subcategory: ""
 layout: "cloudstack"
 page_title: "CloudStack: cloudstack_role"
 description: |-
