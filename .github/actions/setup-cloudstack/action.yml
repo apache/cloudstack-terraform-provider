@@ -43,18 +43,30 @@ runs:
       run: |
         echo "Starting Cloudstack health check"
         T=0
-        until [ $T -gt 20 ]  || curl -sfL http://localhost:8080 --output /dev/null
+        MAX_WAIT=40
+        SLEEP_INTERVAL=30
+        
+        echo "Will wait up to $((MAX_WAIT * SLEEP_INTERVAL / 60)) minutes for CloudStack to be ready"
+        
+        until [ $T -gt $MAX_WAIT ] || curl -sfL http://localhost:8080 --output /dev/null
         do
-            echo "Waiting for Cloudstack to be ready..."
+            echo "Waiting for Cloudstack to be ready... (attempt $((T+1))/$((MAX_WAIT+1)), elapsed: $((T * SLEEP_INTERVAL / 60))m $((T * SLEEP_INTERVAL % 60))s)"
             ((T+=1))
-            sleep 30
+            sleep $SLEEP_INTERVAL
         done
 
         # After loop, check if Cloudstack is up
         if ! curl -sfSL http://localhost:8080 --output /dev/null; then
-          echo "Cloudstack did not become ready in time"
+          echo "Cloudstack did not become ready in time after $((MAX_WAIT * SLEEP_INTERVAL / 60)) minutes"
+          echo "Checking CloudStack container status:"
+          docker ps -a | grep cloudstack || echo "No CloudStack containers found"
+          echo "Checking CloudStack logs:"
+          docker logs $(docker ps -q --filter "ancestor=apache/cloudstack-simulator") --tail 50 || echo "Could not retrieve logs"
+          echo "Testing connectivity:"
           curl -v http://localhost:8080 || true
           exit 22
+        else
+          echo "CloudStack is ready after $((T * SLEEP_INTERVAL / 60))m $((T * SLEEP_INTERVAL % 60))s"
         fi
     - name: Setting up Cloudstack
       id: setup-cloudstack
@@ -64,8 +76,23 @@ runs:
         set -euo pipefail
 
         echo "Deploying Data Center..."
-        docker exec $(docker container ls --format=json -l | jq -r .ID) \
-          python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
+        # Retry data center deployment up to 3 times
+        for attempt in 1 2 3; do
+          echo "Data center deployment attempt $attempt/3"
+          if docker exec $(docker container ls --format=json -l | jq -r .ID) \
+            python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg; then
+            echo "Data center deployment successful on attempt $attempt"
+            break
+          else
+            echo "Data center deployment failed on attempt $attempt"
+            if [ $attempt -eq 3 ]; then
+              echo "All data center deployment attempts failed"
+              exit 1
+            fi
+            echo "Waiting 30 seconds before retry..."
+            sleep 30
+          fi
+        done
 
         # Get the container ID of the running simulator
         CONTAINER_ID=$(docker ps --filter "ancestor=apache/cloudstack-simulator:${{ matrix.cloudstack-version }}" --format "{{.ID}}" | head -n1)
