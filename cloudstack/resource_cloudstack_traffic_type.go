@@ -171,8 +171,29 @@ func resourceCloudStackTrafficTypeRead(d *schema.ResourceData, meta interface{})
 		d.Set("traffic_type", trafficType.Traffictype)
 	}
 
-	// Note: The TrafficType struct doesn't have fields for network labels or VLAN
-	// We'll need to rely on what we store in the state
+	if trafficType.Kvmnetworklabel != "" {
+		d.Set("kvm_network_label", trafficType.Kvmnetworklabel)
+	}
+
+	if trafficType.Vlan != "" {
+		d.Set("vlan", trafficType.Vlan)
+	}
+
+	if trafficType.Xennetworklabel != "" {
+		d.Set("xen_network_label", trafficType.Xennetworklabel)
+	}
+
+	if trafficType.Vmwarenetworklabel != "" {
+		d.Set("vmware_network_label", trafficType.Vmwarenetworklabel)
+	}
+
+	if trafficType.Hypervnetworklabel != "" {
+		d.Set("hyperv_network_label", trafficType.Hypervnetworklabel)
+	}
+
+	if trafficType.Ovm3networklabel != "" {
+		d.Set("ovm3_network_label", trafficType.Ovm3networklabel)
+	}
 
 	return nil
 }
