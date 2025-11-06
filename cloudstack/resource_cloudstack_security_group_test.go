@@ -60,7 +60,7 @@ func TestAccCloudStackSecurityGroup_project(t *testing.T) {
 					testAccCheckCloudStackSecurityGroupExists(
 						"cloudstack_security_group.foo", &sg),
 					resource.TestCheckResourceAttrPair(
-						"cloudstack_security_group.foo", "project_id",
+						"cloudstack_security_group.foo", "projectid",
 						"cloudstack_project.test", "id"),
 				),
 			},
@@ -187,13 +187,20 @@ resource "cloudstack_project" "test" {
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group-project"
   description = "terraform-security-group-project-text"
-  project_id = cloudstack_project.test.id
+  projectid = cloudstack_project.test.id
 }`
 
 const testAccCloudStackSecurityGroup_account = `
+data "cloudstack_domain" "root" {
+  filter {
+    name  = "name"
+    value = "ROOT"
+  }
+}
+
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group-account"
-	description = "terraform-security-group-account-text"
-	account = "admin"
-	domain = "ROOT"
+  description = "terraform-security-group-account-text"
+  account = "admin"
+  domainid = data.cloudstack_domain.root.id
 }`
