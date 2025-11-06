@@ -47,6 +47,47 @@ func TestAccCloudStackSecurityGroup_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackSecurityGroup_project(t *testing.T) {
+	var sg cloudstack.SecurityGroup
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackSecurityGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackSecurityGroup_project,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackSecurityGroupExists(
+						"cloudstack_security_group.foo", &sg),
+					resource.TestCheckResourceAttrPair(
+						"cloudstack_security_group.foo", "project_id",
+						"cloudstack_project.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackSecurityGroup_account(t *testing.T) {
+	var sg cloudstack.SecurityGroup
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackSecurityGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackSecurityGroup_account,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackSecurityGroupExists(
+						"cloudstack_security_group.foo", &sg),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group.foo", "account", "admin"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackSecurityGroup_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -135,4 +176,24 @@ const testAccCloudStackSecurityGroup_basic = `
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group"
 	description = "terraform-security-group-text"
+}`
+
+const testAccCloudStackSecurityGroup_project = `
+resource "cloudstack_project" "test" {
+  name = "terraform-security-group-test-project"
+  displaytext = "Terraform Security Group Test Project"
+}
+
+resource "cloudstack_security_group" "foo" {
+  name = "terraform-security-group-project"
+  description = "terraform-security-group-project-text"
+  project_id = cloudstack_project.test.id
+}`
+
+const testAccCloudStackSecurityGroup_account = `
+resource "cloudstack_security_group" "foo" {
+  name = "terraform-security-group-account"
+	description = "terraform-security-group-account-text"
+	account = "admin"
+	domain = "ROOT"
 }`

@@ -51,7 +51,20 @@ func resourceCloudStackSecurityGroup() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"project": {
+			"account": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+
+			"domain": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
+			"project_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -66,6 +79,18 @@ func resourceCloudStackSecurityGroupCreate(d *schema.ResourceData, meta interfac
 
 	name := d.Get("name").(string)
 
+	// Validate that account is used with domain
+	if account, ok := d.GetOk("account"); ok {
+		if _, domainOk := d.GetOk("domain"); !domainOk {
+			return fmt.Errorf("account parameter requires domain to be set")
+		}
+		// Account and project are mutually exclusive
+		if _, projectOk := d.GetOk("project_id"); projectOk {
+			return fmt.Errorf("account and project parameters are mutually exclusive")
+		}
+		log.Printf("[DEBUG] Creating security group %s for account %s", name, account)
+	}
+
 	// Create a new parameter struct
 	p := cs.SecurityGroup.NewCreateSecurityGroupParams(name)
 
@@ -76,9 +101,19 @@ func resourceCloudStackSecurityGroupCreate(d *schema.ResourceData, meta interfac
 		p.SetDescription(name)
 	}
 
-	// If there is a project supplied, we retrieve and set the project id
-	if err := setProjectid(p, cs, d); err != nil {
+	// Set the account if provided
+	if account, ok := d.GetOk("account"); ok {
+		p.SetAccount(account.(string))
+	}
+
+	// If there is a domain supplied, we retrieve and set the domain id
+	if err := setDomainid(p, cs, d); err != nil {
 		return err
+	}
+
+	// If there is a project_id supplied, we set it directly
+	if projectID, ok := d.GetOk("project_id"); ok {
+		p.SetProjectid(projectID.(string))
 	}
 
 	r, err := cs.SecurityGroup.CreateSecurityGroup(p)
@@ -97,7 +132,7 @@ func resourceCloudStackSecurityGroupRead(d *schema.ResourceData, meta interface{
 	// Get the security group details
 	sg, count, err := cs.SecurityGroup.GetSecurityGroupByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(d.Get("project_id").(string)),
 	)
 	if err != nil {
 		if count == 0 {
@@ -113,7 +148,13 @@ func resourceCloudStackSecurityGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("name", sg.Name)
 	d.Set("description", sg.Description)
 
-	setValueOrID(d, "project", sg.Project, sg.Projectid)
+	// Only set account if it was explicitly configured
+	if _, ok := d.GetOk("account"); ok {
+		d.Set("account", sg.Account)
+	}
+
+	setValueOrID(d, "domain", sg.Domain, sg.Domainid)
+	setValueOrID(d, "project_id", sg.Project, sg.Projectid)
 
 	return nil
 }
@@ -125,9 +166,19 @@ func resourceCloudStackSecurityGroupDelete(d *schema.ResourceData, meta interfac
 	p := cs.SecurityGroup.NewDeleteSecurityGroupParams()
 	p.SetId(d.Id())
 
-	// If there is a project supplied, we retrieve and set the project id
-	if err := setProjectid(p, cs, d); err != nil {
+	// Set the account if provided
+	if account, ok := d.GetOk("account"); ok {
+		p.SetAccount(account.(string))
+	}
+
+	// If there is a domain supplied, we retrieve and set the domain id
+	if err := setDomainid(p, cs, d); err != nil {
 		return err
+	}
+
+	// If there is a project_id supplied, we set it directly
+	if projectID, ok := d.GetOk("project_id"); ok {
+		p.SetProjectid(projectID.(string))
 	}
 
 	// Delete the security group
