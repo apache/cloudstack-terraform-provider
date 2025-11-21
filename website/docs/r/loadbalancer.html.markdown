@@ -6,7 +6,7 @@ description: |-
   Creates an internal load balancer.
 ---
 
-# cloudstack_pod
+# cloudstack_loadbalancer
 
 Creates an internal load balancer.
 
@@ -54,7 +54,7 @@ The following attributes are exported:
 
 ## Import
 
-A pod can be imported; use `<LOADBALANCER ID>` as the import ID. For
+A load balancer can be imported; use `<LOADBALANCER ID>` as the import ID. For
 example:
 
 ```shell
