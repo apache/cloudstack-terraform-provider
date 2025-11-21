@@ -126,6 +126,7 @@ func Provider() *schema.Provider {
 			"cloudstack_ipaddress":                      resourceCloudStackIPAddress(),
 			"cloudstack_kubernetes_cluster":             resourceCloudStackKubernetesCluster(),
 			"cloudstack_kubernetes_version":             resourceCloudStackKubernetesVersion(),
+			"cloudstack_loadbalancer":                   resourceCloudStackLoadBalancer(),
 			"cloudstack_loadbalancer_rule":              resourceCloudStackLoadBalancerRule(),
 			"cloudstack_network":                        resourceCloudStackNetwork(),
 			"cloudstack_network_acl":                    resourceCloudStackNetworkACL(),
