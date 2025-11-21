@@ -17,9 +17,10 @@ resource "cloudstack_egress_firewall" "default" {
   network_id = "6eb22f91-7454-4107-89f4-36afcdf33021"
 
   rule {
-    cidr_list = ["10.0.0.0/8"]
-    protocol  = "tcp"
-    ports     = ["80", "1000-2000"]
+    cidr_list      = ["10.1.0.0/16"]
+    dest_cidr_list = ["10.2.0.0/16"]
+    protocol       = "tcp"
+    ports          = ["80", "1000-2000"]
   }
 }
 ```
@@ -43,7 +44,9 @@ The following arguments are supported:
 
 The `rule` block supports:
 
-* `cidr_list` - (Required) A CIDR list to allow access to the given ports.
+* `cidr_list` - (Required) the cidr list to forward traffic from.
+
+* `dest_cidr_list` - (Optional) the cidr list to forward traffic to.
 
 * `protocol` - (Required) The name of the protocol to allow. Valid options are:
     `tcp`, `udp` and `icmp`.
