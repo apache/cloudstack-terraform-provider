@@ -70,6 +70,13 @@ func resourceCloudStackEgressFirewall() *schema.Resource {
 							Set:      schema.HashString,
 						},
 
+						"dest_cidr_list": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
+
 						"protocol": {
 							Type:     schema.TypeString,
 							Required: true,
