@@ -320,10 +320,17 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 				// Delete the known rule so only unknown rules remain in the ruleMap
 				delete(ruleMap, id.(string))
 
+				// Create a set with all CIDR's
+				cidrs := &schema.Set{F: schema.HashString}
+				for _, cidr := range strings.Split(r.Cidrlist, ",") {
+					cidrs.Add(cidr)
+				}
+
 				// Update the values
 				rule["protocol"] = r.Protocol
 				rule["icmp_type"] = r.Icmptype
 				rule["icmp_code"] = r.Icmpcode
+				rule["cidr_list"] = cidrs
 				rules.Add(rule)
 			}
 
