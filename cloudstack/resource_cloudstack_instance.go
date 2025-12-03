@@ -249,6 +249,11 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"deleteprotection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -478,6 +483,20 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(r.Id)
+
+	// Set deleteprotection using UpdateVirtualMachine
+	if v, ok := d.GetOk("deleteprotection"); ok {
+		// p_update := cs.VirtualMachine.NewUpdateVirtualMachineParams(r.Id)
+		// p_update.SetDeleteprotection(v.(bool))
+		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+		p.SetDeleteprotection(v.(bool))
+
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the deleteprotection for instance %s: %s", name, err)
+		}
+	}
 
 	// Set tags if necessary
 	if err = setTags(cs, d, "userVm"); err != nil {
@@ -870,6 +889,18 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return fmt.Errorf(
 				"Error updating the details for instance %s: %s", vmDetails, err)
+		}
+	}
+
+	// Check if the deleteprotection has changed and if so, update the deleteprotection
+	if d.HasChange("deleteprotection") {
+		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+		p.SetDeleteprotection(d.Get("deleteprotection").(bool))
+
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the deleteprotection for instance %s: %s", name, err)
 		}
 	}
 

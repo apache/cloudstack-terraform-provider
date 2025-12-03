@@ -175,9 +175,11 @@ The following arguments are supported:
 * `user_data` - (Optional) The user data to provide when launching the
     instance. This can be either plain text or base64 encoded text.
 
-* `userdata_id` - (Optional) The ID of a registered CloudStack user data to use for this instance. Cannot be used together with `user_data`.
+* `userdata_id` - (Optional) The ID of a registered CloudStack user data to use for this instance.
+    Cannot be used together with `user_data`.
 
-* `userdata_details` - (Optional) A map of key-value pairs to pass as parameters to the user data script. Only valid when `userdata_id` is specified. Keys must match the parameter names defined in the user data.
+* `userdata_details` - (Optional) A map of key-value pairs to pass as parameters to the user data script.
+    Only valid when `userdata_id` is specified. Keys must match the parameter names defined in the user data.
 
 * `keypair` - (Optional) The name of the SSH key pair that will be used to
     access this instance. (Mutual exclusive with keypairs)
@@ -191,6 +193,9 @@ The following arguments are supported:
 * `uefi` - (Optional) When set, will boot the instance in UEFI/Legacy mode (defaults false)
 
 * `boot_mode` - (Optional) The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.
+
+* `deleteprotection` - (Optional) Set delete protection for the virtual machine. If true, the instance will be protected from deletion.
+    Note: If the instance is managed by another service like autoscaling groups or CKS, delete protection will be ignored.
 
 ## Attributes Reference
 

@@ -56,6 +56,9 @@ The following arguments are supported:
 * `reattach_on_change` - (Optional) Determines whether or not to detach the disk volume
     from the virtual machine on disk offering or size change.
 
+* `deleteprotection` - (Optional) Set delete protection for the volume. If true, The volume will be protected from deletion.
+    Note: If the volume is managed by another service like autoscaling groups or CKS, delete protection will be ignored.
+
 ## Attributes Reference
 
 The following attributes are exported:

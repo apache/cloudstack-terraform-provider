@@ -92,13 +92,18 @@ func resourceCloudStackDisk() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"tags": tagsSchema(),
-
 			"reattach_on_change": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
+
+			"deleteprotection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -146,6 +151,21 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 
 	// Set the volume ID and partials
 	d.SetId(r.Id)
+
+	// Set deleteprotection using UpdateVolume
+	if v, ok := d.GetOk("deleteprotection"); ok {
+		// p_update := cs.Volume.NewUpdateVolumeParams()
+		// p_update.SetDeleteprotection(v.(bool))
+		p := cs.Volume.NewUpdateVolumeParams()
+		p.SetId(d.Id())
+		p.SetDeleteprotection(v.(bool))
+
+		_, err := cs.Volume.UpdateVolume(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the deleteprotection for disk %s: %s", name, err)
+		}
+	}
 
 	// Set tags if necessary
 	err = setTags(cs, d, "Volume")
@@ -275,6 +295,19 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 		err := updateTags(cs, d, "Volume")
 		if err != nil {
 			return fmt.Errorf("Error updating tags on disk %s: %s", name, err)
+		}
+	}
+
+	// Check if the deleteprotection has changed and if so, update the deleteprotection
+	if d.HasChange("deleteprotection") {
+		p := cs.Volume.NewUpdateVolumeParams()
+		p.SetId(d.Id())
+		p.SetDeleteprotection(d.Get("deleteprotection").(bool))
+
+		_, err := cs.Volume.UpdateVolume(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the deleteprotection for disk %s: %s", name, err)
 		}
 	}
 
