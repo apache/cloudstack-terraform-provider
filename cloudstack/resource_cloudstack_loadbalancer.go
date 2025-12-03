@@ -96,7 +96,7 @@ func resourceCloudStackLoadBalancer() *schema.Resource {
 
 			"virtualmachineids": {
 				Description: "the list of IDs of the virtual machine that are being assigned to the load balancer rule(i.e. virtualMachineIds=1,2,3)",
-				Type:        schema.TypeList,
+				Type:        schema.TypeSet,
 				Optional:    true,
 				ForceNew:    true,
 				Elem: &schema.Schema{
@@ -132,11 +132,11 @@ func resourceCloudStackLoadBalancerCreate(d *schema.ResourceData, meta interface
 	}
 
 	if v, ok := d.GetOk("virtualmachineids"); ok {
-		vmIds := v.([]interface{})
+		vmIds := v.(*schema.Set).List()
 		for _, vmId := range vmIds {
-			assignParams := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(r.Id)
-			assignParams.SetVirtualmachineids([]string{vmId.(string)})
-			_, err := cs.LoadBalancer.AssignToLoadBalancerRule(assignParams)
+			p_update := cs.LoadBalancer.NewAssignToLoadBalancerRuleParams(r.Id)
+			p_update.SetVirtualmachineids([]string{vmId.(string)})
+			_, err := cs.LoadBalancer.AssignToLoadBalancerRule(p_update)
 			if err != nil {
 				return err
 			}
