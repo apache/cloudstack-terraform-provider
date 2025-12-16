@@ -486,8 +486,6 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	// Set deleteprotection using UpdateVirtualMachine
 	if v, ok := d.GetOk("deleteprotection"); ok {
-		// p_update := cs.VirtualMachine.NewUpdateVirtualMachineParams(r.Id)
-		// p_update.SetDeleteprotection(v.(bool))
 		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
 		p.SetDeleteprotection(v.(bool))
 

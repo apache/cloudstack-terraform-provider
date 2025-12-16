@@ -154,8 +154,6 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 
 	// Set deleteprotection using UpdateVolume
 	if v, ok := d.GetOk("deleteprotection"); ok {
-		// p_update := cs.Volume.NewUpdateVolumeParams()
-		// p_update.SetDeleteprotection(v.(bool))
 		p := cs.Volume.NewUpdateVolumeParams()
 		p.SetId(d.Id())
 		p.SetDeleteprotection(v.(bool))
