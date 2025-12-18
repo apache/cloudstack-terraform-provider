@@ -252,6 +252,7 @@ func resourceCloudStackInstance() *schema.Resource {
 			"deleteprotection": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 
 			"tags": tagsSchema(),
