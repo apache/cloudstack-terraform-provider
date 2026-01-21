@@ -71,6 +71,10 @@ The following arguments are supported:
 * `zone` - (Required) The name or ID of the zone where this network will be
     available. Changing this forces a new resource to be created.
 
+* `bypass_vlan_check` -  (Optional) if set to `true` it bypasses VLAN id/range overlap
+    check during network creation for shared and L2 networks
+
+
 ## Attributes Reference
 
 The following attributes are exported:
