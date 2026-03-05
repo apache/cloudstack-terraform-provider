@@ -12,10 +12,33 @@ Creates a Network ACL for the given VPC.
 
 ## Example Usage
 
+### Basic Network ACL
+
 ```hcl
 resource "cloudstack_network_acl" "default" {
   name   = "test-acl"
   vpc_id = "76f6e8dc-07e3-4971-b2a2-8831b0cc4cb4"
+}
+```
+
+### Network ACL with Automatic Project Inheritance
+
+```hcl
+# Create a VPC in a project
+resource "cloudstack_vpc" "project_vpc" {
+  name         = "project-vpc"
+  cidr         = "10.0.0.0/16"
+  vpc_offering = "Default VPC offering"
+  project      = "my-project"
+  zone         = "zone-1"
+}
+
+# Network ACL automatically inherits project from VPC
+resource "cloudstack_network_acl" "project_acl" {
+  name        = "project-acl"
+  description = "ACL for project VPC"
+  vpc_id      = cloudstack_vpc.project_vpc.id
+  # project is automatically inherited from the VPC
 }
 ```
 
@@ -30,7 +53,8 @@ The following arguments are supported:
     new resource to be created.
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created.
+    instance to. Changing this forces a new resource to be created. If not
+    specified, the project will be automatically inherited from the VPC.
 
 * `vpc_id` - (Required) The ID of the VPC to create this ACL for. Changing this
    forces a new resource to be created.
