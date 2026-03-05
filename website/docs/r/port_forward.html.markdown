@@ -12,6 +12,8 @@ Creates port forwards.
 
 ## Example Usage
 
+### Basic Port Forward
+
 ```hcl
 resource "cloudstack_port_forward" "default" {
   ip_address_id = "30b21801-d4b3-4174-852b-0c0f30bdbbfb"
@@ -21,6 +23,38 @@ resource "cloudstack_port_forward" "default" {
     private_port       = 80
     public_port        = 8080
     virtual_machine_id = "f8141e2f-4e7e-4c63-9362-986c908b7ea7"
+  }
+}
+```
+
+### Port Forward with Automatic Project Inheritance
+
+```hcl
+# Create a VPC in a project
+resource "cloudstack_vpc" "project_vpc" {
+  name         = "project-vpc"
+  cidr         = "10.0.0.0/16"
+  vpc_offering = "Default VPC offering"
+  project      = "my-project"
+  zone         = "zone-1"
+}
+
+# IP address automatically inherits project from VPC
+resource "cloudstack_ipaddress" "project_ip" {
+  vpc_id = cloudstack_vpc.project_vpc.id
+  zone   = "zone-1"
+}
+
+# Port forward automatically inherits project from IP address
+resource "cloudstack_port_forward" "project_forward" {
+  ip_address_id = cloudstack_ipaddress.project_ip.id
+  # project is automatically inherited from the IP address
+
+  forward {
+    protocol           = "tcp"
+    private_port       = 80
+    public_port        = 8080
+    virtual_machine_id = cloudstack_instance.web.id
   }
 }
 ```
@@ -36,8 +70,9 @@ The following arguments are supported:
     this IP address will be managed by this resource. This means it will delete
     all port forwards that are not in your config! (defaults false)
 
-* `project` - (Optional) The name or ID of the project to create this port forward
-    in. Changing this forces a new resource to be created.
+* `project` - (Optional) The name or ID of the project to deploy this
+    resource to. Changing this forces a new resource to be created. If not
+    specified, the project will be automatically inherited from the IP address.
 
 * `forward` - (Required) Can be specified multiple times. Each forward block supports
     fields documented below.
