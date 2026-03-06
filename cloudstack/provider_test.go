@@ -23,8 +23,11 @@ import (
 	"context"
 	"os"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
@@ -143,5 +146,52 @@ func testAccPreCheck(t *testing.T) {
 	}
 	if v := os.Getenv("CLOUDSTACK_SECRET_KEY"); v == "" {
 		t.Fatal("CLOUDSTACK_SECRET_KEY must be set for acceptance tests")
+	}
+}
+
+// testAccPreCheckStaticRouteNexthop checks if the CloudStack version supports
+// the nexthop parameter for static routes (requires 4.22.0+)
+func testAccPreCheckStaticRouteNexthop(t *testing.T) {
+	testAccPreCheck(t)
+	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+	// Check the API capabilities to get CloudStack version
+	p := cs.Configuration.NewListCapabilitiesParams()
+	caps, err := cs.Configuration.ListCapabilities(p)
+	if err != nil {
+		t.Skipf("Unable to check CloudStack capabilities: %v", err)
+		return
+	}
+
+	// Check CloudStack version - nexthop support was added in 4.22.0
+	if caps != nil && caps.Capabilities != nil && caps.Capabilities.Cloudstackversion != "" {
+		version := caps.Capabilities.Cloudstackversion
+
+		// Parse version string (e.g., "4.22.0.0" -> major=4, minor=22)
+		// Convert to numeric value: major * 1000 + minor (e.g., 4.22 -> 4022)
+		parts := strings.Split(version, ".")
+		if len(parts) >= 2 {
+			major := 0
+			minor := 0
+
+			// Parse major version - extract first numeric part
+			majorStr := regexp.MustCompile(`^\d+`).FindString(parts[0])
+			if majorStr != "" {
+				major, _ = strconv.Atoi(majorStr)
+			}
+
+			// Parse minor version - extract first numeric part
+			minorStr := regexp.MustCompile(`^\d+`).FindString(parts[1])
+			if minorStr != "" {
+				minor, _ = strconv.Atoi(minorStr)
+			}
+
+			versionNum := major*1000 + minor
+			const minVersionNum = 4022 // 4.22.0
+
+			if versionNum < minVersionNum {
+				t.Skipf("Static route nexthop parameter not supported in CloudStack version %s (requires 4.22.0+)", version)
+			}
+		}
 	}
 }

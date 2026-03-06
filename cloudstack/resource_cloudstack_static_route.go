@@ -42,9 +42,26 @@ func resourceCloudStackStaticRoute() *schema.Resource {
 			},
 
 			"gateway_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"nexthop", "vpc_id"},
+			},
+
+			"nexthop": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"gateway_id"},
+				RequiredWith:  []string{"vpc_id"},
+			},
+
+			"vpc_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"gateway_id"},
+				RequiredWith:  []string{"nexthop"},
 			},
 		},
 	}
@@ -58,11 +75,20 @@ func resourceCloudStackStaticRouteCreate(d *schema.ResourceData, meta interface{
 		d.Get("cidr").(string),
 	)
 
+	// Set either gateway_id or nexthop+vpc_id (they are mutually exclusive)
 	if v, ok := d.GetOk("gateway_id"); ok {
 		p.SetGatewayid(v.(string))
 	}
 
-	// Create the new private gateway
+	if v, ok := d.GetOk("nexthop"); ok {
+		p.SetNexthop(v.(string))
+	}
+
+	if v, ok := d.GetOk("vpc_id"); ok {
+		p.SetVpcid(v.(string))
+	}
+
+	// Create the new static route
 	r, err := cs.VPC.CreateStaticRoute(p)
 	if err != nil {
 		return fmt.Errorf("Error creating static route for %s: %s", d.Get("cidr").(string), err)
@@ -76,7 +102,7 @@ func resourceCloudStackStaticRouteCreate(d *schema.ResourceData, meta interface{
 func resourceCloudStackStaticRouteRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Get the virtual machine details
+	// Get the static route details
 	r, count, err := cs.VPC.GetStaticRouteByID(d.Id())
 	if err != nil {
 		if count == 0 {
@@ -89,6 +115,19 @@ func resourceCloudStackStaticRouteRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("cidr", r.Cidr)
+
+	// Set gateway_id if it's not empty (indicates this route uses a gateway)
+	if r.Vpcgatewayid != "" {
+		d.Set("gateway_id", r.Vpcgatewayid)
+	}
+
+	// Set nexthop and vpc_id if nexthop is not empty (indicates this route uses nexthop)
+	if r.Nexthop != "" {
+		d.Set("nexthop", r.Nexthop)
+		if r.Vpcid != "" {
+			d.Set("vpc_id", r.Vpcid)
+		}
+	}
 
 	return nil
 }

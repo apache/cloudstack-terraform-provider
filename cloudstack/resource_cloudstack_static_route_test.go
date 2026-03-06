@@ -42,6 +42,32 @@ func TestAccCloudStackStaticRoute_basic(t *testing.T) {
 					testAccCheckCloudStackStaticRouteExists(
 						"cloudstack_static_route.foo", &staticroute),
 					testAccCheckCloudStackStaticRouteAttributes(&staticroute),
+					resource.TestCheckResourceAttr(
+						"cloudstack_static_route.foo", "cidr", "172.16.0.0/16"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackStaticRoute_nexthop(t *testing.T) {
+	var staticroute cloudstack.StaticRoute
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckStaticRouteNexthop(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackStaticRouteDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackStaticRoute_nexthop,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackStaticRouteExists(
+						"cloudstack_static_route.bar", &staticroute),
+					testAccCheckCloudStackStaticRouteNexthopAttributes(&staticroute),
+					resource.TestCheckResourceAttr(
+						"cloudstack_static_route.bar", "cidr", "192.168.0.0/16"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_static_route.bar", "nexthop", "10.1.1.1"),
 				),
 			},
 		},
@@ -83,6 +109,22 @@ func testAccCheckCloudStackStaticRouteAttributes(
 
 		if staticroute.Cidr != "172.16.0.0/16" {
 			return fmt.Errorf("Bad CIDR: %s", staticroute.Cidr)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackStaticRouteNexthopAttributes(
+	staticroute *cloudstack.StaticRoute) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if staticroute.Cidr != "192.168.0.0/16" {
+			return fmt.Errorf("Bad CIDR: %s", staticroute.Cidr)
+		}
+
+		if staticroute.Nexthop != "10.1.1.1" {
+			return fmt.Errorf("Bad nexthop: %s", staticroute.Nexthop)
 		}
 
 		return nil
@@ -135,4 +177,18 @@ resource "cloudstack_private_gateway" "foo" {
 resource "cloudstack_static_route" "foo" {
   cidr = "172.16.0.0/16"
   gateway_id = cloudstack_private_gateway.foo.id
+}`
+
+const testAccCloudStackStaticRoute_nexthop = `
+resource "cloudstack_vpc" "bar" {
+  name = "terraform-vpc-nexthop"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_static_route" "bar" {
+  cidr = "192.168.0.0/16"
+  nexthop = "10.1.1.1"
+  vpc_id = cloudstack_vpc.bar.id
 }`
