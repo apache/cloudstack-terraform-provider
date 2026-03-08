@@ -1,0 +1,13 @@
+# CloudStack API Configuration
+api_url    = "https://cloudstack.example.com/client/api"
+api_key    = "YOUR_API_KEY"
+secret_key = "YOUR_SECRET_KEY"
+
+# Zone and Resources
+zone              = "Zone1"
+zone_id           = "zone-uuid-here"
+network_offering  = "DefaultIsolatedNetworkSourceNatService"
+service_offering  = "Small Instance"
+disk_offering     = "Small"
+disk_offering_id  = "disk-offering-uuid-here"
+template          = "ubuntu-24.04-lts"
