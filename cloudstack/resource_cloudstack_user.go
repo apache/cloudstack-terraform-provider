@@ -88,6 +88,28 @@ func resourceCloudStackUserCreate(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceCloudStackUserUpdate(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	p := cs.User.NewUpdateUserParams(d.Id())
+
+	if d.HasChange("email") {
+		p.SetEmail(d.Get("email").(string))
+	}
+	if d.HasChange("first_name") {
+		p.SetFirstname(d.Get("first_name").(string))
+	}
+	if d.HasChange("last_name") {
+		p.SetLastname(d.Get("last_name").(string))
+	}
+	if d.HasChange("password") {
+		p.SetPassword(d.Get("password").(string))
+	}
+
+	_, err := cs.User.UpdateUser(p)
+	if err != nil {
+		return err
+	}
+
 	return resourceCloudStackUserRead(d, meta)
 }
 
@@ -106,5 +128,22 @@ func resourceCloudStackUserDelete(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceCloudStackUserRead(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	user, count, err := cs.User.GetUserByID(d.Id())
+	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("Error reading User %s: %s", d.Id(), err)
+	}
+
+	d.Set("account", user.Account)
+	d.Set("email", user.Email)
+	d.Set("first_name", user.Firstname)
+	d.Set("last_name", user.Lastname)
+	d.Set("username", user.Username)
+
 	return nil
 }
