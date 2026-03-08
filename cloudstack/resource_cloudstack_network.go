@@ -228,9 +228,24 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 			// Set the acl ID
 			p.SetAclid(aclid.(string))
 		}
+
+		// If no project is explicitly set, try to inherit it from the VPC
+		if _, ok := d.GetOk("project"); !ok {
+			// Get the VPC to retrieve its project
+			// Use listall to search across all projects
+			vpcParams := cs.VPC.NewListVPCsParams()
+			vpcParams.SetId(vpcid.(string))
+			vpcParams.SetListall(true)
+			vpcList, err := cs.VPC.ListVPCs(vpcParams)
+			if err == nil && vpcList.Count > 0 && vpcList.VPCs[0].Projectid != "" {
+				log.Printf("[DEBUG] Inheriting project %s from VPC %s", vpcList.VPCs[0].Projectid, vpcid.(string))
+				p.SetProjectid(vpcList.VPCs[0].Projectid)
+			}
+		}
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
+	// This will override the inherited project from VPC if explicitly set
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
 	}
@@ -283,11 +298,23 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Get the virtual machine details
+	// Get the network details
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	n, count, err := cs.Network.GetNetworkByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from VPC
+	if count == 0 && project == "" {
+		n, count, err = cs.Network.GetNetworkByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
+
 	if err != nil {
 		if count == 0 {
 			log.Printf(
