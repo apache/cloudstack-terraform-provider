@@ -23,6 +23,27 @@ resource "cloudstack_network" "default" {
 }
 ```
 
+VPC network with automatic project inheritance:
+
+```hcl
+resource "cloudstack_vpc" "default" {
+  name         = "test-vpc"
+  cidr         = "10.0.0.0/8"
+  vpc_offering = "Default VPC Offering"
+  zone         = "zone-1"
+  project      = "my-project"
+}
+
+resource "cloudstack_network" "vpc_network" {
+  name             = "test-vpc-network"
+  cidr             = "10.1.0.0/16"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id           = cloudstack_vpc.default.id
+  zone             = cloudstack_vpc.default.zone
+  # project is automatically inherited from the VPC
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -61,7 +82,9 @@ The following arguments are supported:
     `none`, this will force a new resource to be created. (defaults `none`)
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created.
+    instance to. Changing this forces a new resource to be created. If not
+    specified and `vpc_id` is provided, the project will be automatically
+    inherited from the VPC.
 
 * `source_nat_ip` - (Optional) If set to `true` a public IP will be associated
     with the network. This is mainly used when the network supports the source
