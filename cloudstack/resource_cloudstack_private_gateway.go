@@ -86,10 +86,11 @@ func resourceCloudStackPrivateGateway() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"bypassvlanoverlapcheck": {
+			"bypass_vlan_overlap_check": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 		},
 	}
@@ -125,9 +126,9 @@ func resourceCloudStackPrivateGatewayCreate(d *schema.ResourceData, meta interfa
 		p.SetAclid(aclid.(string))
 	}
 
-	// Set bypassvlanoverlapcheck if specified
-	if bypassvlanoverlapcheck, ok := d.GetOk("bypassvlanoverlapcheck"); ok {
-		p.SetBypassvlanoverlapcheck(bypassvlanoverlapcheck.(bool))
+	// Set bypass_vlan_overlap_check if specified
+	if bypassVlanOverlapCheck, ok := d.GetOk("bypass_vlan_overlap_check"); ok {
+		p.SetBypassvlanoverlapcheck(bypassVlanOverlapCheck.(bool))
 	}
 
 	// Create the new private gateway
