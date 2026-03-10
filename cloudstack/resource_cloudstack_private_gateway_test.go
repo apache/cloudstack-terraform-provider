@@ -62,7 +62,7 @@ func TestAccCloudStackPrivateGateway_import(t *testing.T) {
 				ResourceName:            "cloudstack_private_gateway.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"bypassvlanoverlapcheck"},
+				ImportStateVerifyIgnore: []string{"bypass_vlan_overlap_check"},
 			},
 		},
 	})
@@ -82,7 +82,7 @@ func TestAccCloudStackPrivateGateway_bypassVlanOverlapCheck(t *testing.T) {
 					testAccCheckCloudStackPrivateGatewayExists(
 						"cloudstack_private_gateway.bar", &gateway),
 					resource.TestCheckResourceAttr(
-						"cloudstack_private_gateway.bar", "bypassvlanoverlapcheck", "true"),
+						"cloudstack_private_gateway.bar", "bypass_vlan_overlap_check", "true"),
 				),
 			},
 		},
@@ -103,7 +103,7 @@ func TestAccCloudStackPrivateGateway_bypassVlanOverlapCheckDefault(t *testing.T)
 					testAccCheckCloudStackPrivateGatewayExists(
 						"cloudstack_private_gateway.foo", &gateway),
 					resource.TestCheckResourceAttr(
-						"cloudstack_private_gateway.foo", "bypassvlanoverlapcheck", "false"),
+						"cloudstack_private_gateway.foo", "bypass_vlan_overlap_check", "false"),
 				),
 			},
 		},
@@ -225,6 +225,6 @@ resource "cloudstack_private_gateway" "bar" {
   vlan = "2"
   vpc_id = cloudstack_vpc.bar.id
   acl_id = cloudstack_network_acl.bar.id
-  bypassvlanoverlapcheck = true
+  bypass_vlan_overlap_check = true
   depends_on = ["cloudstack_vpc.bar","cloudstack_network_acl.bar"]
 }`
