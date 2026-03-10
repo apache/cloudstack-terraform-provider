@@ -43,7 +43,7 @@ The following arguments are supported:
 
 * `nexthop` - (Optional) The IP address of the nexthop for the static route.
     Changing this forces a new resource to be created. Conflicts with `gateway_id`.
-    Must be used together with `vpc_id`.
+    Must be used together with `vpc_id`. **Requires CloudStack 4.22.0+**.
 
 * `vpc_id` - (Optional) The ID of the VPC. Required when using `nexthop`.
     Changing this forces a new resource to be created. Conflicts with `gateway_id`.
