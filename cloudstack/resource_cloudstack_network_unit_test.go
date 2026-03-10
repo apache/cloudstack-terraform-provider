@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -145,7 +146,7 @@ func TestParseCIDRv6_RejectsIPv4(t *testing.T) {
 	}
 
 	expectedError := "ip6cidr must be an IPv6 CIDR, got IPv4"
-	if err.Error()[:len(expectedError)] != expectedError {
+	if !strings.HasPrefix(err.Error(), expectedError) {
 		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
 	}
 }
@@ -162,7 +163,7 @@ func TestParseCIDRv6_Prefix128_NoIPRange(t *testing.T) {
 	}
 
 	expectedError := "ip6cidr prefix /128 is too small"
-	if err.Error()[:len(expectedError)] != expectedError {
+	if !strings.HasPrefix(err.Error(), expectedError) {
 		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
 	}
 }
@@ -201,7 +202,7 @@ func TestParseCIDRv6_Prefix127_WithIPRange(t *testing.T) {
 	}
 
 	expectedError := "ip6cidr prefix /127 is too small for automatic IP range generation"
-	if err.Error()[:len(expectedError)] != expectedError {
+	if !strings.HasPrefix(err.Error(), expectedError) {
 		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
 	}
 }
