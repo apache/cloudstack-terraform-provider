@@ -35,7 +35,5 @@ github:
            - all-jobs-passed
 
   collaborators:
-    - kiranchavala
-    - vishesh92
     - fabiomatavelli
-    - CodeBleu
+    - bhouse-nexthop
