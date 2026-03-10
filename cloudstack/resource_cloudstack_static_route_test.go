@@ -68,6 +68,9 @@ func TestAccCloudStackStaticRoute_nexthop(t *testing.T) {
 						"cloudstack_static_route.bar", "cidr", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_static_route.bar", "nexthop", "10.1.1.1"),
+					resource.TestCheckResourceAttrPair(
+						"cloudstack_static_route.bar", "vpc_id",
+						"cloudstack_vpc.bar", "id"),
 				),
 			},
 		},
