@@ -17,10 +17,11 @@
 // under the License.
 //
 
-// NOTE: IPv6 acceptance tests (TestAccCloudStackNetwork_ipv6*) are currently
+// NOTE: IPv6 acceptance tests (TestAccCloudStackNetwork_ipv6*) are conditionally
 // skipped when running against the CloudStack simulator because the simulator
 // only supports IPv6 with advanced shared network offerings. These tests will
-// work correctly against a real CloudStack environment with proper IPv6 support.
+// run on real CloudStack environments with proper IPv6 support. Set the environment
+// variable CLOUDSTACK_ENABLE_IPV6_TESTS=true to force-enable IPv6 tests.
 // Unit tests for the IPv6 CIDR parsing logic are available in
 // resource_cloudstack_network_unit_test.go and do not require a CloudStack instance.
 
@@ -28,6 +29,8 @@ package cloudstack
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -172,12 +175,29 @@ func TestAccCloudStackNetwork_importProject(t *testing.T) {
 	})
 }
 
+// testAccPreCheckIPv6Support checks if IPv6 tests should run.
+// IPv6 tests are skipped on the CloudStack simulator unless explicitly enabled
+// via the CLOUDSTACK_ENABLE_IPV6_TESTS environment variable.
+func testAccPreCheckIPv6Support(t *testing.T) {
+	testAccPreCheck(t)
+
+	// Allow explicit override to enable IPv6 tests
+	if os.Getenv("CLOUDSTACK_ENABLE_IPV6_TESTS") == "true" {
+		return
+	}
+
+	// Try to detect if we're running on the simulator by checking the API URL
+	apiURL := os.Getenv("CLOUDSTACK_API_URL")
+	if strings.Contains(apiURL, "localhost") || strings.Contains(apiURL, "127.0.0.1") {
+		t.Skip("Skipping IPv6 test: CloudStack simulator does not support IPv6 for isolated networks. Set CLOUDSTACK_ENABLE_IPV6_TESTS=true to force-enable.")
+	}
+}
+
 func TestAccCloudStackNetwork_ipv6(t *testing.T) {
-	t.Skip("Skipping IPv6 test: CloudStack simulator only supports IPv6 with advanced shared networks")
 	var network cloudstack.Network
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckIPv6Support(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
 		Steps: []resource.TestStep{
@@ -196,11 +216,10 @@ func TestAccCloudStackNetwork_ipv6(t *testing.T) {
 }
 
 func TestAccCloudStackNetwork_ipv6_vpc(t *testing.T) {
-	t.Skip("Skipping IPv6 test: CloudStack simulator only supports IPv6 with advanced shared networks")
 	var network cloudstack.Network
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckIPv6Support(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
 		Steps: []resource.TestStep{
@@ -218,11 +237,10 @@ func TestAccCloudStackNetwork_ipv6_vpc(t *testing.T) {
 }
 
 func TestAccCloudStackNetwork_ipv6_custom_gateway(t *testing.T) {
-	t.Skip("Skipping IPv6 test: CloudStack simulator only supports IPv6 with advanced shared networks")
 	var network cloudstack.Network
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheckIPv6Support(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
 		Steps: []resource.TestStep{
