@@ -358,15 +358,9 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
 
-	// Only set ip6cidr if it has a value
-	if n.Ip6cidr != "" {
-		d.Set("ip6cidr", n.Ip6cidr)
-	}
-
-	// Only set ip6gateway if it has a value
-	if n.Ip6gateway != "" {
-		d.Set("ip6gateway", n.Ip6gateway)
-	}
+	// Always set IPv6 fields to detect drift when IPv6 is removed server-side
+	d.Set("ip6cidr", n.Ip6cidr)
+	d.Set("ip6gateway", n.Ip6gateway)
 
 	// Note: CloudStack API may not return startipv6 and endipv6 fields
 	// These are typically only set during network creation
