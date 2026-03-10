@@ -70,6 +70,11 @@ func resourceCloudStackStaticRoute() *schema.Resource {
 func resourceCloudStackStaticRouteCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
+	// Verify that required parameters are set
+	if err := verifyStaticRouteParams(d); err != nil {
+		return err
+	}
+
 	// Create a new parameter struct
 	p := cs.VPC.NewCreateStaticRouteParams(
 		d.Get("cidr").(string),
@@ -149,6 +154,31 @@ func resourceCloudStackStaticRouteDelete(d *schema.ResourceData, meta interface{
 		}
 
 		return fmt.Errorf("Error deleting static route for %s: %s", d.Get("cidr").(string), err)
+	}
+
+	return nil
+}
+
+func verifyStaticRouteParams(d *schema.ResourceData) error {
+	_, hasGatewayID := d.GetOk("gateway_id")
+	_, hasNexthop := d.GetOk("nexthop")
+	_, hasVpcID := d.GetOk("vpc_id")
+
+	// Check that either gateway_id or (nexthop + vpc_id) is provided
+	if !hasGatewayID && !hasNexthop {
+		return fmt.Errorf(
+			"You must supply either 'gateway_id' or 'nexthop' (with 'vpc_id')")
+	}
+
+	// Check that nexthop and vpc_id are used together
+	if hasNexthop && !hasVpcID {
+		return fmt.Errorf(
+			"You must supply 'vpc_id' when using 'nexthop'")
+	}
+
+	if hasVpcID && !hasNexthop {
+		return fmt.Errorf(
+			"You must supply 'nexthop' when using 'vpc_id'")
 	}
 
 	return nil
