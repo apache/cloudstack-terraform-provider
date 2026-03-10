@@ -541,9 +541,17 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 	m := make(map[string]string, 4)
 
 	cidr := d.Get("ip6cidr").(string)
-	_, ipnet, err := net.ParseCIDR(cidr)
+	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse cidr %s: %s", cidr, err)
+	}
+
+	// Validate that this is actually an IPv6 CIDR
+	if ip.To4() != nil {
+		return nil, fmt.Errorf("ip6cidr must be an IPv6 CIDR, got IPv4: %s", cidr)
+	}
+	if len(ipnet.Mask) != net.IPv6len {
+		return nil, fmt.Errorf("ip6cidr must be an IPv6 CIDR with 16-byte mask, got %d bytes: %s", len(ipnet.Mask), cidr)
 	}
 
 	if gateway, ok := d.GetOk("ip6gateway"); ok {
