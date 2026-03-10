@@ -45,6 +45,7 @@ func resourceCloudStackDiskOffering() *schema.Resource {
 			"disk_size": {
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}

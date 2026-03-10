@@ -41,6 +41,8 @@ func resourceCloudStackDomain() *schema.Resource {
 			"domain_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"network_domain": {
 				Type:     schema.TypeString,
@@ -49,6 +51,8 @@ func resourceCloudStackDomain() *schema.Resource {
 			"parent_domain_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}

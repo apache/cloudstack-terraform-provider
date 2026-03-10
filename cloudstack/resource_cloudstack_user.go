@@ -37,6 +37,7 @@ func resourceCloudStackUser() *schema.Resource {
 			"account": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"email": {
 				Type:     schema.TypeString,
@@ -51,12 +52,14 @@ func resourceCloudStackUser() *schema.Resource {
 				Required: true,
 			},
 			"password": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
 			},
 			"username": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -107,7 +110,7 @@ func resourceCloudStackUserUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	_, err := cs.User.UpdateUser(p)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error updating User %s: %s", d.Id(), err)
 	}
 
 	return resourceCloudStackUserRead(d, meta)
