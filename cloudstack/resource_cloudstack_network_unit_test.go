@@ -133,3 +133,19 @@ func TestParseCIDRv6_SmallerPrefix(t *testing.T) {
 		t.Errorf("Expected end IP %s, got %s", expectedEndIP, result["endipv6"])
 	}
 }
+
+func TestParseCIDRv6_RejectsIPv4(t *testing.T) {
+	d := schema.TestResourceDataRaw(t, resourceCloudStackNetwork().Schema, map[string]interface{}{
+		"ip6cidr": "10.0.0.0/24",
+	})
+
+	_, err := parseCIDRv6(d, false)
+	if err == nil {
+		t.Fatal("parseCIDRv6 should reject IPv4 CIDR")
+	}
+
+	expectedError := "ip6cidr must be an IPv6 CIDR, got IPv4"
+	if err.Error()[:len(expectedError)] != expectedError {
+		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
+	}
+}
