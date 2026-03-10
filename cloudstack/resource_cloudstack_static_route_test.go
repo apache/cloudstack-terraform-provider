@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -194,4 +195,50 @@ resource "cloudstack_static_route" "bar" {
   cidr = "192.168.0.0/16"
   nexthop = "10.1.1.1"
   vpc_id = cloudstack_vpc.bar.id
+}`
+
+// Test validation errors
+func TestAccCloudStackStaticRoute_validation(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccCloudStackStaticRoute_noParameters,
+				ExpectError: regexp.MustCompile(`You must supply either 'gateway_id' or 'nexthop'`),
+			},
+			{
+				Config:      testAccCloudStackStaticRoute_nexthopWithoutVpc,
+				ExpectError: regexp.MustCompile(`all of .nexthop,vpc_id. must be specified`),
+			},
+			{
+				Config:      testAccCloudStackStaticRoute_vpcWithoutNexthop,
+				ExpectError: regexp.MustCompile(`all of .nexthop,vpc_id. must be specified`),
+			},
+		},
+	})
+}
+
+const testAccCloudStackStaticRoute_noParameters = `
+resource "cloudstack_static_route" "invalid" {
+  cidr = "192.168.0.0/16"
+}`
+
+const testAccCloudStackStaticRoute_nexthopWithoutVpc = `
+resource "cloudstack_static_route" "invalid" {
+  cidr = "192.168.0.0/16"
+  nexthop = "10.1.1.1"
+}`
+
+const testAccCloudStackStaticRoute_vpcWithoutNexthop = `
+resource "cloudstack_vpc" "test" {
+  name = "terraform-vpc-test"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_static_route" "invalid" {
+  cidr = "192.168.0.0/16"
+  vpc_id = cloudstack_vpc.test.id
 }`
