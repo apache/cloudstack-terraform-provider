@@ -531,6 +531,23 @@ func parseCIDR(d *schema.ResourceData, specifyiprange bool) (map[string]string, 
 	return m, nil
 }
 
+// addToIPv6 adds an integer offset to an IPv6 address with proper carry across all bytes.
+// Returns a new net.IP with the result.
+func addToIPv6(ip net.IP, offset uint64) net.IP {
+	result := make(net.IP, len(ip))
+	copy(result, ip)
+
+	carry := offset
+	// Start from the least significant byte (rightmost) and work backwards
+	for i := len(result) - 1; i >= 0 && carry > 0; i-- {
+		sum := uint64(result[i]) + carry
+		result[i] = byte(sum & 0xff)
+		carry = sum >> 8
+	}
+
+	return result
+}
+
 func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string, error) {
 	m := make(map[string]string, 4)
 
@@ -571,28 +588,16 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 		m["ip6gateway"] = gateway.(string)
 	} else {
 		// Default gateway to network address + 1 (e.g., 2001:db8::1)
-		ip16 := ipnet.IP.To16()
-		if ip16 == nil {
-			return nil, fmt.Errorf("cidr not valid for ipv6")
-		}
-		gwip := make(net.IP, len(ip16))
-		copy(gwip, ip16)
-		gwip[len(ip16)-1] = 1
+		gwip := addToIPv6(ipnet.IP, 1)
 		m["ip6gateway"] = gwip.String()
 	}
 
 	if startipv6, ok := d.GetOk("startipv6"); ok {
 		m["startipv6"] = startipv6.(string)
 	} else if specifyiprange {
-		ip16 := ipnet.IP.To16()
-		if ip16 == nil {
-			return nil, fmt.Errorf("cidr not valid for ipv6")
-		}
-
-		myip := make(net.IP, len(ip16))
-		copy(myip, ip16)
-		myip[len(ip16)-1] = 2
-		m["startipv6"] = myip.String()
+		// Default start IP to network address + 2
+		startip := addToIPv6(ipnet.IP, 2)
+		m["startipv6"] = startip.String()
 	}
 
 	if endip, ok := d.GetOk("endipv6"); ok {
