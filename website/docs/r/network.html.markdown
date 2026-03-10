@@ -82,7 +82,7 @@ The following arguments are supported:
     `none`, this will force a new resource to be created. (defaults `none`)
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created. If not
+    network to. Changing this forces a new resource to be created. If not
     specified and `vpc_id` is provided, the project will be automatically
     inherited from the VPC.
 
