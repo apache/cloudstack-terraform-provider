@@ -86,7 +86,7 @@ The following arguments are supported:
    acquired and associated. Changing this forces a new resource to be created.
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created. If not
+    IP address to. Changing this forces a new resource to be created. If not
     specified and `vpc_id` is provided, the project will be automatically
     inherited from the VPC. If not specified and `network_id` is provided,
     the project will be automatically inherited from the network.
