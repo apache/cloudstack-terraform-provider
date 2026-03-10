@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -149,49 +150,75 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
+// parseCloudStackVersion parses a CloudStack version string (e.g., "4.22.0.0")
+// and returns a numeric value for comparison (e.g., 4.22 -> 4022).
+// The numeric value is calculated as: major * 1000 + minor.
+// Returns 0 if the version string cannot be parsed.
+func parseCloudStackVersion(version string) int {
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return 0
+	}
+
+	major := 0
+	minor := 0
+
+	// Parse major version - extract first numeric part
+	majorStr := regexp.MustCompile(`^\d+`).FindString(parts[0])
+	if majorStr != "" {
+		major, _ = strconv.Atoi(majorStr)
+	}
+
+	// Parse minor version - extract first numeric part
+	minorStr := regexp.MustCompile(`^\d+`).FindString(parts[1])
+	if minorStr != "" {
+		minor, _ = strconv.Atoi(minorStr)
+	}
+
+	return major*1000 + minor
+}
+
+// getCloudStackVersion retrieves the CloudStack version from the API.
+// Returns the version string and any error encountered.
+func getCloudStackVersion(cs *cloudstack.CloudStackClient) (string, error) {
+	p := cs.Configuration.NewListCapabilitiesParams()
+	caps, err := cs.Configuration.ListCapabilities(p)
+	if err != nil {
+		return "", err
+	}
+
+	if caps != nil && caps.Capabilities != nil && caps.Capabilities.Cloudstackversion != "" {
+		return caps.Capabilities.Cloudstackversion, nil
+	}
+
+	return "", fmt.Errorf("unable to determine CloudStack version")
+}
+
+// requireMinimumCloudStackVersion checks if the CloudStack version meets the minimum requirement.
+// If the version is below the minimum, it skips the test with an appropriate message.
+// The minVersion parameter should be in the format returned by parseCloudStackVersion (e.g., 4022 for 4.22.0).
+func requireMinimumCloudStackVersion(t *testing.T, cs *cloudstack.CloudStackClient, minVersion int, featureName string) {
+	version, err := getCloudStackVersion(cs)
+	if err != nil {
+		t.Skipf("Unable to check CloudStack version: %v", err)
+		return
+	}
+
+	versionNum := parseCloudStackVersion(version)
+	if versionNum < minVersion {
+		// Convert minVersion back to readable format (e.g., 4022 -> "4.22")
+		major := minVersion / 1000
+		minor := minVersion % 1000
+		t.Skipf("%s not supported in CloudStack version %s (requires %d.%d+)", featureName, version, major, minor)
+	}
+}
+
 // testAccPreCheckStaticRouteNexthop checks if the CloudStack version supports
 // the nexthop parameter for static routes (requires 4.22.0+)
 func testAccPreCheckStaticRouteNexthop(t *testing.T) {
 	testAccPreCheck(t)
 	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
 
-	// Check the API capabilities to get CloudStack version
-	p := cs.Configuration.NewListCapabilitiesParams()
-	caps, err := cs.Configuration.ListCapabilities(p)
-	if err != nil {
-		t.Skipf("Unable to check CloudStack capabilities: %v", err)
-		return
-	}
-
-	// Check CloudStack version - nexthop support was added in 4.22.0
-	if caps != nil && caps.Capabilities != nil && caps.Capabilities.Cloudstackversion != "" {
-		version := caps.Capabilities.Cloudstackversion
-
-		// Parse version string (e.g., "4.22.0.0" -> major=4, minor=22)
-		// Convert to numeric value: major * 1000 + minor (e.g., 4.22 -> 4022)
-		parts := strings.Split(version, ".")
-		if len(parts) >= 2 {
-			major := 0
-			minor := 0
-
-			// Parse major version - extract first numeric part
-			majorStr := regexp.MustCompile(`^\d+`).FindString(parts[0])
-			if majorStr != "" {
-				major, _ = strconv.Atoi(majorStr)
-			}
-
-			// Parse minor version - extract first numeric part
-			minorStr := regexp.MustCompile(`^\d+`).FindString(parts[1])
-			if minorStr != "" {
-				minor, _ = strconv.Atoi(minorStr)
-			}
-
-			versionNum := major*1000 + minor
-			const minVersionNum = 4022 // 4.22.0
-
-			if versionNum < minVersionNum {
-				t.Skipf("Static route nexthop parameter not supported in CloudStack version %s (requires 4.22.0+)", version)
-			}
-		}
-	}
+	const minVersionNum = 4022 // 4.22.0
+	requireMinimumCloudStackVersion(t, cs, minVersionNum, "Static route nexthop parameter")
 }
