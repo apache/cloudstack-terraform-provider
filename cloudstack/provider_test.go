@@ -217,7 +217,19 @@ func requireMinimumCloudStackVersion(t *testing.T, cs *cloudstack.CloudStackClie
 // the nexthop parameter for static routes (requires 4.22.0+)
 func testAccPreCheckStaticRouteNexthop(t *testing.T) {
 	testAccPreCheck(t)
-	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+
+	// Create a CloudStack client to check version
+	config := Config{
+		APIURL:    os.Getenv("CLOUDSTACK_API_URL"),
+		APIKey:    os.Getenv("CLOUDSTACK_API_KEY"),
+		SecretKey: os.Getenv("CLOUDSTACK_SECRET_KEY"),
+		Timeout:   900,
+	}
+
+	cs, err := config.NewClient()
+	if err != nil {
+		t.Fatalf("Failed to create CloudStack client: %v", err)
+	}
 
 	const minVersionNum = 4022 // 4.22.0
 	requireMinimumCloudStackVersion(t, cs, minVersionNum, "Static route nexthop parameter")
