@@ -45,6 +45,16 @@ resource "cloudstack_ipaddress" "project_ip" {
   zone   = "zone-1"
 }
 
+# Instance in the project
+resource "cloudstack_instance" "web" {
+  name             = "web-server"
+  service_offering = "Small Instance"
+  network_id       = "your-network-id"
+  template         = "your-template-id"
+  zone             = "zone-1"
+  project          = "my-project"
+}
+
 # Port forward automatically inherits project from IP address
 resource "cloudstack_port_forward" "project_forward" {
   ip_address_id = cloudstack_ipaddress.project_ip.id
