@@ -554,6 +554,25 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 		return nil, fmt.Errorf("ip6cidr must be an IPv6 CIDR with 16-byte mask, got %d bytes: %s", len(ipnet.Mask), cidr)
 	}
 
+	// Validate prefix length to ensure we have enough addresses for gateway/start/end
+	ones, _ := ipnet.Mask.Size()
+	if specifyiprange {
+		// When specifyiprange is true, we need at least 3 addresses:
+		// - gateway (network + 1)
+		// - start IP (network + 2)
+		// - end IP (network + 3 or more)
+		// This requires a /126 or larger prefix (4 addresses minimum)
+		if ones > 126 {
+			return nil, fmt.Errorf("ip6cidr prefix /%d is too small for automatic IP range generation; minimum is /126 (4 addresses)", ones)
+		}
+	} else {
+		// When specifyiprange is false, we only need the gateway (network + 1)
+		// This requires a /127 or larger prefix (2 addresses minimum)
+		if ones > 127 {
+			return nil, fmt.Errorf("ip6cidr prefix /%d is too small for automatic gateway generation; minimum is /127 (2 addresses)", ones)
+		}
+	}
+
 	if gateway, ok := d.GetOk("ip6gateway"); ok {
 		m["ip6gateway"] = gateway.(string)
 	} else {

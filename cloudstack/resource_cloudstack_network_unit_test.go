@@ -149,3 +149,88 @@ func TestParseCIDRv6_RejectsIPv4(t *testing.T) {
 		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
 	}
 }
+
+func TestParseCIDRv6_Prefix128_NoIPRange(t *testing.T) {
+	// /128 is a single address - should fail even without IP range
+	d := schema.TestResourceDataRaw(t, resourceCloudStackNetwork().Schema, map[string]interface{}{
+		"ip6cidr": "2001:db8::1/128",
+	})
+
+	_, err := parseCIDRv6(d, false)
+	if err == nil {
+		t.Fatal("parseCIDRv6 should reject /128 prefix (single address)")
+	}
+
+	expectedError := "ip6cidr prefix /128 is too small"
+	if err.Error()[:len(expectedError)] != expectedError {
+		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
+	}
+}
+
+func TestParseCIDRv6_Prefix127_NoIPRange(t *testing.T) {
+	// /127 has 2 addresses - should work without IP range (only needs gateway)
+	d := schema.TestResourceDataRaw(t, resourceCloudStackNetwork().Schema, map[string]interface{}{
+		"ip6cidr": "2001:db8::/127",
+	})
+
+	result, err := parseCIDRv6(d, false)
+	if err != nil {
+		t.Fatalf("parseCIDRv6 should accept /127 prefix without IP range: %v", err)
+	}
+
+	// Should have gateway
+	if _, ok := result["ip6gateway"]; !ok {
+		t.Error("Expected ip6gateway to be set")
+	}
+
+	// Should not have start/end IP
+	if _, ok := result["startipv6"]; ok {
+		t.Error("startipv6 should not be set when specifyiprange is false")
+	}
+}
+
+func TestParseCIDRv6_Prefix127_WithIPRange(t *testing.T) {
+	// /127 has only 2 addresses - should fail with IP range (needs 3+ addresses)
+	d := schema.TestResourceDataRaw(t, resourceCloudStackNetwork().Schema, map[string]interface{}{
+		"ip6cidr": "2001:db8::/127",
+	})
+
+	_, err := parseCIDRv6(d, true)
+	if err == nil {
+		t.Fatal("parseCIDRv6 should reject /127 prefix with IP range (only 2 addresses)")
+	}
+
+	expectedError := "ip6cidr prefix /127 is too small for automatic IP range generation"
+	if err.Error()[:len(expectedError)] != expectedError {
+		t.Errorf("Expected error message to start with '%s', got '%s'", expectedError, err.Error())
+	}
+}
+
+func TestParseCIDRv6_Prefix126_WithIPRange(t *testing.T) {
+	// /126 has 4 addresses - should work with IP range
+	d := schema.TestResourceDataRaw(t, resourceCloudStackNetwork().Schema, map[string]interface{}{
+		"ip6cidr": "2001:db8::/126",
+	})
+
+	result, err := parseCIDRv6(d, true)
+	if err != nil {
+		t.Fatalf("parseCIDRv6 should accept /126 prefix with IP range: %v", err)
+	}
+
+	// Should have gateway, start, and end
+	if _, ok := result["ip6gateway"]; !ok {
+		t.Error("Expected ip6gateway to be set")
+	}
+	if _, ok := result["startipv6"]; !ok {
+		t.Error("Expected startipv6 to be set")
+	}
+	if _, ok := result["endipv6"]; !ok {
+		t.Error("Expected endipv6 to be set")
+	}
+
+	// Verify the end IP is correct for /126 (last 2 bits set to 1)
+	expectedEndIP := "2001:db8::3"
+	if result["endipv6"] != expectedEndIP {
+		t.Errorf("Expected end IP %s for /126, got %s", expectedEndIP, result["endipv6"])
+	}
+}
