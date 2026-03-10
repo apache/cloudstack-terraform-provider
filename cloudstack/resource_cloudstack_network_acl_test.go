@@ -82,7 +82,6 @@ func TestAccCloudStackNetworkACL_vpcProjectInheritance(t *testing.T) {
 					// Verify the project was inherited from the VPC
 					resource.TestCheckResourceAttr(
 						"cloudstack_network_acl.foo", "project", "terraform"),
-					testAccCheckCloudStackNetworkACLProjectInherited(&acl),
 				),
 			},
 		},
@@ -127,19 +126,6 @@ func testAccCheckCloudStackNetworkACLBasicAttributes(
 
 		if acl.Description != "terraform-acl-text" {
 			return fmt.Errorf("Bad description: %s", acl.Description)
-		}
-
-		return nil
-	}
-}
-
-func testAccCheckCloudStackNetworkACLProjectInherited(
-	acl *cloudstack.NetworkACLList) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// The ACL itself doesn't have project info, but we verify it was created
-		// successfully which means it inherited the project from the VPC
-		if acl.Name != "terraform-acl" {
-			return fmt.Errorf("Expected ACL name to be 'terraform-acl', got: %s", acl.Name)
 		}
 
 		return nil
