@@ -53,7 +53,7 @@ The following arguments are supported:
     new resource to be created.
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created. If not
+    resource to. Changing this forces a new resource to be created. If not
     specified, the project will be automatically inherited from the VPC.
 
 * `vpc_id` - (Required) The ID of the VPC to create this ACL for. Changing this
