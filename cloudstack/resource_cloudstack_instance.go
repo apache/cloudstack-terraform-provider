@@ -541,11 +541,6 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("display_name", vm.Displayname)
 	d.Set("group", vm.Group)
 
-	// Set the project if the instance belongs to one
-	if vm.Project != "" {
-		d.Set("project", vm.Project)
-	}
-
 	// In some rare cases (when destroying a machine fails) it can happen that
 	// an instance does not have any attached NIC anymore.
 	if len(vm.Nic) > 0 {
