@@ -68,7 +68,7 @@ The following arguments are supported:
 * `bypass_vlan_overlap_check` - (Optional) When set to true, bypasses the VLAN overlap
     check during private gateway creation. This allows creating private gateways with
     VLANs that may overlap with existing VLANs in the physical network. Defaults to
-    false. Changing this forces a new resource to be created.
+    false.
 
 ## Attributes Reference
 
