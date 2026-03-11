@@ -188,9 +188,18 @@ func resourceCloudStackCniConfigurationRead(d *schema.ResourceData, meta interfa
 
 	d.Set("name", config.CniConfiguration[0].Name)
 	d.Set("cni_config", config.CniConfiguration[0].Userdata)
-	d.Set("account", config.CniConfiguration[0].Account)
-	d.Set("domain_id", config.CniConfiguration[0].Domainid)
-	d.Set("project_id", config.CniConfiguration[0].Projectid)
+
+	// Only set account and domain_id if they were originally provided by the user
+	// to avoid drift when CloudStack returns default values
+	if _, ok := d.GetOk("account"); ok {
+		d.Set("account", config.CniConfiguration[0].Account)
+	}
+	if _, ok := d.GetOk("domain_id"); ok {
+		d.Set("domain_id", config.CniConfiguration[0].Domainid)
+	}
+	if _, ok := d.GetOk("project_id"); ok {
+		d.Set("project_id", config.CniConfiguration[0].Projectid)
+	}
 
 	if config.CniConfiguration[0].Params != "" {
 		paramsList := strings.Split(config.CniConfiguration[0].Params, ",")

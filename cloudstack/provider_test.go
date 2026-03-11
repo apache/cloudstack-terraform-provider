@@ -145,3 +145,32 @@ func testAccPreCheck(t *testing.T) {
 		t.Fatal("CLOUDSTACK_SECRET_KEY must be set for acceptance tests")
 	}
 }
+
+// getCloudStackVersion returns the CloudStack version from the API
+func getCloudStackVersion(t *testing.T) string {
+	cfg := Config{
+		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
+		APIKey:      os.Getenv("CLOUDSTACK_API_KEY"),
+		SecretKey:   os.Getenv("CLOUDSTACK_SECRET_KEY"),
+		HTTPGETOnly: true,
+		Timeout:     60,
+	}
+	cs, err := cfg.NewClient()
+	if err != nil {
+		t.Logf("Failed to create CloudStack client: %v", err)
+		return ""
+	}
+
+	p := cs.Configuration.NewListCapabilitiesParams()
+	r, err := cs.Configuration.ListCapabilities(p)
+	if err != nil {
+		t.Logf("Failed to get CloudStack capabilities: %v", err)
+		return ""
+	}
+
+	if r.Capabilities != nil {
+		return r.Capabilities.Cloudstackversion
+	}
+
+	return ""
+}
