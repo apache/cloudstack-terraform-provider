@@ -82,6 +82,26 @@ func resourceCloudStackNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				StateFunc: func(v interface{}) string {
+					s, ok := v.(string)
+					if !ok {
+						return ""
+					}
+
+					// Leave empty value unchanged.
+					if s == "" {
+						return s
+					}
+
+					// Parse and canonicalize the IPv6 CIDR. If parsing fails,
+					// return the original string so invalid input is not altered.
+					_, ipnet, err := net.ParseCIDR(s)
+					if err != nil {
+						return s
+					}
+
+					return ipnet.String()
+				},
 			},
 
 			"gateway": {
