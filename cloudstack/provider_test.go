@@ -148,6 +148,8 @@ func testAccPreCheck(t *testing.T) {
 
 // getCloudStackVersion returns the CloudStack version from the API
 func getCloudStackVersion(t *testing.T) string {
+	t.Helper()
+
 	cfg := Config{
 		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
 		APIKey:      os.Getenv("CLOUDSTACK_API_KEY"),
@@ -157,15 +159,13 @@ func getCloudStackVersion(t *testing.T) string {
 	}
 	cs, err := cfg.NewClient()
 	if err != nil {
-		t.Logf("Failed to create CloudStack client: %v", err)
-		return ""
+		t.Fatalf("Failed to create CloudStack client: %v", err)
 	}
 
 	p := cs.Configuration.NewListCapabilitiesParams()
 	r, err := cs.Configuration.ListCapabilities(p)
 	if err != nil {
-		t.Logf("Failed to get CloudStack capabilities: %v", err)
-		return ""
+		t.Fatalf("Failed to get CloudStack capabilities: %v", err)
 	}
 
 	if r.Capabilities != nil {
