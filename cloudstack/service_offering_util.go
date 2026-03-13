@@ -81,7 +81,7 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 	// Only set DiskOfferingId if it was already set in the state (i.e., user explicitly provided it)
 	// When using disk_offering block, CloudStack creates an internal disk offering and returns its ID,
 	// but we should not populate disk_offering_id in that case to avoid drift
-	if cs.Diskofferingid != "" && !state.DiskOfferingId.IsNull() {
+	if cs.Diskofferingid != "" && !state.DiskOfferingId.IsNull() && !state.DiskOfferingId.IsUnknown() {
 		state.DiskOfferingId = types.StringValue(cs.Diskofferingid)
 	}
 	if cs.Displaytext != "" {

@@ -126,14 +126,14 @@ In order to run the full suite of Acceptance tests you will need to run the Clou
 ### Step 1: Start the CloudStack Simulator
 
 ```sh
-# Pull the simulator image (recommended versions: 4.20.1.0 or 4.23.0.0-SNAPSHOT)
-docker pull apache/cloudstack-simulator:4.20.1.0
+# Pull the simulator image (recommended versions: 4.20.2.0 or 4.23.0.0-SNAPSHOT)
+docker pull apache/cloudstack-simulator:4.20.2.0
 
 # Start the simulator container
-docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.20.1.0
+docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.20.2.0
 ```
 
-**Note:** Version 4.22.0.0 has a known bug with updating load balancer rules and is not recommended for testing.
+**Note:** Version 4.22.0.0 has a known bug with updating load balancer rules. CI currently tests against this version, but for local testing we recommend using 4.20.2.0 or 4.23.0.0-SNAPSHOT to avoid this issue.
 
 ### Step 2: Wait for Simulator to be Ready
 
