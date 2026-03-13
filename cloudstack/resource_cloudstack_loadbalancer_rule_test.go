@@ -57,7 +57,6 @@ func TestAccCloudStackLoadBalancerRule_update(t *testing.T) {
 	// Skip this test on CloudStack 4.22.0.0 due to a known simulator bug
 	// that causes "530 Internal Server Error" when updating load balancer rules.
 	// This bug does not exist in 4.20.1.0, 4.22.1.0+, or 4.23.0.0+.
-	testAccPreCheck(t)
 	version := getCloudStackVersion(t)
 	if version == "4.22.0.0" {
 		t.Skip("Skipping TestAccCloudStackLoadBalancerRule_update on CloudStack 4.22.0.0 due to known simulator bug (Error 530: Internal Server Error)")

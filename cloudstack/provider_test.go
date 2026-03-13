@@ -149,6 +149,7 @@ func testAccPreCheck(t *testing.T) {
 // getCloudStackVersion returns the CloudStack version from the API
 func getCloudStackVersion(t *testing.T) string {
 	t.Helper()
+	testAccPreCheck(t)
 
 	cfg := Config{
 		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
