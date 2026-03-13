@@ -21,7 +21,6 @@ package cloudstack
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -143,24 +142,11 @@ resource "cloudstack_cni_configuration" "foo" {
 `
 
 func testAccPreCheckCniSupport(t *testing.T) {
-	testAccPreCheck(t)
-
-	// Create a CloudStack client to check if CNI is supported
-	cfg := Config{
-		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
-		APIKey:      os.Getenv("CLOUDSTACK_API_KEY"),
-		SecretKey:   os.Getenv("CLOUDSTACK_SECRET_KEY"),
-		HTTPGETOnly: true,
-		Timeout:     60,
-	}
-	cs, err := cfg.NewClient()
-	if err != nil {
-		t.Fatalf("Failed to create CloudStack client: %v", err)
-	}
+	cs := newTestClient(t)
 
 	// Try to list CNI configurations to check if the feature is available
 	p := cs.Configuration.NewListCniConfigurationParams()
-	_, err = cs.Configuration.ListCniConfiguration(p)
+	_, err := cs.Configuration.ListCniConfiguration(p)
 	if err != nil {
 		t.Skipf("CNI configuration not supported in this CloudStack version (requires 4.21.0+): %v", err)
 	}
