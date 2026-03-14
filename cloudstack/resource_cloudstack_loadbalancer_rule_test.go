@@ -58,7 +58,6 @@ func TestAccCloudStackLoadBalancerRule_update(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheck(t)
 			// Skip this test on CloudStack 4.22.0.0 due to a known simulator bug
 			// that causes "530 Internal Server Error" when updating load balancer rules.
 			// This bug does not exist in 4.20.1.0, 4.22.1.0+, or 4.23.0.0+.
