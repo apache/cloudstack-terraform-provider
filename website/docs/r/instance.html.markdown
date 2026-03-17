@@ -194,7 +194,7 @@ The following arguments are supported:
 
 * `boot_mode` - (Optional) The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.
 
-* `deleteprotection` - (Optional) Set delete protection for the virtual machine. If true, the instance will be protected from deletion.
+* `delete_protection` - (Optional) Set delete protection for the virtual machine. If true, the instance will be protected from deletion.
     Note: If the instance is managed by another service like autoscaling groups or CKS, delete protection will be ignored.
 
 ## Attributes Reference

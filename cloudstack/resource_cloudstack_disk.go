@@ -98,7 +98,7 @@ func resourceCloudStackDisk() *schema.Resource {
 				Default:  false,
 			},
 
-			"deleteprotection": {
+			"delete_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
@@ -153,8 +153,8 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 	// Set the volume ID and partials
 	d.SetId(r.Id)
 
-	// Set deleteprotection using UpdateVolume
-	if v, ok := d.GetOk("deleteprotection"); ok {
+	// Set delete protection using UpdateVolume
+	if v, ok := d.GetOk("delete_protection"); ok {
 		p := cs.Volume.NewUpdateVolumeParams()
 		p.SetId(d.Id())
 		p.SetDeleteprotection(v.(bool))
@@ -162,7 +162,7 @@ func resourceCloudStackDiskCreate(d *schema.ResourceData, meta interface{}) erro
 		_, err := cs.Volume.UpdateVolume(p)
 		if err != nil {
 			return fmt.Errorf(
-				"Error updating the deleteprotection for disk %s: %s", name, err)
+				"Error updating the delete protection for disk %s: %s", name, err)
 		}
 	}
 
@@ -297,16 +297,16 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	// Check if the deleteprotection has changed and if so, update the deleteprotection
-	if d.HasChange("deleteprotection") {
+	// Check if the delete protection has changed and if so, update the delete protection
+	if d.HasChange("delete_protection") {
 		p := cs.Volume.NewUpdateVolumeParams()
 		p.SetId(d.Id())
-		p.SetDeleteprotection(d.Get("deleteprotection").(bool))
+		p.SetDeleteprotection(d.Get("delete_protection").(bool))
 
 		_, err := cs.Volume.UpdateVolume(p)
 		if err != nil {
 			return fmt.Errorf(
-				"Error updating the deleteprotection for disk %s: %s", name, err)
+				"Error updating the delete protection for disk %s: %s", name, err)
 		}
 	}
 
