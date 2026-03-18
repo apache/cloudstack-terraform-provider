@@ -44,6 +44,7 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceCloudStackNetworkACLRuleImport,
 		},
+		DeprecationMessage: "cloudstack_network_acl_rule is deprecated. Use cloudstack_network_acl_ruleset instead for better performance and in-place updates.",
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 			// Force replacement for migration from deprecated 'ports' to 'port' field
 			if diff.HasChange("rule") {
@@ -51,7 +52,7 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 				oldRulesList := oldRules.([]interface{})
 				newRulesList := newRules.([]interface{})
 
-				log.Printf("[DEBUG] CustomizeDiff: checking %d old rules -> %d new rules", len(oldRulesList), len(newRulesList))
+				log.Printf("[DEBUG] CustomizeDiff: checking %d old rules -> %d new rules for migration", len(oldRulesList), len(newRulesList))
 
 				// Check if ANY old rule uses deprecated 'ports' field
 				hasDeprecatedPorts := false
@@ -99,28 +100,6 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 
 				log.Printf("[DEBUG] CustomizeDiff: No migration detected - hasDeprecatedPorts=%t, hasNewPortFormat=%t", hasDeprecatedPorts, hasNewPortFormat)
 			}
-
-			// WORKAROUND: Filter out ghost entries from ruleset
-			// The SDK creates ghost entries when rules are removed from a TypeSet that has Computed: true
-			// This happens because the SDK tries to preserve Computed fields (like uuid) when elements are removed
-			if diff.HasChange("ruleset") {
-				_, newRuleset := diff.GetChange("ruleset")
-				if newSet, ok := newRuleset.(*schema.Set); ok {
-					cleanRules, ghostCount := filterGhostEntries(newSet.List(), "CustomizeDiff")
-
-					if ghostCount > 0 {
-						// Create a new Set with the clean rules
-						rulesetResource := resourceCloudStackNetworkACLRule().Schema["ruleset"].Elem.(*schema.Resource)
-						hashFunc := schema.HashResource(rulesetResource)
-						cleanSet := schema.NewSet(hashFunc, cleanRules)
-						if err := diff.SetNew("ruleset", cleanSet); err != nil {
-							log.Printf("[ERROR] CustomizeDiff: Failed to set clean ruleset: %v", err)
-							return err
-						}
-					}
-				}
-			}
-
 			return nil
 		},
 
@@ -209,82 +188,6 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 				},
 			},
 
-			"ruleset": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				// Computed is required to allow CustomizeDiff to use SetNew() for filtering ghost entries.
-				// Ghost entries are created by the SDK when elements are removed from a TypeSet that
-				// contains Computed fields (like uuid). The SDK preserves the Computed fields but zeros
-				// out the required fields, creating invalid "ghost" entries in the state.
-				// By marking the field as Computed, we can use CustomizeDiff to filter these out before
-				// the Update phase, preventing them from being persisted to the state.
-				Computed:      true,
-				ConflictsWith: []string{"rule"},
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"rule_number": {
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-
-						"action": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "allow",
-						},
-
-						"cidr_list": {
-							Type:     schema.TypeSet,
-							Required: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							Set:      schema.HashString,
-						},
-
-						"protocol": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-
-						"icmp_type": {
-							Type:     schema.TypeInt,
-							Optional: true,
-							Default:  0,
-						},
-
-						"icmp_code": {
-							Type:     schema.TypeInt,
-							Optional: true,
-							Default:  0,
-						},
-
-						"port": {
-							Type:     schema.TypeString,
-							Optional: true,
-							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-								// Treat empty string as equivalent to not set (for "all" protocol)
-								return old == "" && new == ""
-							},
-						},
-
-						"traffic_type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "ingress",
-						},
-
-						"description": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-
-						"uuid": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
-			},
-
 			"project": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -300,170 +203,6 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 	}
 }
 
-// Helper functions for UUID handling to abstract differences between
-// 'rule' (uses uuids map) and 'ruleset' (uses uuid string)
-
-// getRuleUUID gets the UUID for a rule, handling both formats
-// For ruleset: returns the uuid string
-// For rule with key: returns the UUID from uuids map for the given key
-// For rule without key: returns the first UUID from uuids map
-func getRuleUUID(rule map[string]interface{}, key string) (string, bool) {
-	// Try uuid string first (ruleset format)
-	if uuidVal, ok := rule["uuid"]; ok && uuidVal != nil {
-		if uuid, ok := uuidVal.(string); ok && uuid != "" {
-			return uuid, true
-		}
-	}
-
-	// Try uuids map (rule format)
-	if uuidsVal, ok := rule["uuids"]; ok && uuidsVal != nil {
-		if uuids, ok := uuidsVal.(map[string]interface{}); ok {
-			if key != "" {
-				// Get specific key
-				if idVal, ok := uuids[key]; ok && idVal != nil {
-					if id, ok := idVal.(string); ok {
-						return id, true
-					}
-				}
-			} else {
-				// Get first non-nil UUID
-				for _, idVal := range uuids {
-					if idVal != nil {
-						if id, ok := idVal.(string); ok {
-							return id, true
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return "", false
-}
-
-// setRuleUUID sets the UUID for a rule, handling both formats
-// For ruleset: sets the uuid string
-// For rule: sets the UUID in uuids map with the given key
-func setRuleUUID(rule map[string]interface{}, key string, uuid string) {
-	// Check if this is a ruleset (has uuid field) or rule (has uuids field)
-	if _, hasUUID := rule["uuid"]; hasUUID {
-		// Ruleset format
-		rule["uuid"] = uuid
-	} else {
-		// Rule format - ensure uuids map exists
-		var uuids map[string]interface{}
-		if uuidsVal, ok := rule["uuids"]; ok && uuidsVal != nil {
-			uuids = uuidsVal.(map[string]interface{})
-		} else {
-			uuids = make(map[string]interface{})
-			rule["uuids"] = uuids
-		}
-		uuids[key] = uuid
-	}
-}
-
-// hasRuleUUID checks if a rule has any UUID set
-func hasRuleUUID(rule map[string]interface{}) bool {
-	// Check uuid string (ruleset format)
-	if uuidVal, ok := rule["uuid"]; ok && uuidVal != nil {
-		if uuid, ok := uuidVal.(string); ok && uuid != "" {
-			return true
-		}
-	}
-
-	// Check uuids map (rule format)
-	if uuidsVal, ok := rule["uuids"]; ok && uuidsVal != nil {
-		if uuids, ok := uuidsVal.(map[string]interface{}); ok && len(uuids) > 0 {
-			return true
-		}
-	}
-
-	return false
-}
-
-// isRulesetRule checks if a rule is from a ruleset (has uuid field) vs rule (has uuids field)
-func isRulesetRule(rule map[string]interface{}) bool {
-	_, hasUUID := rule["uuid"]
-	return hasUUID
-}
-
-// isGhostEntry checks if a rule is a ghost entry created by the SDK
-// Ghost entries have empty protocol and rule_number=0 but may have a UUID
-func isGhostEntry(rule map[string]interface{}) bool {
-	protocol, _ := rule["protocol"].(string)
-	ruleNumber, _ := rule["rule_number"].(int)
-	return protocol == "" && ruleNumber == 0
-}
-
-// filterGhostEntries removes ghost entries from a list of rules
-// Returns the cleaned list and the count of ghosts removed
-func filterGhostEntries(rules []interface{}, logPrefix string) ([]interface{}, int) {
-	var cleanRules []interface{}
-	ghostCount := 0
-
-	for i, r := range rules {
-		rMap := r.(map[string]interface{})
-		if isGhostEntry(rMap) {
-			log.Printf("[DEBUG] %s: Filtering out ghost entry at index %d (uuid=%v)", logPrefix, i, rMap["uuid"])
-			ghostCount++
-			continue
-		}
-		cleanRules = append(cleanRules, r)
-	}
-
-	if ghostCount > 0 {
-		log.Printf("[DEBUG] %s: Filtered %d ghost entries (%d -> %d rules)", logPrefix, ghostCount, len(rules), len(cleanRules))
-	}
-
-	return cleanRules, ghostCount
-}
-
-// assignRuleNumbers assigns rule numbers to rules that don't have them
-// Rules are numbered sequentially starting from 1
-// If a rule has an explicit rule_number, nextNumber advances to ensure no duplicates
-// For rules using the deprecated 'ports' field with multiple ports, reserves enough numbers
-func assignRuleNumbers(rules []interface{}) []interface{} {
-	result := make([]interface{}, len(rules))
-	nextNumber := 1
-
-	for i, rule := range rules {
-		ruleMap := make(map[string]interface{})
-		// Copy the rule
-		for k, v := range rule.(map[string]interface{}) {
-			ruleMap[k] = v
-		}
-
-		// Check if rule_number is set
-		if ruleNum, ok := ruleMap["rule_number"].(int); ok && ruleNum > 0 {
-			// Rule has explicit number, ensure nextNumber never decreases
-			// to prevent duplicate or decreasing rule numbers
-			if ruleNum >= nextNumber {
-				nextNumber = ruleNum + 1
-			}
-			log.Printf("[DEBUG] Rule at index %d has explicit rule_number=%d, nextNumber=%d", i, ruleNum, nextNumber)
-		} else {
-			// Auto-assign sequential number
-			ruleMap["rule_number"] = nextNumber
-			log.Printf("[DEBUG] Auto-assigned rule_number=%d to rule at index %d", nextNumber, i)
-
-			// Check if this rule uses the deprecated 'ports' field with multiple ports
-			// If so, we need to reserve additional rule numbers for the expanded rules
-			if portsSet, ok := ruleMap["ports"].(*schema.Set); ok && portsSet.Len() > 1 {
-				// Reserve portsSet.Len() numbers (one for each port)
-				// The first port gets nextNumber, subsequent ports get nextNumber+1, nextNumber+2, etc.
-				nextNumber += portsSet.Len()
-				log.Printf("[DEBUG] Rule uses deprecated ports field with %d ports, reserved numbers up to %d", portsSet.Len(), nextNumber-1)
-			} else {
-				nextNumber++
-			}
-		}
-
-		result[i] = ruleMap
-	}
-
-	return result
-}
-
 func resourceCloudStackNetworkACLRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Entering resourceCloudStackNetworkACLRuleCreate with acl_id=%s", d.Get("acl_id").(string))
 
@@ -473,22 +212,13 @@ func resourceCloudStackNetworkACLRuleCreate(d *schema.ResourceData, meta interfa
 		return err
 	}
 
-	// Handle 'rule' (TypeList with auto-numbering)
+	// Create all rules that are configured
 	if nrs := d.Get("rule").([]interface{}); len(nrs) > 0 {
 		// Create an empty rule list to hold all newly created rules
 		rules := make([]interface{}, 0)
 
-		log.Printf("[DEBUG] Processing %d rules from 'rule' field", len(nrs))
-
-		// Validate rules BEFORE assigning numbers, so we can detect user-provided rule_number
-		if err := validateRulesList(d, nrs, "rule"); err != nil {
-			return err
-		}
-
-		// Assign rule numbers to rules that don't have them
-		rulesWithNumbers := assignRuleNumbers(nrs)
-
-		err := createNetworkACLRules(d, meta, &rules, rulesWithNumbers)
+		log.Printf("[DEBUG] Processing %d rules", len(nrs))
+		err := createNetworkACLRules(d, meta, &rules, nrs)
 		if err != nil {
 			log.Printf("[ERROR] Failed to create network ACL rules: %v", err)
 			return err
@@ -501,35 +231,6 @@ func resourceCloudStackNetworkACLRuleCreate(d *schema.ResourceData, meta interfa
 		// Update state with created rules
 		if err := d.Set("rule", rules); err != nil {
 			log.Printf("[ERROR] Failed to set rule attribute: %v", err)
-			return err
-		}
-	} else if nrs := d.Get("ruleset").(*schema.Set); nrs.Len() > 0 {
-		// Handle 'ruleset' (TypeSet with mandatory rule_number)
-		rules := make([]interface{}, 0)
-
-		log.Printf("[DEBUG] Processing %d rules from 'ruleset' field", nrs.Len())
-
-		// Convert Set to list (no auto-numbering needed, rule_number is required)
-		rulesList := nrs.List()
-
-		// Validate rules BEFORE creating them
-		if err := validateRulesList(d, rulesList, "ruleset"); err != nil {
-			return err
-		}
-
-		err := createNetworkACLRules(d, meta, &rules, rulesList)
-		if err != nil {
-			log.Printf("[ERROR] Failed to create network ACL rules: %v", err)
-			return err
-		}
-
-		// Set the resource ID only after successful creation
-		log.Printf("[DEBUG] Setting resource ID to acl_id=%s", d.Get("acl_id").(string))
-		d.SetId(d.Get("acl_id").(string))
-
-		// Update state with created rules
-		if err := d.Set("ruleset", rules); err != nil {
-			log.Printf("[ERROR] Failed to set ruleset attribute: %v", err)
 			return err
 		}
 	} else {
@@ -569,14 +270,11 @@ func createNetworkACLRules(d *schema.ResourceData, meta interface{}, rules *[]in
 				mu.Lock()
 				errs = multierror.Append(errs, fmt.Errorf("rule #%d: %v", index+1, err))
 				mu.Unlock()
+			} else if len(rule["uuids"].(map[string]interface{})) > 0 {
+				log.Printf("[DEBUG] Successfully created rule #%d, storing at index %d", index+1, index)
+				results[index] = rule
 			} else {
-				// Check if rule was created successfully (has uuid or uuids)
-				if hasRuleUUID(rule) {
-					log.Printf("[DEBUG] Successfully created rule #%d, storing at index %d", index+1, index)
-					results[index] = rule
-				} else {
-					log.Printf("[WARN] Rule #%d created but has no UUID/UUIDs", index+1)
-				}
+				log.Printf("[WARN] Rule #%d created but has no UUIDs", index+1)
 			}
 
 			<-sem
@@ -603,17 +301,17 @@ func createNetworkACLRules(d *schema.ResourceData, meta interface{}, rules *[]in
 
 func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[string]interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+	uuids := rule["uuids"].(map[string]interface{})
+	log.Printf("[DEBUG] Creating network ACL rule with protocol=%s", rule["protocol"].(string))
 
-	protocol := rule["protocol"].(string)
-	action := rule["action"].(string)
-	trafficType := rule["traffic_type"].(string)
-
-	log.Printf("[DEBUG] Creating network ACL rule with protocol=%s, action=%s, traffic_type=%s", protocol, action, trafficType)
-
-	// Note: Parameter verification is done before assignRuleNumbers in resourceCloudStackNetworkACLRuleCreate
+	// Make sure all required parameters are there
+	if err := verifyNetworkACLRuleParams(d, rule); err != nil {
+		log.Printf("[ERROR] Failed to verify rule parameters: %v", err)
+		return err
+	}
 
 	// Create a new parameter struct
-	p := cs.NetworkACL.NewCreateNetworkACLParams(protocol)
+	p := cs.NetworkACL.NewCreateNetworkACLParams(rule["protocol"].(string))
 	log.Printf("[DEBUG] Initialized CreateNetworkACLParams")
 
 	// If a rule ID is specified, set it
@@ -628,27 +326,20 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 	log.Printf("[DEBUG] Set aclid=%s", aclID)
 
 	// Set the action
-	p.SetAction(action)
-	log.Printf("[DEBUG] Set action=%s", action)
+	p.SetAction(rule["action"].(string))
+	log.Printf("[DEBUG] Set action=%s", rule["action"].(string))
 
 	// Set the CIDR list
 	var cidrList []string
-	if cidrSet, ok := rule["cidr_list"].(*schema.Set); ok {
-		for _, cidr := range cidrSet.List() {
-			cidrList = append(cidrList, cidr.(string))
-		}
-	} else {
-		// Fallback for 'rule' field which uses TypeList
-		for _, cidr := range rule["cidr_list"].([]interface{}) {
-			cidrList = append(cidrList, cidr.(string))
-		}
+	for _, cidr := range rule["cidr_list"].([]interface{}) {
+		cidrList = append(cidrList, cidr.(string))
 	}
 	p.SetCidrlist(cidrList)
 	log.Printf("[DEBUG] Set cidr_list=%v", cidrList)
 
 	// Set the traffic type
-	p.SetTraffictype(trafficType)
-	log.Printf("[DEBUG] Set traffic_type=%s", trafficType)
+	p.SetTraffictype(rule["traffic_type"].(string))
+	log.Printf("[DEBUG] Set traffic_type=%s", rule["traffic_type"].(string))
 
 	// Set the description
 	if desc, ok := rule["description"].(string); ok && desc != "" {
@@ -667,9 +358,9 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 			log.Printf("[ERROR] Failed to create ICMP rule: %v", err)
 			return err
 		}
-		ruleID := r.(*cloudstack.CreateNetworkACLResponse).Id
-		setRuleUUID(rule, "icmp", ruleID)
-		log.Printf("[DEBUG] Created ICMP rule with ID=%s", ruleID)
+		uuids["icmp"] = r.(*cloudstack.CreateNetworkACLResponse).Id
+		rule["uuids"] = uuids
+		log.Printf("[DEBUG] Created ICMP rule with ID=%s", r.(*cloudstack.CreateNetworkACLResponse).Id)
 	}
 
 	// If the protocol is ALL set the needed parameters
@@ -679,106 +370,26 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 			log.Printf("[ERROR] Failed to create ALL rule: %v", err)
 			return err
 		}
-		ruleID := r.(*cloudstack.CreateNetworkACLResponse).Id
-		setRuleUUID(rule, "all", ruleID)
-		log.Printf("[DEBUG] Created ALL rule with ID=%s", ruleID)
+		uuids["all"] = r.(*cloudstack.CreateNetworkACLResponse).Id
+		rule["uuids"] = uuids
+		log.Printf("[DEBUG] Created ALL rule with ID=%s", r.(*cloudstack.CreateNetworkACLResponse).Id)
 	}
 
 	// If protocol is TCP or UDP, create the rule (with or without port)
 	if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
-		// Check if deprecated ports field is used (for backward compatibility)
-		portsSet, hasPortsSet := rule["ports"].(*schema.Set)
+		// Check if deprecated ports field is used and reject it
+		if portsSet, hasPortsSet := rule["ports"].(*schema.Set); hasPortsSet && portsSet.Len() > 0 {
+			log.Printf("[ERROR] Attempt to create rule with deprecated ports field")
+			return fmt.Errorf("The 'ports' field is no longer supported for creating new rules. Please use the 'port' field with separate rules for each port/range.")
+		}
+
 		portStr, hasPort := rule["port"].(string)
 
-		if hasPortsSet && portsSet.Len() > 0 {
-			// Handle deprecated ports field for backward compatibility
-			// Create a separate rule for each port in the set, each with a unique rule number
-			log.Printf("[DEBUG] Using deprecated ports field for backward compatibility, creating %d rules", portsSet.Len())
-
-			// Get the base rule number - this should always be set by assignRuleNumbers
-			baseRuleNum := 0
-			if ruleNum, ok := rule["rule_number"].(int); ok && ruleNum > 0 {
-				baseRuleNum = ruleNum
-			}
-
-			// Convert TypeSet to sorted list for deterministic rule number assignment
-			// This ensures that rule numbers are stable across runs
-			portsList := portsSet.List()
-			portsStrings := make([]string, len(portsList))
-			for i, port := range portsList {
-				portsStrings[i] = port.(string)
-			}
-			sort.Strings(portsStrings)
-			log.Printf("[DEBUG] Sorted ports for deterministic numbering: %v", portsStrings)
-
-			portIndex := 0
-			for _, portValue := range portsStrings {
-
-				// Check if this port already has a UUID
-				if _, hasUUID := getRuleUUID(rule, portValue); !hasUUID {
-					m := splitPorts.FindStringSubmatch(portValue)
-					if m == nil {
-						log.Printf("[ERROR] Invalid port format: %s", portValue)
-						return fmt.Errorf("%q is not a valid port value. Valid options are '80' or '80-90'", portValue)
-					}
-
-					startPort, err := strconv.Atoi(m[1])
-					if err != nil {
-						log.Printf("[ERROR] Failed to parse start port %s: %v", m[1], err)
-						return err
-					}
-
-					endPort := startPort
-					if m[2] != "" {
-						endPort, err = strconv.Atoi(m[2])
-						if err != nil {
-							log.Printf("[ERROR] Failed to parse end port %s: %v", m[2], err)
-							return err
-						}
-					}
-
-					// Create a new parameter object for this specific port with a unique rule number
-					portP := cs.NetworkACL.NewCreateNetworkACLParams(protocol)
-					portP.SetAclid(aclID)
-					portP.SetAction(action)
-					portP.SetCidrlist(cidrList)
-					portP.SetTraffictype(trafficType)
-					if desc, ok := rule["description"].(string); ok && desc != "" {
-						portP.SetReason(desc)
-					}
-
-					// Set a unique rule number for each port by adding the port index
-					// This ensures each expanded rule gets a unique number
-					uniqueRuleNum := baseRuleNum + portIndex
-					portP.SetNumber(uniqueRuleNum)
-					log.Printf("[DEBUG] Set unique rule_number=%d for port %s (base=%d, index=%d)", uniqueRuleNum, portValue, baseRuleNum, portIndex)
-
-					portP.SetStartport(startPort)
-					portP.SetEndport(endPort)
-					log.Printf("[DEBUG] Set port start=%d, end=%d for deprecated ports field", startPort, endPort)
-
-					r, err := Retry(4, retryableACLCreationFunc(cs, portP))
-					if err != nil {
-						log.Printf("[ERROR] Failed to create TCP/UDP rule for port %s: %v", portValue, err)
-						return err
-					}
-
-					ruleID := r.(*cloudstack.CreateNetworkACLResponse).Id
-					setRuleUUID(rule, portValue, ruleID)
-					log.Printf("[DEBUG] Created TCP/UDP rule for port %s with ID=%s (deprecated ports field)", portValue, ruleID)
-
-					portIndex++
-				} else {
-					log.Printf("[DEBUG] Port %s already has UUID, skipping", portValue)
-					portIndex++
-				}
-			}
-		} else if hasPort && portStr != "" {
+		if hasPort && portStr != "" {
 			// Handle single port
 			log.Printf("[DEBUG] Processing single port for TCP/UDP rule: %s", portStr)
 
-			// Check if this port already has a UUID (for 'rule' field with uuids map)
-			if _, hasUUID := getRuleUUID(rule, portStr); !hasUUID {
+			if _, ok := uuids[portStr]; !ok {
 				m := splitPorts.FindStringSubmatch(portStr)
 				if m == nil {
 					log.Printf("[ERROR] Invalid port format: %s", portStr)
@@ -810,9 +421,9 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 					return err
 				}
 
-				ruleID := r.(*cloudstack.CreateNetworkACLResponse).Id
-				setRuleUUID(rule, portStr, ruleID)
-				log.Printf("[DEBUG] Created TCP/UDP rule for port %s with ID=%s", portStr, ruleID)
+				uuids[portStr] = r.(*cloudstack.CreateNetworkACLResponse).Id
+				rule["uuids"] = uuids
+				log.Printf("[DEBUG] Created TCP/UDP rule for port %s with ID=%s", portStr, r.(*cloudstack.CreateNetworkACLResponse).Id)
 			} else {
 				log.Printf("[DEBUG] Port %s already has UUID, skipping", portStr)
 			}
@@ -824,141 +435,115 @@ func createNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[str
 				log.Printf("[ERROR] Failed to create TCP/UDP rule for all ports: %v", err)
 				return err
 			}
-			ruleID := r.(*cloudstack.CreateNetworkACLResponse).Id
-			setRuleUUID(rule, "all_ports", ruleID)
-			log.Printf("[DEBUG] Created TCP/UDP rule for all ports with ID=%s", ruleID)
+			uuids["all_ports"] = r.(*cloudstack.CreateNetworkACLResponse).Id
+			rule["uuids"] = uuids
+			log.Printf("[DEBUG] Created TCP/UDP rule for all ports with ID=%s", r.(*cloudstack.CreateNetworkACLResponse).Id)
 		}
 	}
 
-	log.Printf("[DEBUG] Successfully created rule")
+	log.Printf("[DEBUG] Successfully created rule with uuids=%+v", uuids)
 	return nil
 }
 
-func processTCPUDPRule(rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL, rules *[]interface{}) {
+func processTCPUDPRule(rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL, uuids map[string]interface{}, rules *[]interface{}) {
 	// Check for deprecated ports field first (for reading existing state during migration)
-	// This is only applicable to the legacy 'rule' field, not 'ruleset'
 	ps, hasPortsSet := rule["ports"].(*schema.Set)
 	portStr, hasPort := rule["port"].(string)
 
 	if hasPortsSet && ps.Len() > 0 {
-		// Only legacy 'rule' field supports deprecated ports
 		log.Printf("[DEBUG] Processing deprecated ports field with %d ports during state read", ps.Len())
-
-		// Create a new rule object to accumulate all ports
-		newRule := make(map[string]interface{})
-		newRule["uuids"] = make(map[string]interface{})
 
 		// Process each port in the deprecated ports set during state read
 		for _, port := range ps.List() {
 			portStr := port.(string)
 
-			if portRule, ok := processPortForRuleUnified(portStr, rule, ruleMap); ok {
-				// Merge the port rule data into newRule
-				for k, v := range portRule {
-					if k == "uuids" {
-						// Merge uuids maps
-						if uuids, ok := v.(map[string]interface{}); ok {
-							for uk, uv := range uuids {
-								newRule["uuids"].(map[string]interface{})[uk] = uv
-							}
-						}
-					} else {
-						newRule[k] = v
-					}
-				}
+			if processPortForRule(portStr, rule, ruleMap, uuids) {
 				log.Printf("[DEBUG] Processed deprecated port %s during state read", portStr)
 			}
 		}
 
-		// Only add the rule if we found at least one port
-		if uuids, ok := newRule["uuids"].(map[string]interface{}); ok && len(uuids) > 0 {
-			// Copy the ports field from the original rule
-			newRule["ports"] = ps
-			*rules = append(*rules, newRule)
-			log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state during read: %+v", newRule)
+		// Only add the rule once with all processed ports
+		if len(uuids) > 0 {
+			*rules = append(*rules, rule)
+			log.Printf("[DEBUG] Added TCP/UDP rule with deprecated ports to state during read: %+v", rule)
 		}
 
 	} else if hasPort && portStr != "" {
-		// Handle single port - works for both 'rule' and 'ruleset'
 		log.Printf("[DEBUG] Processing single port for TCP/UDP rule: %s", portStr)
 
-		if newRule, ok := processPortForRuleUnified(portStr, rule, ruleMap); ok {
-			newRule["port"] = portStr
-			*rules = append(*rules, newRule)
-			log.Printf("[DEBUG] Added TCP/UDP rule with single port to state: %+v", newRule)
+		if processPortForRule(portStr, rule, ruleMap, uuids) {
+			rule["port"] = portStr
+			*rules = append(*rules, rule)
+			log.Printf("[DEBUG] Added TCP/UDP rule with single port to state: %+v", rule)
 		}
 
 	} else {
-		// No port specified - create rule for all ports
-		// Works for both 'rule' and 'ruleset'
 		log.Printf("[DEBUG] Processing TCP/UDP rule with no port specified")
 
-		if newRule, ok := processPortForRuleUnified("all_ports", rule, ruleMap); ok {
-			*rules = append(*rules, newRule)
-			log.Printf("[DEBUG] Added TCP/UDP rule with no port to state: %+v", newRule)
+		id, ok := uuids["all_ports"]
+		if !ok {
+			log.Printf("[DEBUG] No UUID for all_ports, skipping rule")
+			return
 		}
-	}
-}
 
-func processPortForRuleUnified(portKey string, rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL) (map[string]interface{}, bool) {
-	// Get the UUID for this port (handles both 'rule' and 'ruleset' formats)
-	id, ok := getRuleUUID(rule, portKey)
-	if !ok {
-		log.Printf("[DEBUG] No UUID for port %s, skipping", portKey)
-		return nil, false
-	}
-
-	r, ok := ruleMap[id]
-	if !ok {
-		log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found", portKey, id)
-		return nil, false
-	}
-
-	// Delete the known rule so only unknown rules remain in the ruleMap
-	delete(ruleMap, id)
-
-	// Create a NEW rule object instead of modifying the existing one
-	newRule := make(map[string]interface{})
-
-	// Create a list or set with all CIDR's depending on field type
-	// Check if this is a ruleset rule (has uuid field) vs rule (has uuids field)
-	_, isRuleset := rule["uuid"]
-	if isRuleset {
-		cidrs := &schema.Set{F: schema.HashString}
-		for _, cidr := range strings.Split(r.Cidrlist, ",") {
-			cidrs.Add(cidr)
+		r, ok := ruleMap[id.(string)]
+		if !ok {
+			log.Printf("[DEBUG] TCP/UDP rule for all_ports with ID %s not found, removing UUID", id.(string))
+			delete(uuids, "all_ports")
+			return
 		}
-		newRule["cidr_list"] = cidrs
-	} else {
+
+		delete(ruleMap, id.(string))
+
 		var cidrs []interface{}
 		for _, cidr := range strings.Split(r.Cidrlist, ",") {
 			cidrs = append(cidrs, cidr)
 		}
-		newRule["cidr_list"] = cidrs
+
+		rule["action"] = strings.ToLower(r.Action)
+		rule["protocol"] = r.Protocol
+		rule["traffic_type"] = strings.ToLower(r.Traffictype)
+		rule["cidr_list"] = cidrs
+		rule["rule_number"] = r.Number
+		*rules = append(*rules, rule)
+		log.Printf("[DEBUG] Added TCP/UDP rule with no port to state: %+v", rule)
+	}
+}
+
+func processPortForRule(portStr string, rule map[string]interface{}, ruleMap map[string]*cloudstack.NetworkACL, uuids map[string]interface{}) bool {
+	id, ok := uuids[portStr]
+	if !ok {
+		log.Printf("[DEBUG] No UUID for port %s, skipping", portStr)
+		return false
 	}
 
-	newRule["action"] = strings.ToLower(r.Action)
-	newRule["protocol"] = r.Protocol
-	newRule["traffic_type"] = strings.ToLower(r.Traffictype)
-	newRule["rule_number"] = r.Number
-	newRule["description"] = r.Reason
-	// Set ICMP fields to 0 for non-ICMP protocols to avoid spurious diffs
-	newRule["icmp_type"] = 0
-	newRule["icmp_code"] = 0
-
-	// Copy the UUID field if it exists (for ruleset)
-	if isRuleset {
-		newRule["uuid"] = id
-	} else {
-		// For legacy 'rule' attribute, set uuids map
-		newRule["uuids"] = map[string]interface{}{portKey: id}
+	r, ok := ruleMap[id.(string)]
+	if !ok {
+		log.Printf("[DEBUG] TCP/UDP rule for port %s with ID %s not found, removing UUID", portStr, id.(string))
+		delete(uuids, portStr)
+		return false
 	}
 
-	return newRule, true
+	// Delete the known rule so only unknown rules remain in the ruleMap
+	delete(ruleMap, id.(string))
+
+	var cidrs []interface{}
+	for _, cidr := range strings.Split(r.Cidrlist, ",") {
+		cidrs = append(cidrs, cidr)
+	}
+
+	rule["action"] = strings.ToLower(r.Action)
+	rule["protocol"] = r.Protocol
+	rule["traffic_type"] = strings.ToLower(r.Traffictype)
+	rule["cidr_list"] = cidrs
+	rule["rule_number"] = r.Number
+
+	return true
 }
 
 func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+	log.Printf("[DEBUG] Entering resourceCloudStackNetworkACLRuleRead with acl_id=%s", d.Id())
 
 	// First check if the ACL itself still exists
 	_, count, err := cs.NetworkACL.GetNetworkACLListByID(
@@ -1012,228 +597,118 @@ func resourceCloudStackNetworkACLRuleRead(d *schema.ResourceData, meta interface
 	// Create an empty rule list to hold all rules
 	var rules []interface{}
 
-	// Determine which field is being used and get the rules list
-	var configuredRules []interface{}
-	usingRuleset := false
+	// Read all rules that are configured
+	if rs := d.Get("rule").([]interface{}); len(rs) > 0 {
+		for _, rule := range rs {
+			rule := rule.(map[string]interface{})
+			uuids := rule["uuids"].(map[string]interface{})
+			log.Printf("[DEBUG] Processing rule with protocol=%s, uuids=%+v", rule["protocol"].(string), uuids)
 
-	if rs := d.Get("ruleset").(*schema.Set); rs != nil && rs.Len() > 0 {
-		usingRuleset = true
-		configuredRules = rs.List()
-	} else if rs := d.Get("rule").([]interface{}); len(rs) > 0 {
-		configuredRules = rs
-	}
-
-	// Process all configured rules (works for both 'rule' and 'ruleset')
-	for _, rule := range configuredRules {
-		rule := rule.(map[string]interface{})
-
-		protocol, _ := rule["protocol"].(string)
-
-		if protocol == "" {
-			continue
-		}
-
-		if protocol == "icmp" {
-			id, ok := getRuleUUID(rule, "icmp")
-			if !ok {
-				log.Printf("[DEBUG] No ICMP UUID found, skipping rule")
-				continue
-			}
-
-			// Get the rule
-			r, ok := ruleMap[id]
-			if !ok {
-				log.Printf("[DEBUG] ICMP rule with ID %s not found", id)
-				continue
-			}
-
-			// Delete the known rule so only unknown rules remain in the ruleMap
-			delete(ruleMap, id)
-
-			// Create a NEW rule object instead of modifying the existing one
-			// This prevents corrupting the configuration data
-			newRule := make(map[string]interface{})
-
-			// Create a list or set with all CIDR's depending on field type
-			if usingRuleset {
-				cidrs := &schema.Set{F: schema.HashString}
-				for _, cidr := range strings.Split(r.Cidrlist, ",") {
-					cidrs.Add(cidr)
+			if rule["protocol"].(string) == "icmp" {
+				id, ok := uuids["icmp"]
+				if !ok {
+					log.Printf("[DEBUG] No ICMP UUID found, skipping rule")
+					continue
 				}
-				newRule["cidr_list"] = cidrs
-			} else {
+
+				// Get the rule
+				r, ok := ruleMap[id.(string)]
+				if !ok {
+					log.Printf("[DEBUG] ICMP rule with ID %s not found, removing UUID", id.(string))
+					delete(uuids, "icmp")
+					continue
+				}
+
+				// Delete the known rule so only unknown rules remain in the ruleMap
+				delete(ruleMap, id.(string))
+
+				// Create a list with all CIDR's
 				var cidrs []interface{}
 				for _, cidr := range strings.Split(r.Cidrlist, ",") {
 					cidrs = append(cidrs, cidr)
 				}
-				newRule["cidr_list"] = cidrs
+
+				// Update the values
+				rule["action"] = strings.ToLower(r.Action)
+				rule["protocol"] = r.Protocol
+				rule["icmp_type"] = r.Icmptype
+				rule["icmp_code"] = r.Icmpcode
+				rule["traffic_type"] = strings.ToLower(r.Traffictype)
+				rule["cidr_list"] = cidrs
+				rule["rule_number"] = r.Number
+				rules = append(rules, rule)
+				log.Printf("[DEBUG] Added ICMP rule to state: %+v", rule)
 			}
 
-			// Set the values from CloudStack
-			newRule["action"] = strings.ToLower(r.Action)
-			newRule["protocol"] = r.Protocol
-			newRule["icmp_type"] = r.Icmptype
-			newRule["icmp_code"] = r.Icmpcode
-			newRule["traffic_type"] = strings.ToLower(r.Traffictype)
-			newRule["rule_number"] = r.Number
-			newRule["description"] = r.Reason
-			if usingRuleset {
-				newRule["uuid"] = id
-			} else {
-				newRule["uuids"] = map[string]interface{}{"icmp": id}
-			}
-			rules = append(rules, newRule)
-			log.Printf("[DEBUG] Added ICMP rule to state: %+v", newRule)
-		}
-
-		if rule["protocol"].(string) == "all" {
-			id, ok := getRuleUUID(rule, "all")
-			if !ok {
-				log.Printf("[DEBUG] No ALL UUID found, skipping rule")
-				continue
-			}
-
-			// Get the rule
-			r, ok := ruleMap[id]
-			if !ok {
-				log.Printf("[DEBUG] ALL rule with ID %s not found", id)
-				continue
-			}
-
-			// Delete the known rule so only unknown rules remain in the ruleMap
-			delete(ruleMap, id)
-
-			// Create a NEW rule object instead of modifying the existing one
-			newRule := make(map[string]interface{})
-
-			// Create a list or set with all CIDR's depending on field type
-			if usingRuleset {
-				cidrs := &schema.Set{F: schema.HashString}
-				for _, cidr := range strings.Split(r.Cidrlist, ",") {
-					cidrs.Add(cidr)
+			if rule["protocol"].(string) == "all" {
+				id, ok := uuids["all"]
+				if !ok {
+					log.Printf("[DEBUG] No ALL UUID found, skipping rule")
+					continue
 				}
-				newRule["cidr_list"] = cidrs
-			} else {
+
+				// Get the rule
+				r, ok := ruleMap[id.(string)]
+				if !ok {
+					log.Printf("[DEBUG] ALL rule with ID %s not found, removing UUID", id.(string))
+					delete(uuids, "all")
+					continue
+				}
+
+				// Delete the known rule so only unknown rules remain in the ruleMap
+				delete(ruleMap, id.(string))
+
+				// Create a list with all CIDR's
 				var cidrs []interface{}
 				for _, cidr := range strings.Split(r.Cidrlist, ",") {
 					cidrs = append(cidrs, cidr)
 				}
-				newRule["cidr_list"] = cidrs
+
+				// Update the values
+				rule["action"] = strings.ToLower(r.Action)
+				rule["protocol"] = r.Protocol
+				rule["traffic_type"] = strings.ToLower(r.Traffictype)
+				rule["cidr_list"] = cidrs
+				rule["rule_number"] = r.Number
+				rules = append(rules, rule)
+				log.Printf("[DEBUG] Added ALL rule to state: %+v", rule)
 			}
 
-			// Set the values from CloudStack
-			newRule["action"] = strings.ToLower(r.Action)
-			newRule["protocol"] = r.Protocol
-			newRule["traffic_type"] = strings.ToLower(r.Traffictype)
-			newRule["rule_number"] = r.Number
-			newRule["description"] = r.Reason
-			// Set ICMP fields to 0 for non-ICMP protocols to avoid spurious diffs
-			newRule["icmp_type"] = 0
-			newRule["icmp_code"] = 0
-			if usingRuleset {
-				newRule["uuid"] = id
-			} else {
-				newRule["uuids"] = map[string]interface{}{"all": id}
+			if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
+				uuids := rule["uuids"].(map[string]interface{})
+				processTCPUDPRule(rule, ruleMap, uuids, &rules)
 			}
-			rules = append(rules, newRule)
-			log.Printf("[DEBUG] Added ALL rule to state: %+v", newRule)
-		}
-
-		if rule["protocol"].(string) == "tcp" || rule["protocol"].(string) == "udp" {
-			processTCPUDPRule(rule, ruleMap, &rules)
 		}
 	}
 
-	// If this is a managed ACL, add all unknown rules as out-of-band rule placeholders
+	// If this is a managed firewall, add all unknown rules into dummy rules
 	managed := d.Get("managed").(bool)
 	if managed && len(ruleMap) > 0 {
-		// Find the highest rule_number to avoid conflicts when creating out-of-band rule placeholders
-		maxRuleNumber := 0
-		for _, rule := range rules {
-			if ruleMap, ok := rule.(map[string]interface{}); ok {
-				if ruleNum, ok := ruleMap["rule_number"].(int); ok && ruleNum > maxRuleNumber {
-					maxRuleNumber = ruleNum
-				}
-			}
-		}
-
-		// Start assigning out-of-band rule numbers after the highest existing rule_number
-		outOfBandRuleNumber := maxRuleNumber + 1
-
 		for uuid := range ruleMap {
-			// Make a placeholder rule to hold the unknown UUID
-			// Format differs between 'rule' and 'ruleset'
-			var rule map[string]interface{}
-			if usingRuleset {
-				// For ruleset: use 'uuid' string and include rule_number
-				// cidr_list is a TypeSet for ruleset
-				cidrs := &schema.Set{F: schema.HashString}
-				cidrs.Add(uuid)
+			// We need to create and add a dummy value to a list as the
+			// cidr_list is a required field and thus needs a value
+			cidrs := []interface{}{uuid}
 
-				// Include all fields with defaults to avoid spurious diffs
-				rule = map[string]interface{}{
-					"cidr_list":    cidrs,
-					"protocol":     uuid,
-					"uuid":         uuid,
-					"rule_number":  outOfBandRuleNumber,
-					"action":       "allow",   // default value
-					"traffic_type": "ingress", // default value
-					"icmp_type":    0,         // default value
-					"icmp_code":    0,         // default value
-					"description":  "",        // empty string for optional field
-					"port":         "",        // empty string for optional field
-				}
-				outOfBandRuleNumber++
-			} else {
-				// For rule: use 'uuids' map
-				// cidr_list is a TypeList for rule
-				cidrs := []interface{}{uuid}
-				rule = map[string]interface{}{
-					"cidr_list": cidrs,
-					"protocol":  uuid,
-					"uuids":     map[string]interface{}{uuid: uuid},
-				}
+			// Make a dummy rule to hold the unknown UUID
+			rule := map[string]interface{}{
+				"cidr_list": cidrs,
+				"protocol":  uuid,
+				"uuids":     map[string]interface{}{uuid: uuid},
 			}
 
-			// Add the out-of-band rule placeholder to the rules list
+			// Add the dummy rule to the rules list
 			rules = append(rules, rule)
-			log.Printf("[DEBUG] Added out-of-band rule placeholder for UUID %s (usingRuleset=%t)", uuid, usingRuleset)
+			log.Printf("[DEBUG] Added managed dummy rule for UUID %s", uuid)
 		}
 	}
 
-	// Always set the rules in state, even if empty (for managed=true case)
-	if usingRuleset {
-		// WORKAROUND: Filter out any ghost entries from the rules we're about to set
-		// The SDK can create ghost entries with empty protocol/rule_number
-		rules, _ = filterGhostEntries(rules, "Read")
-
-		// For TypeSet, we need to be very careful about state updates
-		// The SDK has issues with properly clearing removed elements from TypeSet
-		// So we explicitly set to empty first, then set the new value
-		// Use schema.HashResource to match the default hash function
-		rulesetResource := resourceCloudStackNetworkACLRule().Schema["ruleset"].Elem.(*schema.Resource)
-		hashFunc := schema.HashResource(rulesetResource)
-
-		// First, clear the ruleset completely
-		emptySet := schema.NewSet(hashFunc, []interface{}{})
-		if err := d.Set("ruleset", emptySet); err != nil {
-			log.Printf("[ERROR] Failed to clear ruleset attribute: %v", err)
-			return err
-		}
-
-		// Now set the new rules
-		newSet := schema.NewSet(hashFunc, rules)
-		if err := d.Set("ruleset", newSet); err != nil {
-			return err
-		}
-	} else {
+	if len(rules) > 0 {
+		log.Printf("[DEBUG] Setting %d rules in state", len(rules))
 		if err := d.Set("rule", rules); err != nil {
 			log.Printf("[ERROR] Failed to set rule attribute: %v", err)
 			return err
 		}
-	}
-
-	if len(rules) == 0 && !managed {
+	} else if !managed {
 		log.Printf("[DEBUG] No rules found and not managed, clearing ID")
 		d.SetId("")
 	}
@@ -1266,49 +741,17 @@ func resourceCloudStackNetworkACLRuleUpdate(d *schema.ResourceData, meta interfa
 		}
 
 		log.Printf("[DEBUG] Rule list changed, performing efficient updates")
-
-		// Validate new rules BEFORE assigning numbers
-		if err := validateRulesList(d, newRules, "rule"); err != nil {
-			return err
-		}
-
-		// Assign rule numbers to new rules that don't have them
-		newRulesWithNumbers := assignRuleNumbers(newRules)
-
-		err := updateNetworkACLRules(d, meta, oldRules, newRulesWithNumbers)
+		err := updateNetworkACLRules(d, meta, oldRules, newRules)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Check if the ruleset has changed
-	if d.HasChange("ruleset") {
-		o, n := d.GetChange("ruleset")
-
-		// WORKAROUND: The Terraform SDK has a bug where it creates "ghost" entries
-		// when rules are removed from a TypeSet. These ghost entries have empty
-		// protocol and rule_number=0 but retain the UUID from the deleted rule.
-		// We need to filter them out BEFORE doing Set operations.
-		cleanNewRules, _ := filterGhostEntries(n.(*schema.Set).List(), "Update")
-		cleanOldRules, _ := filterGhostEntries(o.(*schema.Set).List(), "Update old")
-
-		// Use the same sophisticated reconciliation logic as the 'rule' attribute
-		// This will match rules by rule_number, update changed rules, and only
-		// delete/create rules that truly disappeared/appeared
-		cs := meta.(*cloudstack.CloudStackClient)
-		err := performNormalRuleUpdates(d, meta, cs, cleanOldRules, cleanNewRules)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Call Read to refresh the state from the API
-	// Read() already filters ghost entries, so we don't need to do it again here
 	return resourceCloudStackNetworkACLRuleRead(d, meta)
 }
 
 func resourceCloudStackNetworkACLRuleDelete(d *schema.ResourceData, meta interface{}) error {
-	// Delete all rules from 'rule' field
+	// Delete all rules
 	if ors := d.Get("rule").([]interface{}); len(ors) > 0 {
 		for _, rule := range ors {
 			ruleMap := rule.(map[string]interface{})
@@ -1320,107 +763,54 @@ func resourceCloudStackNetworkACLRuleDelete(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	// Delete all rules from 'ruleset' field
-	if ors := d.Get("ruleset").(*schema.Set); ors != nil && ors.Len() > 0 {
-		for _, rule := range ors.List() {
-			ruleMap := rule.(map[string]interface{})
-			err := deleteNetworkACLRule(d, meta, ruleMap)
-			if err != nil {
-				log.Printf("[ERROR] Failed to delete ruleset rule: %v", err)
-				return err
-			}
-		}
-	}
-
 	return nil
 }
 
 func deleteNetworkACLRule(d *schema.ResourceData, meta interface{}, rule map[string]interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
+	uuids := rule["uuids"].(map[string]interface{})
 
-	if isRulesetRule(rule) {
-		// For ruleset, delete the single UUID
-		if uuid, ok := getRuleUUID(rule, ""); ok {
-			if err := deleteSingleACL(cs, uuid); err != nil {
-				return err
-			}
-			// Don't modify the rule object - it's from the old state and modifying it
-			// can cause issues with TypeSet state management
+	for k, id := range uuids {
+		// We don't care about the count here, so just continue
+		if k == "%" {
+			continue
 		}
-	} else {
-		// For rule, delete all UUIDs from the map
-		if uuidsVal, ok := rule["uuids"]; ok && uuidsVal != nil {
-			uuids := uuidsVal.(map[string]interface{})
-			for k, id := range uuids {
-				// Skip the count field
-				if k == "%" {
-					continue
-				}
-				if idStr, ok := id.(string); ok {
-					if err := deleteSingleACL(cs, idStr); err != nil {
-						return err
-					}
-					// Don't modify the uuids map - it's from the old state
-				}
+
+		// Create the parameter struct
+		p := cs.NetworkACL.NewDeleteNetworkACLParams(id.(string))
+
+		// Delete the rule
+		if _, err := cs.NetworkACL.DeleteNetworkACL(p); err != nil {
+
+			// This is a very poor way to be told the ID does no longer exist :(
+			if strings.Contains(err.Error(), fmt.Sprintf(
+				"Invalid parameter id value=%s due to incorrect long value format, "+
+					"or entity does not exist", id.(string))) {
+				delete(uuids, k)
+				rule["uuids"] = uuids
+				continue
 			}
+
+			return err
 		}
+
+		// Delete the UUID of this rule
+		delete(uuids, k)
+		rule["uuids"] = uuids
 	}
 
-	return nil
-}
-
-func deleteSingleACL(cs *cloudstack.CloudStackClient, id string) error {
-	log.Printf("[DEBUG] Deleting ACL rule with UUID=%s", id)
-
-	p := cs.NetworkACL.NewDeleteNetworkACLParams(id)
-	if _, err := cs.NetworkACL.DeleteNetworkACL(p); err != nil {
-		// This is a very poor way to be told the ID does no longer exist :(
-		if strings.Contains(err.Error(), fmt.Sprintf(
-			"Invalid parameter id value=%s due to incorrect long value format, "+
-				"or entity does not exist", id)) {
-			// ID doesn't exist, which is fine for delete
-			return nil
-		}
-		return err
-	}
 	return nil
 }
 
 func verifyNetworkACLParams(d *schema.ResourceData) error {
 	managed := d.Get("managed").(bool)
 	_, rules := d.GetOk("rule")
-	_, ruleset := d.GetOk("ruleset")
 
-	if !rules && !ruleset && !managed {
+	if !rules && !managed {
 		return fmt.Errorf(
-			"You must supply at least one 'rule' or 'ruleset' when not using the 'managed' firewall feature")
+			"You must supply at least one 'rule' when not using the 'managed' firewall feature")
 	}
 
-	return nil
-}
-
-// validateRulesList validates all rules in a list by calling verifyNetworkACLRuleParams on each
-// This helper consolidates the validation logic used in Create and Update paths for both 'rule' and 'ruleset' fields
-// Out-of-band rule placeholders (created by managed=true) are skipped as they are markers for deletion
-func validateRulesList(d *schema.ResourceData, rules []interface{}, fieldName string) error {
-	validatedCount := 0
-	for i, rule := range rules {
-		ruleMap := rule.(map[string]interface{})
-
-		// Skip validation for out-of-band rule placeholders
-		// These are created by managed=true and are just markers for deletion
-		if isOutOfBandRulePlaceholder(ruleMap) {
-			log.Printf("[DEBUG] Skipping validation for out-of-band rule placeholder at index %d", i)
-			continue
-		}
-
-		if err := verifyNetworkACLRuleParams(d, ruleMap); err != nil {
-			log.Printf("[ERROR] Failed to verify %s rule %d parameters: %v", fieldName, i, err)
-			return fmt.Errorf("validation failed for %s rule %d: %w", fieldName, i, err)
-		}
-		validatedCount++
-	}
-	log.Printf("[DEBUG] Successfully validated %d %s rules (skipped %d out-of-band placeholders)", validatedCount, fieldName, len(rules)-validatedCount)
 	return nil
 }
 
@@ -1462,40 +852,14 @@ func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interfac
 		// No additional test are needed
 		log.Printf("[DEBUG] Protocol 'all' validated")
 	case "tcp", "udp":
-		// The deprecated 'ports' field is allowed for backward compatibility
-		// but users should migrate to the 'port' field
+		// The deprecated 'ports' field is no longer supported in any scenario
 		portsSet, hasPortsSet := rule["ports"].(*schema.Set)
 		portStr, hasPort := rule["port"].(string)
 
-		// Allow deprecated ports field for backward compatibility
-		// The schema already marks it as deprecated with a warning
+		// Block deprecated ports field completely
 		if hasPortsSet && portsSet.Len() > 0 {
-			log.Printf("[DEBUG] Using deprecated ports field for backward compatibility")
-
-			// When using deprecated ports field with multiple values, rule_number cannot be specified
-			// because we auto-generate sequential rule numbers for each port
-			if portsSet.Len() > 1 {
-				if ruleNum, ok := rule["rule_number"]; ok && ruleNum != nil {
-					if number, ok := ruleNum.(int); ok && number > 0 {
-						log.Printf("[ERROR] Cannot specify rule_number when using deprecated ports field with multiple values")
-						return fmt.Errorf(
-							"Cannot specify 'rule_number' when using deprecated 'ports' field with multiple values. " +
-								"Rule numbers are auto-generated for each port (starting from the auto-assigned base number). " +
-								"Either use a single port in 'ports', or omit 'rule_number', or migrate to the 'port' field.")
-					}
-				}
-			}
-
-			// Validate each port in the set
-			for _, p := range portsSet.List() {
-				portValue := p.(string)
-				m := splitPorts.FindStringSubmatch(portValue)
-				if m == nil {
-					log.Printf("[ERROR] Invalid port format in ports field: %s", portValue)
-					return fmt.Errorf(
-						"%q is not a valid port value. Valid options are '80' or '80-90'", portValue)
-				}
-			}
+			log.Printf("[ERROR] Attempt to use deprecated ports field")
+			return fmt.Errorf("The 'ports' field is no longer supported. Please use the 'port' field instead.")
 		}
 
 		// Validate the new port field if used
@@ -1507,11 +871,8 @@ func verifyNetworkACLRuleParams(d *schema.ResourceData, rule map[string]interfac
 				return fmt.Errorf(
 					"%q is not a valid port value. Valid options are '80' or '80-90'", portStr)
 			}
-		}
-
-		// If neither port nor ports is specified, that's also valid (allows all ports)
-		if (!hasPort || portStr == "") && (!hasPortsSet || portsSet.Len() == 0) {
-			log.Printf("[DEBUG] No port specified for TCP/UDP, allowing all ports")
+		} else {
+			log.Printf("[DEBUG] No port specified for TCP/UDP, allowing empty port")
 		}
 	default:
 		_, err := strconv.ParseInt(protocol, 0, 0)
@@ -1578,34 +939,6 @@ func checkACLListExists(cs *cloudstack.CloudStackClient, aclID string) (bool, er
 	return count > 0, nil
 }
 
-// isOutOfBandRulePlaceholder checks if a rule is a placeholder for an out-of-band rule
-// (created by managed=true for rules that exist in CloudStack but not in config)
-// Out-of-band rule placeholders are identified by having protocol == uuid, OR by having
-// an empty protocol with rule_number == 0 (TypeSet reconciliation creates these)
-func isOutOfBandRulePlaceholder(rule map[string]interface{}) bool {
-	protocol, hasProtocol := rule["protocol"].(string)
-	uuid, hasUUID := getRuleUUID(rule, "")
-
-	if !hasUUID || uuid == "" {
-		return false
-	}
-
-	// Case 1: protocol equals uuid (original out-of-band rule placeholder in state)
-	if hasProtocol && protocol == uuid {
-		return true
-	}
-
-	// Case 2: protocol is empty and rule_number is 0
-	// This happens when TypeSet reconciles an out-of-band rule placeholder from state but zeros out the fields
-	if hasProtocol && protocol == "" {
-		if ruleNum, ok := rule["rule_number"].(int); ok && ruleNum == 0 {
-			return true
-		}
-	}
-
-	return false
-}
-
 func updateNetworkACLRules(d *schema.ResourceData, meta interface{}, oldRules, newRules []interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	log.Printf("[DEBUG] Updating ACL rules: %d old rules, %d new rules", len(oldRules), len(newRules))
@@ -1634,38 +967,22 @@ func performNormalRuleUpdates(d *schema.ResourceData, meta interface{}, cs *clou
 
 			newRuleMap := newRule.(map[string]interface{})
 			log.Printf("[DEBUG] Comparing old rule %+v with new rule %+v", oldRuleMap, newRuleMap)
-
-			// For ruleset rules, match by rule_number only
-			// For regular rules, use the full rulesMatch function
-			var matched bool
-			if isRulesetRule(oldRuleMap) && isRulesetRule(newRuleMap) {
-				matched = rulesetRulesMatchByNumber(oldRuleMap, newRuleMap)
-			} else {
-				matched = rulesMatch(oldRuleMap, newRuleMap)
-			}
-
-			if matched {
+			if rulesMatch(oldRuleMap, newRuleMap) {
 				log.Printf("[DEBUG] Found matching new rule for old rule")
 
-				// Copy UUID from old rule to new rule (following port_forward pattern)
-				// This preserves the UUID across updates
-				if isRulesetRule(oldRuleMap) {
-					// Ruleset format: single uuid string
-					if uuid, ok := oldRuleMap["uuid"].(string); ok && uuid != "" {
-						newRuleMap["uuid"] = uuid
-					}
-				} else {
-					// Rule format: uuids map
-					if uuids, ok := oldRuleMap["uuids"].(map[string]interface{}); ok {
-						newRuleMap["uuids"] = uuids
-					}
+				if oldUUIDs, ok := oldRuleMap["uuids"].(map[string]interface{}); ok {
+					newRuleMap["uuids"] = oldUUIDs
 				}
 
 				if ruleNeedsUpdate(oldRuleMap, newRuleMap) {
 					log.Printf("[DEBUG] Rule needs updating")
-					// Get UUID for update (use empty key to get first UUID)
-					if updateUUID, ok := getRuleUUID(oldRuleMap, ""); ok {
-						rulesToUpdate[updateUUID] = newRuleMap
+					if uuids, ok := oldRuleMap["uuids"].(map[string]interface{}); ok {
+						for _, uuid := range uuids {
+							if uuid != nil {
+								rulesToUpdate[uuid.(string)] = newRuleMap
+								break
+							}
+						}
 					}
 				}
 
@@ -1684,14 +1001,6 @@ func performNormalRuleUpdates(d *schema.ResourceData, meta interface{}, cs *clou
 	for newIdx, newRule := range newRules {
 		if !usedNewRules[newIdx] {
 			newRuleMap := newRule.(map[string]interface{})
-
-			// Skip out-of-band rule placeholders (created by managed=true for out-of-band rules)
-			// These placeholders should not be created - they're just markers for deletion
-			if isOutOfBandRulePlaceholder(newRuleMap) {
-				log.Printf("[DEBUG] Skipping out-of-band rule placeholder (will not create)")
-				continue
-			}
-
 			log.Printf("[DEBUG] New rule has no match, will be created")
 			rulesToCreate = append(rulesToCreate, newRuleMap)
 		}
@@ -1735,35 +1044,14 @@ func performNormalRuleUpdates(d *schema.ResourceData, meta interface{}, cs *clou
 	return nil
 }
 
-// rulesetRulesMatchByNumber matches ruleset rules by rule_number only
-// This allows changes to other fields (CIDR, port, protocol, etc.) to be detected as updates
-func rulesetRulesMatchByNumber(oldRule, newRule map[string]interface{}) bool {
-	oldRuleNum, oldHasRuleNum := oldRule["rule_number"].(int)
-	newRuleNum, newHasRuleNum := newRule["rule_number"].(int)
-
-	// Both must have rule_number and they must match
-	if !oldHasRuleNum || !newHasRuleNum {
-		return false
-	}
-
-	return oldRuleNum == newRuleNum
-}
-
 func rulesMatch(oldRule, newRule map[string]interface{}) bool {
-	oldProtocol := oldRule["protocol"].(string)
-	newProtocol := newRule["protocol"].(string)
-	oldTrafficType := oldRule["traffic_type"].(string)
-	newTrafficType := newRule["traffic_type"].(string)
-	oldAction := oldRule["action"].(string)
-	newAction := newRule["action"].(string)
-
-	if oldProtocol != newProtocol ||
-		oldTrafficType != newTrafficType ||
-		oldAction != newAction {
+	if oldRule["protocol"].(string) != newRule["protocol"].(string) ||
+		oldRule["traffic_type"].(string) != newRule["traffic_type"].(string) ||
+		oldRule["action"].(string) != newRule["action"].(string) {
 		return false
 	}
 
-	protocol := newProtocol
+	protocol := newRule["protocol"].(string)
 
 	if protocol == "tcp" || protocol == "udp" {
 		oldPort, oldHasPort := oldRule["port"].(string)
@@ -1794,24 +1082,18 @@ func rulesMatch(oldRule, newRule map[string]interface{}) bool {
 }
 
 func ruleNeedsUpdate(oldRule, newRule map[string]interface{}) bool {
-	oldAction := oldRule["action"].(string)
-	newAction := newRule["action"].(string)
-	if oldAction != newAction {
-		log.Printf("[DEBUG] Action changed: %s -> %s", oldAction, newAction)
+	if oldRule["action"].(string) != newRule["action"].(string) {
+		log.Printf("[DEBUG] Action changed: %s -> %s", oldRule["action"].(string), newRule["action"].(string))
 		return true
 	}
 
-	oldProtocol := oldRule["protocol"].(string)
-	newProtocol := newRule["protocol"].(string)
-	if oldProtocol != newProtocol {
-		log.Printf("[DEBUG] Protocol changed: %s -> %s", oldProtocol, newProtocol)
+	if oldRule["protocol"].(string) != newRule["protocol"].(string) {
+		log.Printf("[DEBUG] Protocol changed: %s -> %s", oldRule["protocol"].(string), newRule["protocol"].(string))
 		return true
 	}
 
-	oldTrafficType := oldRule["traffic_type"].(string)
-	newTrafficType := newRule["traffic_type"].(string)
-	if oldTrafficType != newTrafficType {
-		log.Printf("[DEBUG] Traffic type changed: %s -> %s", oldTrafficType, newTrafficType)
+	if oldRule["traffic_type"].(string) != newRule["traffic_type"].(string) {
+		log.Printf("[DEBUG] Traffic type changed: %s -> %s", oldRule["traffic_type"].(string), newRule["traffic_type"].(string))
 		return true
 	}
 
@@ -1830,30 +1112,15 @@ func ruleNeedsUpdate(oldRule, newRule map[string]interface{}) bool {
 		return true
 	}
 
-	// Use newProtocol from earlier
-	switch newProtocol {
+	protocol := newRule["protocol"].(string)
+	switch protocol {
 	case "icmp":
-		// Helper function to get int value with default
-		getInt := func(rule map[string]interface{}, key string, defaultVal int) int {
-			if val, ok := rule[key]; ok && val != nil {
-				if i, ok := val.(int); ok {
-					return i
-				}
-			}
-			return defaultVal
-		}
-
-		oldIcmpType := getInt(oldRule, "icmp_type", 0)
-		newIcmpType := getInt(newRule, "icmp_type", 0)
-		if oldIcmpType != newIcmpType {
-			log.Printf("[DEBUG] ICMP type changed: %d -> %d", oldIcmpType, newIcmpType)
+		if oldRule["icmp_type"].(int) != newRule["icmp_type"].(int) {
+			log.Printf("[DEBUG] ICMP type changed: %d -> %d", oldRule["icmp_type"].(int), newRule["icmp_type"].(int))
 			return true
 		}
-
-		oldIcmpCode := getInt(oldRule, "icmp_code", 0)
-		newIcmpCode := getInt(newRule, "icmp_code", 0)
-		if oldIcmpCode != newIcmpCode {
-			log.Printf("[DEBUG] ICMP code changed: %d -> %d", oldIcmpCode, newIcmpCode)
+		if oldRule["icmp_code"].(int) != newRule["icmp_code"].(int) {
+			log.Printf("[DEBUG] ICMP code changed: %d -> %d", oldRule["icmp_code"].(int), newRule["icmp_code"].(int))
 			return true
 		}
 	case "tcp", "udp":
@@ -1865,34 +1132,20 @@ func ruleNeedsUpdate(oldRule, newRule map[string]interface{}) bool {
 		}
 	}
 
-	// Handle cidr_list comparison - can be TypeSet (ruleset) or TypeList (rule)
-	var oldCidrStrs, newCidrStrs []string
-
-	// Extract old CIDRs
-	if oldSet, ok := oldRule["cidr_list"].(*schema.Set); ok {
-		for _, cidr := range oldSet.List() {
-			oldCidrStrs = append(oldCidrStrs, cidr.(string))
-		}
-	} else if oldList, ok := oldRule["cidr_list"].([]interface{}); ok {
-		for _, cidr := range oldList {
-			oldCidrStrs = append(oldCidrStrs, cidr.(string))
-		}
-	}
-
-	// Extract new CIDRs
-	if newSet, ok := newRule["cidr_list"].(*schema.Set); ok {
-		for _, cidr := range newSet.List() {
-			newCidrStrs = append(newCidrStrs, cidr.(string))
-		}
-	} else if newList, ok := newRule["cidr_list"].([]interface{}); ok {
-		for _, cidr := range newList {
-			newCidrStrs = append(newCidrStrs, cidr.(string))
-		}
-	}
-
-	if len(oldCidrStrs) != len(newCidrStrs) {
-		log.Printf("[DEBUG] CIDR list length changed: %d -> %d", len(oldCidrStrs), len(newCidrStrs))
+	oldCidrs := oldRule["cidr_list"].([]interface{})
+	newCidrs := newRule["cidr_list"].([]interface{})
+	if len(oldCidrs) != len(newCidrs) {
+		log.Printf("[DEBUG] CIDR list length changed: %d -> %d", len(oldCidrs), len(newCidrs))
 		return true
+	}
+
+	oldCidrStrs := make([]string, len(oldCidrs))
+	newCidrStrs := make([]string, len(newCidrs))
+	for i, cidr := range oldCidrs {
+		oldCidrStrs[i] = cidr.(string)
+	}
+	for i, cidr := range newCidrs {
+		newCidrStrs[i] = cidr.(string)
 	}
 
 	sort.Strings(oldCidrStrs)
@@ -1922,22 +1175,13 @@ func updateNetworkACLRule(cs *cloudstack.CloudStackClient, oldRule, newRule map[
 		p.SetAction(newRule["action"].(string))
 
 		var cidrList []string
-		if cidrSet, ok := newRule["cidr_list"].(*schema.Set); ok {
-			for _, cidr := range cidrSet.List() {
-				cidrList = append(cidrList, cidr.(string))
-			}
-		} else {
-			for _, cidr := range newRule["cidr_list"].([]interface{}) {
-				cidrList = append(cidrList, cidr.(string))
-			}
+		for _, cidr := range newRule["cidr_list"].([]interface{}) {
+			cidrList = append(cidrList, cidr.(string))
 		}
 		p.SetCidrlist(cidrList)
 
-		// Set description from the new rule
-		if desc, ok := newRule["description"].(string); ok {
+		if desc, ok := newRule["description"].(string); ok && desc != "" {
 			p.SetReason(desc)
-		} else {
-			p.SetReason("")
 		}
 
 		p.SetProtocol(newRule["protocol"].(string))
@@ -2173,11 +1417,8 @@ func performPortsMigration(d *schema.ResourceData, meta interface{}, oldRules, n
 			rulesToCreate = append(rulesToCreate, cleanRule)
 		}
 
-		// Assign rule numbers to new rules that don't have them
-		rulesToCreateWithNumbers := assignRuleNumbers(rulesToCreate)
-
 		var createdRules []interface{}
-		err := createNetworkACLRules(d, meta, &createdRules, rulesToCreateWithNumbers)
+		err := createNetworkACLRules(d, meta, &createdRules, rulesToCreate)
 		if err != nil {
 			return fmt.Errorf("failed to create new rules during migration: %v", err)
 		}
