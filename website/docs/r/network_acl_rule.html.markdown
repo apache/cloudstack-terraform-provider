@@ -8,7 +8,18 @@ description: |-
 
 # cloudstack_network_acl_rule
 
+!> **WARNING:** This resource is deprecated. Use [`cloudstack_network_acl_ruleset`](/docs/providers/cloudstack/r/network_acl_ruleset.html) instead for better performance and in-place updates.
+
 Creates network ACL rules for a given network ACL.
+
+## Migration to cloudstack_network_acl_ruleset
+
+The `cloudstack_network_acl_ruleset` resource provides several advantages:
+- **In-place updates**: Rule modifications preserve UUIDs and avoid delete+create cycles
+- **Better performance**: Optimized concurrent operations with proper thread safety
+- **Simpler state management**: More reliable tracking of rule changes
+
+See the [`cloudstack_network_acl_ruleset`](/docs/providers/cloudstack/r/network_acl_ruleset.html) documentation for migration examples.
 
 ## Example Usage
 
@@ -129,60 +140,10 @@ resource "cloudstack_network_acl_rule" "web_server" {
 }
 ```
 
-### Using `ruleset` for Better Change Management
-
-The `ruleset` field is recommended when you need to insert or remove rules without
-triggering unnecessary updates to other rules. Unlike `rule` (which uses a list),
-`ruleset` uses a set that identifies rules by their `rule_number` rather than position.
-
-**Key differences:**
-- `ruleset` requires `rule_number` on all rules (no auto-numbering)
-- Each `rule_number` must be unique within the ruleset; if you define multiple rules with the same `rule_number`, only the last one will be kept (Terraform's TypeSet behavior)
-- `ruleset` does not support the deprecated `ports` field (use `port` instead)
-- Inserting a rule in the middle only creates that one rule, without updating others
-
-```hcl
-resource "cloudstack_network_acl_rule" "web_server_set" {
-  acl_id = "f3843ce0-334c-4586-bbd3-0c2e2bc946c6"
-
-  # HTTP traffic
-  ruleset {
-    rule_number  = 10
-    action       = "allow"
-    cidr_list    = ["0.0.0.0/0"]
-    protocol     = "tcp"
-    port         = "80"
-    traffic_type = "ingress"
-    description  = "Allow HTTP"
-  }
-
-  # HTTPS traffic
-  ruleset {
-    rule_number  = 20
-    action       = "allow"
-    cidr_list    = ["0.0.0.0/0"]
-    protocol     = "tcp"
-    port         = "443"
-    traffic_type = "ingress"
-    description  = "Allow HTTPS"
-  }
-
-  # SSH from management network
-  ruleset {
-    rule_number  = 30
-    action       = "allow"
-    cidr_list    = ["192.168.100.0/24"]
-    protocol     = "tcp"
-    port         = "22"
-    traffic_type = "ingress"
-    description  = "Allow SSH from management"
-  }
-}
-```
-
-**Note:** You cannot use both `rule` and `ruleset` in the same resource. Choose one based on your needs:
-- Use `rule` if you want auto-numbering and don't mind Terraform showing updates when inserting rules
-- Use `ruleset` if you frequently insert/remove rules and want minimal plan changes
+~> **Note:** For better change management when managing multiple rules, consider using the
+[`cloudstack_network_acl_ruleset`](/docs/providers/cloudstack/r/network_acl_ruleset.html) resource
+instead. It provides cleaner Terraform plans when inserting or removing rules by identifying rules
+by their `rule_number` rather than position in a list.
 
 ## Argument Reference
 
@@ -196,15 +157,7 @@ The following arguments are supported:
     all firewall rules that are not in your config! (defaults false)
 
 * `rule` - (Optional) Can be specified multiple times. Each rule block supports
-    fields documented below. If `managed = false` at least one rule or ruleset is required!
-    **Cannot be used together with `ruleset`.**
-
-* `ruleset` - (Optional) Can be specified multiple times. Similar to `rule` but uses
-    a set instead of a list, which prevents spurious updates when inserting rules.
-    Each ruleset block supports the same fields as `rule` (documented below), with these differences:
-    - `rule_number` is **required** (no auto-numbering)
-    - `ports` field is not supported (use `port` instead)
-    **Cannot be used together with `rule`.**
+    fields documented below. If `managed = false` at least one rule is required!
 
 * `project` - (Optional) The name or ID of the project to deploy this
     instance to. Changing this forces a new resource to be created.
@@ -212,15 +165,11 @@ The following arguments are supported:
 * `parallelism` (Optional) Specifies how much rules will be created or deleted
     concurrently. (defaults 2)
 
-The `rule` and `ruleset` blocks support:
+The `rule` block supports:
 
-* `rule_number` - (Optional for `rule`, **Required** for `ruleset`) The number of the ACL
-    item used to order the ACL rules. The ACL rule with the lowest number has the highest
-    priority.
-    - For `rule`: If not specified, the provider will auto-assign rule numbers starting at 1,
-      increasing sequentially in the order the rules are defined and filling any gaps, rather
-      than basing the number on the highest existing rule in the ACL.
-    - For `ruleset`: Must be specified for all rules (no auto-numbering).
+* `rule_number` - (Optional) The number of the ACL item used to order the ACL rules.
+    The ACL rule with the lowest number has the highest priority. If not specified,
+    CloudStack will assign a rule number automatically.
 
 * `action` - (Optional) The action for the rule. Valid options are: `allow` and
     `deny` (defaults allow).
@@ -244,7 +193,7 @@ The `rule` and `ruleset` blocks support:
 
 * `ports` - (Optional) **DEPRECATED**: Use `port` instead. List of ports and/or
     port ranges to allow. This field is deprecated and will be removed in a future
-    version. For backward compatibility only. **Not available in `ruleset`.**
+    version. For backward compatibility only.
 
 * `traffic_type` - (Optional) The traffic type for the rule. Valid options are:
     `ingress` or `egress` (defaults ingress).
