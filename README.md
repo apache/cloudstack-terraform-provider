@@ -123,37 +123,51 @@ make test
 
 In order to run the full suite of Acceptance tests you will need to run the CloudStack Simulator. Please follow these steps to prepare an environment for running the Acceptance tests:
 
+### Step 1: Start the CloudStack Simulator
+
 ```sh
-docker pull apache/cloudstack-simulator
+# Pull the simulator image (recommended versions: 4.20.2.0 or 4.23.0.0-SNAPSHOT)
+docker pull apache/cloudstack-simulator:4.20.2.0
 
-or pull it with a particular build tag
-
-docker pull apache/cloudstack-simulator:4.20.1.0
-
-docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator
-
-or
-
-docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.20.1.0
+# Start the simulator container
+docker run --name simulator -p 8080:5050 -d apache/cloudstack-simulator:4.20.2.0
 ```
 
-When Docker started the container you can go to <http://localhost:8080/client> and login to the CloudStack UI as user `admin` with password `password`. It can take a few minutes for the container is fully ready, so you probably need to wait and refresh the page for a few minutes before the login page is shown.
+**Note:** Version 4.22.0.0 has a known bug with updating load balancer rules. CI currently tests against this version, but for local testing we recommend using 4.20.2.0 or 4.23.0.0-SNAPSHOT to avoid this issue.
 
-Once the login page is shown and you can login, you need to provision a simulated data-center:
+### Step 2: Wait for Simulator to be Ready
+
+When Docker starts the container, wait a few minutes for it to fully initialize. You can check if it's ready by visiting <http://localhost:8080/client> and logging in as user `admin` with password `password`. You may need to wait and refresh the page for a few minutes before the login page is shown.
+
+### Step 3: Deploy the Data Center (REQUIRED)
+
+**This step is critical!** Simply starting the simulator is not enough. You must run the data center deployment script to create the necessary CloudStack resources (zones, networks, service offerings, templates, etc.):
 
 ```sh
 docker exec -it simulator python /root/tools/marvin/marvin/deployDataCenter.py -i /root/setup/dev/advanced.cfg
 ```
 
-If you refresh the client or login again, you will now get passed the initial welcome screen and be able to go to your account details and retrieve the API key and secret. Export those together with the URL:
+This script creates the "Sandbox-simulator" zone and other resources that the acceptance tests expect. **Without this step, most tests will fail with "zone not found" errors.**
+
+**Note:** This deployment script takes approximately **2-3 minutes** to complete. Wait for it to finish before proceeding to the next step. You should see output like "====Deploy DC Successful=====" when it's done.
+
+### Step 4: Get API Credentials
+
+After deploying the data center, refresh the CloudStack UI and log in again. You will now be able to access your account details and retrieve the API key and secret. Export those together with the URL:
 
 ```sh
 export CLOUDSTACK_API_URL=http://localhost:8080/client/api
-export CLOUDSTACK_API_KEY=r_gszj7e0ttr_C6CP5QU_1IV82EIOtK4o_K9i_AltVztfO68wpXihKs2Tms6tCMDY4HDmbqHc-DtTamG5x112w
-export CLOUDSTACK_SECRET_KEY=tsfMDShFe94f4JkJfEh6_tZZ--w5jqEW7vGL2tkZGQgcdbnxNoq9fRmwAtU5MEGGXOrDlNA6tfvGK14fk_MB6w
+export CLOUDSTACK_API_KEY=<your-api-key-from-ui>
+export CLOUDSTACK_SECRET_KEY=<your-secret-key-from-ui>
 ```
 
-In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`. When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply running:
+### Step 5: Create Required Resources
+
+In order for all the tests to pass, you will need to create a new (empty) project in the UI called `terraform`.
+
+### Step 6: Run the Tests
+
+When the project is created you can run the Acceptance tests against the CloudStack Simulator by simply running:
 
 ```sh
 make testacc

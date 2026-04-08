@@ -369,7 +369,7 @@ func resourceCloudStackLoadBalancerRuleUpdate(d *schema.ResourceData, meta inter
 		_, err := cs.LoadBalancer.UpdateLoadBalancerRule(p)
 		if err != nil {
 			return fmt.Errorf(
-				"Error updating load balancer rule %s", name)
+				"Error updating load balancer rule %s: %s", name, err)
 		}
 	}
 
