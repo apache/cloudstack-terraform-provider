@@ -55,6 +55,7 @@ func resourceCloudStackCniConfiguration() *schema.Resource {
 			"account": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 				Description: "An optional account for the CNI configuration. Must be used with domain_id.",
 			},
@@ -62,6 +63,7 @@ func resourceCloudStackCniConfiguration() *schema.Resource {
 			"domain_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 				Description: "An optional domain ID for the CNI configuration. If the account parameter is used, domain_id must also be used.",
 			},
@@ -69,6 +71,7 @@ func resourceCloudStackCniConfiguration() *schema.Resource {
 			"project_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 				Description: "An optional project for the CNI configuration",
 			},
