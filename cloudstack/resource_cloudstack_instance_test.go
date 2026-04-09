@@ -295,6 +295,45 @@ func TestAccCloudStackInstance_userData(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_deleteProtection(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackDiskDestroy,
+		Steps: []resource.TestStep{
+			{
+				// create vm with delete protection enabled
+				Config: fmt.Sprintf(testAccCloudStackInstance_deleteProtection, true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists("cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "delete_protection", "true"),
+				),
+			},
+			{
+				// attempt to destroy vm. expected to fail due to delete protection is enabled
+				Config:      fmt.Sprintf(testAccCloudStackInstance_deleteProtection, true),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(".*has delete protection enabled and cannot be deleted."),
+			},
+			{
+				// disable delete protection
+				Config: fmt.Sprintf(testAccCloudStackInstance_deleteProtection, false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists("cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "delete_protection", "false"),
+				),
+			},
+			{
+				// destroy vm. expected to pass due to disk protection is disabledd
+				Config:  fmt.Sprintf(testAccCloudStackInstance_deleteProtection, false),
+				Destroy: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackInstanceExists(
 	n string, instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -575,4 +614,28 @@ echo <<EOF
 ${random_bytes.string.base64}
 EOF
 EOFTF
+}`
+
+const testAccCloudStackInstance_deleteProtection = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering= "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+  user_data = "foobar\nfoo\nbar"
+  expunge = true
+  delete_protection = %t
+  tags = {
+    terraform-tag = "true"
+  }
 }`

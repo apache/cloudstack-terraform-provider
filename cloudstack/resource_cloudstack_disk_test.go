@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -117,6 +118,45 @@ func TestAccCloudStackDisk_import(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"shrink_ok", "reattach_on_change"},
+			},
+		},
+	})
+}
+
+func TestAccCloudStackDisk_deleteProtection(t *testing.T) {
+	var disk cloudstack.Volume
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackDiskDestroy,
+		Steps: []resource.TestStep{
+			{
+				// create disk with delete protection enabled
+				Config: fmt.Sprintf(testAccCloudStackDisk_deleteProtection, true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackDiskExists("cloudstack_disk.foo", &disk),
+					resource.TestCheckResourceAttr("cloudstack_disk.foo", "delete_protection", "true"),
+				),
+			},
+			{
+				// attempt to destroy disk. expected to fail due to delete protection is enabled
+				Config:      fmt.Sprintf(testAccCloudStackDisk_deleteProtection, true),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile(".*has delete protection enabled and cannot be deleted."),
+			},
+			{
+				// disable delete protection
+				Config: fmt.Sprintf(testAccCloudStackDisk_deleteProtection, false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackDiskExists("cloudstack_disk.foo", &disk),
+					resource.TestCheckResourceAttr("cloudstack_disk.foo", "delete_protection", "false"),
+				),
+			},
+			{
+				// destroy disk. expected to pass due to disk protection is disabledd
+				Config:  fmt.Sprintf(testAccCloudStackDisk_deleteProtection, false),
+				Destroy: true,
 			},
 		},
 	})
@@ -251,4 +291,16 @@ resource "cloudstack_disk" "foo" {
   disk_offering = "Small"
   virtual_machine_id = cloudstack_instance.foobar.id
   zone = cloudstack_instance.foobar.zone
+}`
+
+const testAccCloudStackDisk_deleteProtection = `
+resource "cloudstack_disk" "foo" {
+  name = "terraform-disk"
+  attach = false
+  disk_offering = "Small"
+  zone = "Sandbox-simulator"
+  delete_protection = %t
+  tags = {
+    terraform-tag = "true"
+  }
 }`
