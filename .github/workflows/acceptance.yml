@@ -58,7 +58,7 @@ jobs:
         id: setup-cloudstack
         with:
           cloudstack-version: ${{ matrix.cloudstack-version }}
-      - uses: hashicorp/setup-terraform@v4
+      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false
