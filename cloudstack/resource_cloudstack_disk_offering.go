@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -44,6 +45,7 @@ func resourceCloudStackDiskOffering() *schema.Resource {
 			"disk_size": {
 				Type:     schema.TypeInt,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -72,8 +74,59 @@ func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface
 	return resourceCloudStackDiskOfferingRead(d, meta)
 }
 
-func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}) error { return nil }
+func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
 
-func resourceCloudStackDiskOfferingUpdate(d *schema.ResourceData, meta interface{}) error { return nil }
+	log.Printf("[DEBUG] Retrieving disk offering %s", d.Get("name").(string))
 
-func resourceCloudStackDiskOfferingDelete(d *schema.ResourceData, meta interface{}) error { return nil }
+	offering, count, err := cs.DiskOffering.GetDiskOfferingByID(d.Id())
+	if err != nil {
+		if count == 0 {
+			log.Printf("[DEBUG] Disk offering %s does no longer exist", d.Get("name").(string))
+			d.SetId("")
+			return nil
+		}
+		return fmt.Errorf("Error retrieving disk offering %s: %s", d.Id(), err)
+	}
+
+	d.Set("name", offering.Name)
+	d.Set("display_text", offering.Displaytext)
+	d.Set("disk_size", offering.Disksize)
+
+	return nil
+}
+
+func resourceCloudStackDiskOfferingUpdate(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	p := cs.DiskOffering.NewUpdateDiskOfferingParams(d.Id())
+
+	if d.HasChange("name") {
+		p.SetName(d.Get("name").(string))
+	}
+	if d.HasChange("display_text") {
+		p.SetDisplaytext(d.Get("display_text").(string))
+	}
+
+	log.Printf("[DEBUG] Updating disk offering %s", d.Get("name").(string))
+	_, err := cs.DiskOffering.UpdateDiskOffering(p)
+	if err != nil {
+		return fmt.Errorf("Error updating disk offering: %s", err)
+	}
+
+	return resourceCloudStackDiskOfferingRead(d, meta)
+}
+
+func resourceCloudStackDiskOfferingDelete(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	p := cs.DiskOffering.NewDeleteDiskOfferingParams(d.Id())
+
+	log.Printf("[DEBUG] Deleting disk offering %s", d.Get("name").(string))
+	_, err := cs.DiskOffering.DeleteDiskOffering(p)
+	if err != nil {
+		return fmt.Errorf("Error deleting disk offering: %s", err)
+	}
+
+	return nil
+}
