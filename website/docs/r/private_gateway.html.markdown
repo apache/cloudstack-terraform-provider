@@ -25,6 +25,20 @@ resource "cloudstack_private_gateway" "default" {
 }
 ```
 
+Example with VLAN overlap check bypass:
+
+```hcl
+resource "cloudstack_private_gateway" "with_bypass" {
+  gateway                      = "10.0.0.1"
+  ip_address                   = "10.0.0.2"
+  netmask                      = "255.255.255.252"
+  vlan                         = "200"
+  vpc_id                       = "76f6e8dc-07e3-4971-b2a2-8831b0cc4cb4"
+  acl_id                       = "cf4f1dad-aade-4ccd-866c-0a2166e5be3d"
+  bypass_vlan_overlap_check    = true
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -50,6 +64,11 @@ The following arguments are supported:
 
 * `vpc_id` - (Required) The VPC ID in which to create this Private gateway. Changing
     this forces a new resource to be created.
+
+* `bypass_vlan_overlap_check` - (Optional) When set to true, bypasses the VLAN overlap
+    check during private gateway creation. This allows creating private gateways with
+    VLANs that may overlap with existing VLANs in the physical network. Defaults to
+    false.
 
 ## Attributes Reference
 
