@@ -19,6 +19,39 @@ resource "cloudstack_security_group" "default" {
 }
 ```
 
+### With Account and Domain
+
+```hcl
+data "cloudstack_domain" "my_domain" {
+  filter {
+    name  = "name"
+    value = "ROOT"
+  }
+}
+
+resource "cloudstack_security_group" "account_sg" {
+  name        = "allow_web"
+  description = "Allow access to HTTP and HTTPS"
+  account     = "my-account"
+  domainid    = data.cloudstack_domain.my_domain.id
+}
+```
+
+### With Project
+
+```hcl
+resource "cloudstack_project" "my_project" {
+  name        = "my-project"
+  displaytext = "My Project"
+}
+
+resource "cloudstack_security_group" "project_sg" {
+  name        = "allow_web"
+  description = "Allow access to HTTP and HTTPS"
+  projectid   = cloudstack_project.my_project.id
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -29,8 +62,16 @@ The following arguments are supported:
 * `description` - (Optional) The description of the security group. Changing
     this forces a new resource to be created.
 
-* `project` - (Optional) The name or ID of the project to create this security
+* `account` - (Optional) The account name to create the security group for.
+    Must be used with `domainid`. Cannot be used with `projectid`. Changing this
+    forces a new resource to be created.
+
+* `domainid` - (Optional) The name or ID of the domain to create this security
     group in. Changing this forces a new resource to be created.
+
+* `projectid` - (Optional) The name or ID of the project to create this security
+    group in. Cannot be used with `account`. Changing this forces a new
+    resource to be created.
 
 ## Attributes Reference
 
