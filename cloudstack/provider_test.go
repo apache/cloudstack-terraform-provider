@@ -21,7 +21,6 @@ package cloudstack
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -178,29 +177,14 @@ func parseCloudStackVersion(version string) int {
 	return major*1000 + minor
 }
 
-// getCloudStackVersion retrieves the CloudStack version from the API.
-// Returns the version string and any error encountered.
-func getCloudStackVersion(cs *cloudstack.CloudStackClient) (string, error) {
-	p := cs.Configuration.NewListCapabilitiesParams()
-	caps, err := cs.Configuration.ListCapabilities(p)
-	if err != nil {
-		return "", err
-	}
-
-	if caps != nil && caps.Capabilities != nil && caps.Capabilities.Cloudstackversion != "" {
-		return caps.Capabilities.Cloudstackversion, nil
-	}
-
-	return "", fmt.Errorf("unable to determine CloudStack version")
-}
-
 // requireMinimumCloudStackVersion checks if the CloudStack version meets the minimum requirement.
 // If the version is below the minimum, it skips the test with an appropriate message.
 // The minVersion parameter should be in the format returned by parseCloudStackVersion (e.g., 4022 for 4.22.0).
-func requireMinimumCloudStackVersion(t *testing.T, cs *cloudstack.CloudStackClient, minVersion int, featureName string) {
-	version, err := getCloudStackVersion(cs)
-	if err != nil {
-		t.Skipf("Unable to check CloudStack version: %v", err)
+func requireMinimumCloudStackVersion(t *testing.T, minVersion int, featureName string) {
+	t.Helper()
+	version := getCloudStackVersion(t)
+	if version == "" {
+		t.Skipf("Unable to determine CloudStack version, skipping %s test", featureName)
 		return
 	}
 
@@ -218,21 +202,8 @@ func requireMinimumCloudStackVersion(t *testing.T, cs *cloudstack.CloudStackClie
 func testAccPreCheckStaticRouteNexthop(t *testing.T) {
 	testAccPreCheck(t)
 
-	// Create a CloudStack client to check version
-	config := Config{
-		APIURL:    os.Getenv("CLOUDSTACK_API_URL"),
-		APIKey:    os.Getenv("CLOUDSTACK_API_KEY"),
-		SecretKey: os.Getenv("CLOUDSTACK_SECRET_KEY"),
-		Timeout:   900,
-	}
-
-	cs, err := config.NewClient()
-	if err != nil {
-		t.Fatalf("Failed to create CloudStack client: %v", err)
-	}
-
 	const minVersionNum = 4022 // 4.22.0
-	requireMinimumCloudStackVersion(t, cs, minVersionNum, "Static route nexthop parameter")
+	requireMinimumCloudStackVersion(t, minVersionNum, "Static route nexthop parameter")
 }
 
 // newTestClient creates a CloudStack client from environment variables for use in test PreCheck functions.
