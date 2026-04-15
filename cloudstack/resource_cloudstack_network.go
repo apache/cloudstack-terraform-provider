@@ -75,6 +75,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 			"cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 
