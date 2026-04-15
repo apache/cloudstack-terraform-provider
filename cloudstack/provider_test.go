@@ -234,3 +234,42 @@ func testAccPreCheckStaticRouteNexthop(t *testing.T) {
 	const minVersionNum = 4022 // 4.22.0
 	requireMinimumCloudStackVersion(t, cs, minVersionNum, "Static route nexthop parameter")
 }
+
+// newTestClient creates a CloudStack client from environment variables for use in test PreCheck functions.
+// This is needed because PreCheck functions run before the test framework configures the provider,
+// so testAccProvider.Meta() is nil at that point.
+func newTestClient(t *testing.T) *cloudstack.CloudStackClient {
+	t.Helper()
+	testAccPreCheck(t)
+
+	cfg := Config{
+		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
+		APIKey:      os.Getenv("CLOUDSTACK_API_KEY"),
+		SecretKey:   os.Getenv("CLOUDSTACK_SECRET_KEY"),
+		HTTPGETOnly: true,
+		Timeout:     60,
+	}
+	cs, err := cfg.NewClient()
+	if err != nil {
+		t.Fatalf("Failed to create CloudStack client: %v", err)
+	}
+	return cs
+}
+
+// getCloudStackVersion returns the CloudStack version from the API
+func getCloudStackVersion(t *testing.T) string {
+	t.Helper()
+	cs := newTestClient(t)
+
+	p := cs.Configuration.NewListCapabilitiesParams()
+	r, err := cs.Configuration.ListCapabilities(p)
+	if err != nil {
+		t.Fatalf("Failed to get CloudStack capabilities: %v", err)
+	}
+
+	if r.Capabilities != nil {
+		return r.Capabilities.Cloudstackversion
+	}
+
+	return ""
+}
