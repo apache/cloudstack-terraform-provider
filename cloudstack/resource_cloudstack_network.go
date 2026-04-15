@@ -78,7 +78,40 @@ func resourceCloudStackNetwork() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"ip6cidr": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				StateFunc: func(v interface{}) string {
+					s, ok := v.(string)
+					if !ok {
+						return ""
+					}
+
+					// Leave empty value unchanged.
+					if s == "" {
+						return s
+					}
+
+					// Parse and canonicalize the IPv6 CIDR. If parsing fails,
+					// return the original string so invalid input is not altered.
+					_, ipnet, err := net.ParseCIDR(s)
+					if err != nil {
+						return s
+					}
+
+					return ipnet.String()
+				},
+			},
+
 			"gateway": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
+			"ip6gateway": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -93,6 +126,20 @@ func resourceCloudStackNetwork() *schema.Resource {
 			},
 
 			"endip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
+			"startipv6": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
+			"endipv6": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -209,6 +256,31 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		p.SetEndip(endip)
 	}
 
+	// IPv6 support
+	if ip6cidr, ok := d.GetOk("ip6cidr"); ok {
+		m6, err := parseCIDRv6(d, no.Specifyipranges)
+		if err != nil {
+			return err
+		}
+
+		p.SetIp6cidr(ip6cidr.(string))
+
+		// Only set the start IPv6 if we have one
+		if startipv6, ok := m6["startipv6"]; ok {
+			p.SetStartipv6(startipv6)
+		}
+
+		// Only set the ipv6 gateway if we have one
+		if ip6gateway, ok := m6["ip6gateway"]; ok {
+			p.SetIp6gateway(ip6gateway)
+		}
+
+		// Only set the end IPv6 if we have one
+		if endipv6, ok := m6["endipv6"]; ok {
+			p.SetEndipv6(endipv6)
+		}
+	}
+
 	// Set the network domain if we have one
 	if networkDomain, ok := d.GetOk("network_domain"); ok {
 		p.SetNetworkdomain(networkDomain.(string))
@@ -305,6 +377,13 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("gateway", n.Gateway)
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
+
+	// Always set IPv6 fields to detect drift when IPv6 is removed server-side
+	d.Set("ip6cidr", n.Ip6cidr)
+	d.Set("ip6gateway", n.Ip6gateway)
+
+	// Note: CloudStack API may not return startipv6 and endipv6 fields
+	// These are typically only set during network creation
 
 	if n.Aclid == "" {
 		n.Aclid = none
@@ -467,6 +546,96 @@ func parseCIDR(d *schema.ResourceData, specifyiprange bool) (map[string]string, 
 	} else if specifyiprange {
 		m["endip"] = fmt.Sprintf("%d.%d.%d.%d",
 			sub[0]+(0xff-msk[0]), sub[1]+(0xff-msk[1]), sub[2]+(0xff-msk[2]), sub[3]+(0xff-msk[3]-1))
+	}
+
+	return m, nil
+}
+
+// addToIPv6 adds an integer offset to an IPv6 address with proper carry across all bytes.
+// Returns a new net.IP with the result.
+func addToIPv6(ip net.IP, offset uint64) net.IP {
+	result := make(net.IP, len(ip))
+	copy(result, ip)
+
+	carry := offset
+	// Start from the least significant byte (rightmost) and work backwards
+	for i := len(result) - 1; i >= 0 && carry > 0; i-- {
+		sum := uint64(result[i]) + carry
+		result[i] = byte(sum & 0xff)
+		carry = sum >> 8
+	}
+
+	return result
+}
+
+func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string, error) {
+	m := make(map[string]string, 4)
+
+	cidr := d.Get("ip6cidr").(string)
+	ip, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to parse cidr %s: %s", cidr, err)
+	}
+
+	// Validate that this is actually an IPv6 CIDR
+	if ip.To4() != nil {
+		return nil, fmt.Errorf("ip6cidr must be an IPv6 CIDR, got IPv4: %s", cidr)
+	}
+	if len(ipnet.Mask) != net.IPv6len {
+		return nil, fmt.Errorf("ip6cidr must be an IPv6 CIDR with 16-byte mask, got %d bytes: %s", len(ipnet.Mask), cidr)
+	}
+
+	// Validate prefix length to ensure we have enough addresses for gateway/start/end
+	ones, _ := ipnet.Mask.Size()
+	if specifyiprange {
+		// When specifyiprange is true, we need at least 3 addresses:
+		// - gateway (network + 1)
+		// - start IP (network + 2)
+		// - end IP (network + 3 or more)
+		// This requires a /126 or larger prefix (4 addresses minimum)
+		if ones > 126 {
+			return nil, fmt.Errorf("ip6cidr prefix /%d is too small for automatic IP range generation; minimum is /126 (4 addresses)", ones)
+		}
+	} else {
+		// When specifyiprange is false, we only need the gateway (network + 1)
+		// This requires a /127 or larger prefix (2 addresses minimum)
+		if ones > 127 {
+			return nil, fmt.Errorf("ip6cidr prefix /%d is too small for automatic gateway generation; minimum is /127 (2 addresses)", ones)
+		}
+	}
+
+	if gateway, ok := d.GetOk("ip6gateway"); ok {
+		m["ip6gateway"] = gateway.(string)
+	} else {
+		// Default gateway to network address + 1 (e.g., 2001:db8::1)
+		gwip := addToIPv6(ipnet.IP, 1)
+		m["ip6gateway"] = gwip.String()
+	}
+
+	if startipv6, ok := d.GetOk("startipv6"); ok {
+		m["startipv6"] = startipv6.(string)
+	} else if specifyiprange {
+		// Default start IP to network address + 2
+		startip := addToIPv6(ipnet.IP, 2)
+		m["startipv6"] = startip.String()
+	}
+
+	if endip, ok := d.GetOk("endipv6"); ok {
+		m["endipv6"] = endip.(string)
+	} else if specifyiprange {
+		ip16 := ipnet.IP.To16()
+		if ip16 == nil {
+			return nil, fmt.Errorf("cidr not valid for ipv6")
+		}
+
+		last := make(net.IP, len(ip16))
+		copy(last, ip16)
+
+		for i := range ip16 {
+			// Perform bitwise OR with the inverse of the mask
+			last[i] |= ^ipnet.Mask[i]
+		}
+		m["endipv6"] = last.String()
 	}
 
 	return m, nil

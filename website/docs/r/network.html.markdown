@@ -23,6 +23,18 @@ resource "cloudstack_network" "default" {
 }
 ```
 
+With IPv6 support:
+
+```hcl
+resource "cloudstack_network" "ipv6" {
+  name             = "test-network-ipv6"
+  cidr             = "10.0.0.0/16"
+  ip6cidr          = "2001:db8::/64"
+  network_offering = "Default Network"
+  zone             = "zone-1"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -41,6 +53,19 @@ The following arguments are supported:
     network. Defaults to the second available IP in the range.
 
 * `endip` - (Optional) End of the IP block that will be available on the
+    network. Defaults to the last available IP in the range.
+
+* `ip6cidr` - (Optional) The IPv6 CIDR block for the network.  Changing this
+    forces a new resource to be created.
+
+* `ip6gateway` - (Optional) IPv6 Gateway that will be provided to the instances
+    in this network. Defaults to the second address in the subnet (network address + 1,
+    e.g., 2001:db8::1 for 2001:db8::/64).
+
+* `startipv6` - (Optional) Start of the IPv6 block that will be available on the
+    network. Defaults to the second available IP in the range.
+
+* `endipv6` - (Optional) End of the IPv6 block that will be available on the
     network. Defaults to the last available IP in the range.
 
 * `network_domain` - (Optional) DNS domain for the network.
@@ -77,6 +102,8 @@ The following attributes are exported:
 
 * `id` - The ID of the network.
 * `display_text` - The display text of the network.
+* `gateway` - The IPv4 gateway of the network.
+* `ip6gateway` - The IPv6 gateway of the network.
 * `network_domain` - DNS domain for the network.
 * `source_nat_ip_address` - The associated source NAT IP.
 * `source_nat_ip_id` - The ID of the associated source NAT IP.

@@ -17,10 +17,20 @@
 // under the License.
 //
 
+// NOTE: IPv6 acceptance tests (TestAccCloudStackNetwork_ipv6*) are conditionally
+// skipped when running against the CloudStack simulator because the simulator
+// only supports IPv6 with advanced shared network offerings. These tests will
+// run on real CloudStack environments with proper IPv6 support. Set the environment
+// variable CLOUDSTACK_ENABLE_IPV6_TESTS=true to force-enable IPv6 tests.
+// Unit tests for the IPv6 CIDR parsing logic are available in
+// resource_cloudstack_network_unit_test.go and do not require a CloudStack instance.
+
 package cloudstack
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -165,6 +175,90 @@ func TestAccCloudStackNetwork_importProject(t *testing.T) {
 	})
 }
 
+// testAccPreCheckIPv6Support checks if IPv6 tests should run.
+// IPv6 tests are skipped on the CloudStack simulator unless explicitly enabled
+// via the CLOUDSTACK_ENABLE_IPV6_TESTS environment variable.
+func testAccPreCheckIPv6Support(t *testing.T) {
+	testAccPreCheck(t)
+
+	// Allow explicit override to enable IPv6 tests
+	if os.Getenv("CLOUDSTACK_ENABLE_IPV6_TESTS") == "true" {
+		return
+	}
+
+	// Try to detect if we're running on the simulator by checking the API URL
+	apiURL := os.Getenv("CLOUDSTACK_API_URL")
+	if strings.Contains(apiURL, "localhost") || strings.Contains(apiURL, "127.0.0.1") {
+		t.Skip("Skipping IPv6 test: CloudStack simulator does not support IPv6 for isolated networks. Set CLOUDSTACK_ENABLE_IPV6_TESTS=true to force-enable.")
+	}
+}
+
+func TestAccCloudStackNetwork_ipv6(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckIPv6Support(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_ipv6,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					testAccCheckCloudStackNetworkIPv6Attributes(&network),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network.foo", "ip6cidr", "2001:db8::/64"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackNetwork_ipv6_vpc(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckIPv6Support(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_ipv6_vpc,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network.foo", "ip6cidr", "2001:db8:1::/64"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackNetwork_ipv6_custom_gateway(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckIPv6Support(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_ipv6_custom_gateway,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network.foo", "ip6cidr", "2001:db8:2::/64"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_network.foo", "ip6gateway", "2001:db8:2::1"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackNetworkExists(
 	n string, network *cloudstack.Network) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -237,6 +331,34 @@ func testAccCheckCloudStackNetworkVPCAttributes(
 		}
 
 		if network.Networkofferingname != "DefaultIsolatedNetworkOfferingForVpcNetworks" {
+			return fmt.Errorf("Bad network offering: %s", network.Networkofferingname)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackNetworkIPv6Attributes(
+	network *cloudstack.Network) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if network.Name != "terraform-network-ipv6" {
+			return fmt.Errorf("Bad name: %s", network.Name)
+		}
+
+		if network.Displaytext != "terraform-network-ipv6" {
+			return fmt.Errorf("Bad display name: %s", network.Displaytext)
+		}
+
+		if network.Cidr != "10.1.2.0/24" {
+			return fmt.Errorf("Bad CIDR: %s", network.Cidr)
+		}
+
+		if network.Ip6cidr != "2001:db8::/64" {
+			return fmt.Errorf("Bad IPv6 CIDR: %s", network.Ip6cidr)
+		}
+
+		if network.Networkofferingname != "DefaultIsolatedNetworkOfferingWithSourceNatService" {
 			return fmt.Errorf("Bad network offering: %s", network.Networkofferingname)
 		}
 
@@ -376,4 +498,43 @@ resource "cloudstack_network" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   acl_id = cloudstack_network_acl.bar.id
   zone = cloudstack_vpc.foo.zone
+}`
+
+const testAccCloudStackNetwork_ipv6 = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-ipv6"
+  display_text = "terraform-network-ipv6"
+  cidr = "10.1.2.0/24"
+  ip6cidr = "2001:db8::/64"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}`
+
+const testAccCloudStackNetwork_ipv6_vpc = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc-ipv6"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-ipv6"
+  display_text = "terraform-network-ipv6"
+  cidr = "10.1.1.0/24"
+  ip6cidr = "2001:db8:1::/64"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
+}`
+
+const testAccCloudStackNetwork_ipv6_custom_gateway = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-ipv6-custom"
+  display_text = "terraform-network-ipv6-custom"
+  cidr = "10.1.3.0/24"
+  ip6cidr = "2001:db8:2::/64"
+  ip6gateway = "2001:db8:2::1"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
 }`
