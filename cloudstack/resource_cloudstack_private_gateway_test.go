@@ -59,9 +59,52 @@ func TestAccCloudStackPrivateGateway_import(t *testing.T) {
 			},
 
 			{
-				ResourceName:      "cloudstack_private_gateway.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "cloudstack_private_gateway.foo",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"bypass_vlan_overlap_check"},
+			},
+		},
+	})
+}
+
+func TestAccCloudStackPrivateGateway_bypassVlanOverlapCheck(t *testing.T) {
+	var gateway cloudstack.PrivateGateway
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackPrivateGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackPrivateGateway_bypassVlanOverlapCheck,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackPrivateGatewayExists(
+						"cloudstack_private_gateway.bar", &gateway),
+					resource.TestCheckResourceAttr(
+						"cloudstack_private_gateway.bar", "bypass_vlan_overlap_check", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackPrivateGateway_bypassVlanOverlapCheckDefault(t *testing.T) {
+	var gateway cloudstack.PrivateGateway
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackPrivateGatewayDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackPrivateGateway_basic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackPrivateGatewayExists(
+						"cloudstack_private_gateway.foo", &gateway),
+					resource.TestCheckResourceAttr(
+						"cloudstack_private_gateway.foo", "bypass_vlan_overlap_check", "false"),
+				),
 			},
 		},
 	})
@@ -159,4 +202,29 @@ resource "cloudstack_private_gateway" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   acl_id = cloudstack_network_acl.foo.id
   depends_on = ["cloudstack_vpc.foo","cloudstack_network_acl.foo"]
+}`
+
+const testAccCloudStackPrivateGateway_bypassVlanOverlapCheck = `
+resource "cloudstack_vpc" "bar" {
+  name = "terraform-vpc-bypass"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network_acl" "bar" {
+  name = "terraform-acl-bypass"
+  vpc_id = cloudstack_vpc.bar.id
+  depends_on = ["cloudstack_vpc.bar"]
+}
+
+resource "cloudstack_private_gateway" "bar" {
+  gateway = "10.1.1.254"
+  ip_address = "192.168.0.2"
+  netmask = "255.255.255.0"
+  vlan = "2"
+  vpc_id = cloudstack_vpc.bar.id
+  acl_id = cloudstack_network_acl.bar.id
+  bypass_vlan_overlap_check = true
+  depends_on = ["cloudstack_vpc.bar","cloudstack_network_acl.bar"]
 }`
