@@ -8,7 +8,18 @@ description: |-
 
 # cloudstack_network_acl_rule
 
+!> **WARNING:** This resource is deprecated. Use [`cloudstack_network_acl_ruleset`](/docs/providers/cloudstack/r/network_acl_ruleset.html) instead for better performance and in-place updates.
+
 Creates network ACL rules for a given network ACL.
+
+## Migration to cloudstack_network_acl_ruleset
+
+The `cloudstack_network_acl_ruleset` resource provides several advantages:
+- **In-place updates**: Rule modifications preserve UUIDs and avoid delete+create cycles
+- **Better performance**: Optimized concurrent operations with proper thread safety
+- **Simpler state management**: More reliable tracking of rule changes
+
+See the [`cloudstack_network_acl_ruleset`](/docs/providers/cloudstack/r/network_acl_ruleset.html) documentation for migration examples.
 
 ## Example Usage
 
@@ -127,6 +138,12 @@ resource "cloudstack_network_acl_rule" "web_server" {
     description  = "Allow all outbound TCP"
   }
 }
+```
+
+~> **Note:** For better change management when managing multiple rules, consider using the
+[`cloudstack_network_acl_ruleset`](/docs/providers/cloudstack/r/network_acl_ruleset.html) resource
+instead. It provides cleaner Terraform plans when inserting or removing rules by identifying rules
+by their `rule_number` rather than position in a list.
 
 ## Argument Reference
 
@@ -150,7 +167,9 @@ The following arguments are supported:
 
 The `rule` block supports:
 
-* `rule_number` - (Optional) The number of the ACL item used to order the ACL rules. The ACL rule with the lowest number has the highest priority. If not specified, the ACL item will be created with a number one greater than the highest numbered rule.
+* `rule_number` - (Optional) The number of the ACL item used to order the ACL rules.
+    The ACL rule with the lowest number has the highest priority. If not specified,
+    CloudStack will assign a rule number automatically.
 
 * `action` - (Optional) The action for the rule. Valid options are: `allow` and
     `deny` (defaults allow).
@@ -166,14 +185,14 @@ The `rule` block supports:
 * `icmp_code` - (Optional) The ICMP code to allow, or `-1` to allow `any`. This
     can only be specified if the protocol is ICMP. (defaults 0)
 
-* `port` - (Optional) Port or port range to allow. This can only be specified if 
+* `port` - (Optional) Port or port range to allow. This can only be specified if
     the protocol is TCP, UDP, ALL or a valid protocol number. Valid formats are:
     - Single port: `"80"`
     - Port range: `"8000-8010"`
     - If not specified for TCP/UDP, allows all ports for that protocol
 
-* `ports` - (Optional) **DEPRECATED**: Use `port` instead. List of ports and/or 
-    port ranges to allow. This field is deprecated and will be removed in a future 
+* `ports` - (Optional) **DEPRECATED**: Use `port` instead. List of ports and/or
+    port ranges to allow. This field is deprecated and will be removed in a future
     version. For backward compatibility only.
 
 * `traffic_type` - (Optional) The traffic type for the rule. Valid options are:

@@ -44,6 +44,7 @@ func resourceCloudStackNetworkACLRule() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: resourceCloudStackNetworkACLRuleImport,
 		},
+		DeprecationMessage: "cloudstack_network_acl_rule is deprecated. Use cloudstack_network_acl_ruleset instead for better performance and in-place updates.",
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 			// Force replacement for migration from deprecated 'ports' to 'port' field
 			if diff.HasChange("rule") {
