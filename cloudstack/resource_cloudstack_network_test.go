@@ -377,3 +377,59 @@ resource "cloudstack_network" "foo" {
   acl_id = cloudstack_network_acl.bar.id
   zone = cloudstack_vpc.foo.zone
 }`
+
+func TestAccCloudStackNetwork_l2NoCidr(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_l2NoCidr,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.l2", &network),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackNetwork_l2NoCidr = `
+resource "cloudstack_network" "l2" {
+  name             = "terraform-l2-network"
+  display_text     = "terraform-l2-network"
+  network_offering = "DefaultL2NetworkOffering"
+  zone             = "Sandbox-simulator"
+}`
+
+func TestAccCloudStackNetwork_isolatedNoCidr(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_isolatedNoCidr,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.isolated_no_cidr", &network),
+					resource.TestCheckResourceAttrSet(
+						"cloudstack_network.isolated_no_cidr", "cidr"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackNetwork_isolatedNoCidr = `
+resource "cloudstack_network" "isolated_no_cidr" {
+  name             = "terraform-isolated-no-cidr"
+  display_text     = "terraform-isolated-no-cidr"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}`
