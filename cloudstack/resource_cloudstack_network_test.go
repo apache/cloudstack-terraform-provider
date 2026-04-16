@@ -404,3 +404,32 @@ resource "cloudstack_network" "l2" {
   network_offering = "DefaultL2NetworkOffering"
   zone             = "Sandbox-simulator"
 }`
+
+func TestAccCloudStackNetwork_isolatedNoCidr(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_isolatedNoCidr,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.isolated_no_cidr", &network),
+					resource.TestCheckResourceAttrSet(
+						"cloudstack_network.isolated_no_cidr", "cidr"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackNetwork_isolatedNoCidr = `
+resource "cloudstack_network" "isolated_no_cidr" {
+  name             = "terraform-isolated-no-cidr"
+  display_text     = "terraform-isolated-no-cidr"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}`
