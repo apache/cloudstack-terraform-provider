@@ -57,6 +57,7 @@ func resourceCloudStackZone() *schema.Resource {
 				Description: "the second DNS for the Zone",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"domain": {
 				Description: "Network domain name for the networks in the zone",
@@ -74,6 +75,7 @@ func resourceCloudStackZone() *schema.Resource {
 				Description: "the guest CIDR address for the Zone",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"internal_dns1": {
 				Description: "the first internal DNS for the Zone",
@@ -84,16 +86,19 @@ func resourceCloudStackZone() *schema.Resource {
 				Description: "the second internal DNS for the Zone",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"ip6_dns1": {
 				Description: "the first DNS for IPv6 network in the Zone",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"ip6_dns2": {
 				Description: "the second DNS for IPv6 network in the Zone",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"local_storage_enabled": {
 				Description: "true if local storage offering enabled, false otherwise",
