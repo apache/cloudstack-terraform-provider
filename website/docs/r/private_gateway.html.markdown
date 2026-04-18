@@ -51,6 +51,9 @@ The following arguments are supported:
 * `vpc_id` - (Required) The VPC ID in which to create this Private gateway. Changing
     this forces a new resource to be created.
 
+* `bypass_vlan_check` -  (Optional) if set to `true` it bypasses VLAN id/range overlap 
+    check during private gateway creation
+
 ## Attributes Reference
 
 The following attributes are exported:
