@@ -59,7 +59,6 @@ func resourceCloudStackUser() *schema.Resource {
 			"username": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -106,6 +105,9 @@ func resourceCloudStackUserUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	if d.HasChange("password") {
 		p.SetPassword(d.Get("password").(string))
+	}
+	if d.HasChange("username") {
+		p.SetUsername(d.Get("username").(string))
 	}
 
 	_, err := cs.User.UpdateUser(p)

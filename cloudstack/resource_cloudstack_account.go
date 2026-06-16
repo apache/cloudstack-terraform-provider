@@ -54,12 +54,11 @@ func resourceCloudStackAccount() *schema.Resource {
 			"username": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"account_type": {
 				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
+				Optional: true,
+				Computed: true,
 			},
 			"role_id": {
 				Type:     schema.TypeString,
@@ -85,13 +84,16 @@ func resourceCloudStackAccountCreate(d *schema.ResourceData, meta interface{}) e
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	role_id := d.Get("role_id").(string)
-	account_type := d.Get("account_type").(int)
 	account := d.Get("account").(string)
 	domain_id := d.Get("domain_id").(string)
 
 	// Create a new parameter struct
 	p := cs.Account.NewCreateAccountParams(email, first_name, last_name, password, username)
-	p.SetAccounttype(int(account_type))
+	// account_type is derived from the role when omitted; only set it when
+	// explicitly configured.
+	if v, ok := d.GetOk("account_type"); ok {
+		p.SetAccounttype(v.(int))
+	}
 	p.SetRoleid(role_id)
 	if account != "" {
 		p.SetAccount(account)
@@ -139,8 +141,13 @@ func resourceCloudStackAccountRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("account", account.Name)
 	d.Set("domain_id", account.Domainid)
 
-	if len(account.User) > 0 {
-		user := account.User[0]
+	user := accountUser(account, d.Get("username").(string))
+	if user == nil && len(account.User) > 0 {
+		// Managed username not found (e.g. renamed out of band); fall back to the
+		// first user so state still reflects a real user of the account.
+		user = &account.User[0]
+	}
+	if user != nil {
 		d.Set("email", user.Email)
 		d.Set("first_name", user.Firstname)
 		d.Set("last_name", user.Lastname)
@@ -178,19 +185,26 @@ func resourceCloudStackAccountUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	// Handle user-level changes via updateUser API
-	if d.HasChange("email") || d.HasChange("first_name") || d.HasChange("last_name") || d.HasChange("password") {
+	if d.HasChange("email") || d.HasChange("first_name") || d.HasChange("last_name") || d.HasChange("password") || d.HasChange("username") {
 		lp := cs.Account.NewListAccountsParams()
 		lp.SetId(d.Id())
 		accounts, err := cs.Account.ListAccounts(lp)
 		if err != nil {
 			return fmt.Errorf("Error retrieving Account %s for user update: %s", d.Id(), err)
 		}
-		if accounts.Count == 0 || len(accounts.Accounts[0].User) == 0 {
-			return fmt.Errorf("Account %s has no users to update", d.Id())
+		if accounts.Count == 0 {
+			return fmt.Errorf("Account %s no longer exists", d.Id())
 		}
 
-		userID := accounts.Accounts[0].User[0].Id
-		up := cs.User.NewUpdateUserParams(userID)
+		// Match the user by the username we manage. On a username change the
+		// state still holds the previous username, so look it up by the old value.
+		oldUsername, _ := d.GetChange("username")
+		user := accountUser(accounts.Accounts[0], oldUsername.(string))
+		if user == nil {
+			return fmt.Errorf("Account %s has no user %q to update", d.Id(), oldUsername)
+		}
+
+		up := cs.User.NewUpdateUserParams(user.Id)
 
 		if d.HasChange("email") {
 			up.SetEmail(d.Get("email").(string))
@@ -204,6 +218,9 @@ func resourceCloudStackAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		if d.HasChange("password") {
 			up.SetPassword(d.Get("password").(string))
 		}
+		if d.HasChange("username") {
+			up.SetUsername(d.Get("username").(string))
+		}
 
 		_, err = cs.User.UpdateUser(up)
 		if err != nil {
@@ -213,6 +230,22 @@ func resourceCloudStackAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[DEBUG] Account %s successfully updated", d.Id())
 	return resourceCloudStackAccountRead(d, meta)
+}
+
+// accountUser returns the user of the account whose username matches the given
+// value, or nil when no user matches. CloudStack accounts can hold multiple
+// users, so selecting by username keeps Read/Update operating on the user this
+// resource manages instead of an arbitrary index.
+func accountUser(account *cloudstack.Account, username string) *cloudstack.AccountUser {
+	if account == nil {
+		return nil
+	}
+	for i := range account.User {
+		if account.User[i].Username == username {
+			return &account.User[i]
+		}
+	}
+	return nil
 }
 
 func resourceCloudStackAccountDelete(d *schema.ResourceData, meta interface{}) error {
