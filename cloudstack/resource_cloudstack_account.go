@@ -67,10 +67,12 @@ func resourceCloudStackAccount() *schema.Resource {
 			"account": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"domain_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -89,10 +91,11 @@ func resourceCloudStackAccountCreate(d *schema.ResourceData, meta interface{}) e
 
 	// Create a new parameter struct
 	p := cs.Account.NewCreateAccountParams(email, first_name, last_name, password, username)
-	// account_type is derived from the role when omitted; only set it when
-	// explicitly configured.
-	if v, ok := d.GetOk("account_type"); ok {
-		p.SetAccounttype(v.(int))
+	// account_type is derived from the role when omitted; only send it when the
+	// user explicitly set it in config. GetRawConfig distinguishes an explicit
+	// 0 (a valid account type) from an omitted value, which GetOk cannot.
+	if cfg := d.GetRawConfig(); !cfg.IsNull() && !cfg.GetAttr("account_type").IsNull() {
+		p.SetAccounttype(d.Get("account_type").(int))
 	}
 	p.SetRoleid(role_id)
 	if account != "" {
@@ -100,7 +103,9 @@ func resourceCloudStackAccountCreate(d *schema.ResourceData, meta interface{}) e
 	} else {
 		p.SetAccount(username)
 	}
-	p.SetDomainid(domain_id)
+	if domain_id != "" {
+		p.SetDomainid(domain_id)
+	}
 
 	log.Printf("[DEBUG] Creating Account %s", account)
 	a, err := cs.Account.CreateAccount(p)
@@ -141,13 +146,10 @@ func resourceCloudStackAccountRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("account", account.Name)
 	d.Set("domain_id", account.Domainid)
 
-	user := accountUser(account, d.Get("username").(string))
-	if user == nil && len(account.User) > 0 {
-		// Managed username not found (e.g. renamed out of band); fall back to the
-		// first user so state still reflects a real user of the account.
-		user = &account.User[0]
-	}
-	if user != nil {
+	// Match the user this resource manages by username. CloudStack accounts can
+	// hold multiple users, so falling back to an arbitrary index could bind state
+	// to the wrong user; leave the user fields untouched when no match is found.
+	if user := accountUser(account, d.Get("username").(string)); user != nil {
 		d.Set("email", user.Email)
 		d.Set("first_name", user.Firstname)
 		d.Set("last_name", user.Lastname)
@@ -172,7 +174,9 @@ func resourceCloudStackAccountUpdate(d *schema.ResourceData, meta interface{}) e
 			p.SetRoleid(d.Get("role_id").(string))
 		}
 		if d.HasChange("account") {
-			p.SetNewname(d.Get("account").(string))
+			if newName := d.Get("account").(string); newName != "" {
+				p.SetNewname(newName)
+			}
 		}
 		if d.HasChange("domain_id") {
 			p.SetDomainid(d.Get("domain_id").(string))
