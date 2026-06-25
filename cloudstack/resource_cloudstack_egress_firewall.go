@@ -70,6 +70,13 @@ func resourceCloudStackEgressFirewall() *schema.Resource {
 							Set:      schema.HashString,
 						},
 
+						"dest_cidr_list": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
+
 						"protocol": {
 							Type:     schema.TypeString,
 							Required: true,
@@ -192,6 +199,15 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 			cidrList = append(cidrList, cidr.(string))
 		}
 		p.SetCidrlist(cidrList)
+	}
+
+	// Set the destination CIDR list
+	var destCidrList []string
+	if rs := rule["dest_cidr_list"].(*schema.Set); rs.Len() > 0 {
+		for _, cidr := range rule["dest_cidr_list"].(*schema.Set).List() {
+			destCidrList = append(destCidrList, cidr.(string))
+		}
+		p.SetDestcidrlist(destCidrList)
 	}
 
 	// If the protocol is ICMP set the needed ICMP parameters
@@ -319,11 +335,20 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 					cidrs.Add(cidr)
 				}
 
+				// Create a set with all destination CIDR's
+				destCidrs := &schema.Set{F: schema.HashString}
+				if r.Destcidrlist != "" {
+					for _, cidr := range strings.Split(r.Destcidrlist, ",") {
+						destCidrs.Add(cidr)
+					}
+				}
+
 				// Update the values
 				rule["protocol"] = r.Protocol
 				rule["icmp_type"] = r.Icmptype
 				rule["icmp_code"] = r.Icmpcode
 				rule["cidr_list"] = cidrs
+				rule["dest_cidr_list"] = destCidrs
 				rules.Add(rule)
 			}
 
@@ -357,9 +382,18 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 							cidrs.Add(cidr)
 						}
 
+						// Create a set with all destination CIDR's
+						destCidrs := &schema.Set{F: schema.HashString}
+						if r.Destcidrlist != "" {
+							for _, cidr := range strings.Split(r.Destcidrlist, ",") {
+								destCidrs.Add(cidr)
+							}
+						}
+
 						// Update the values
 						rule["protocol"] = r.Protocol
 						rule["cidr_list"] = cidrs
+						rule["dest_cidr_list"] = destCidrs
 						ports.Add(port)
 					}
 
@@ -394,6 +428,15 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 					}
 					rule["cidr_list"] = cidrs
 				}
+
+				// Create a set with all destination CIDR's
+				destCidrs := &schema.Set{F: schema.HashString}
+				if r.Destcidrlist != "" {
+					for _, cidr := range strings.Split(r.Destcidrlist, ",") {
+						destCidrs.Add(cidr)
+					}
+				}
+				rule["dest_cidr_list"] = destCidrs
 
 				// Update the values
 				rule["protocol"] = r.Protocol

@@ -43,7 +43,9 @@ The following arguments are supported:
 
 The `rule` block supports:
 
-* `cidr_list` - (Required) A CIDR list to allow access to the given ports.
+* `cidr_list` - (Optional) A CIDR list to allow access to the given ports.
+
+* `dest_cidr_list` - (Optional) A CIDR list to restrict the destination of egress traffic.
 
 * `protocol` - (Required) The name of the protocol to allow. Valid options are:
     `tcp`, `udp` and `icmp`.
