@@ -202,8 +202,8 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 	}
 
 	// Set the destination CIDR list
-	var destCidrList []string
-	if rs := rule["dest_cidr_list"].(*schema.Set); rs.Len() > 0 {
+	if rs, ok := rule["dest_cidr_list"].(*schema.Set); ok && rs.Len() > 0 {
+		var destCidrList []string
 		for _, cidr := range rule["dest_cidr_list"].(*schema.Set).List() {
 			destCidrList = append(destCidrList, cidr.(string))
 		}
@@ -280,6 +280,19 @@ func createEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map
 	return nil
 }
 
+// cidrSetFromList builds a schema.Set of CIDRs from a comma-separated list,
+// returning an empty set when the list is empty.
+func cidrSetFromList(list string) *schema.Set {
+	set := &schema.Set{F: schema.HashString}
+	if list == "" {
+		return set
+	}
+	for _, cidr := range strings.Split(list, ",") {
+		set.Add(cidr)
+	}
+	return set
+}
+
 func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
@@ -313,7 +326,10 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 			rule := rule.(map[string]interface{})
 			uuids := rule["uuids"].(map[string]interface{})
 
-			if rule["protocol"].(string) == "icmp" {
+			protocol := strings.ToLower(rule["protocol"].(string))
+
+			switch protocol {
+			case "icmp":
 				id, ok := uuids["icmp"]
 				if !ok {
 					continue
@@ -329,82 +345,14 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 				// Delete the known rule so only unknown rules remain in the ruleMap
 				delete(ruleMap, id.(string))
 
-				// Create a set with all CIDR's
-				cidrs := &schema.Set{F: schema.HashString}
-				for _, cidr := range strings.Split(r.Cidrlist, ",") {
-					cidrs.Add(cidr)
-				}
-
-				// Create a set with all destination CIDR's
-				destCidrs := &schema.Set{F: schema.HashString}
-				if r.Destcidrlist != "" {
-					for _, cidr := range strings.Split(r.Destcidrlist, ",") {
-						destCidrs.Add(cidr)
-					}
-				}
-
 				// Update the values
 				rule["protocol"] = r.Protocol
 				rule["icmp_type"] = r.Icmptype
 				rule["icmp_code"] = r.Icmpcode
-				rule["cidr_list"] = cidrs
-				rule["dest_cidr_list"] = destCidrs
+				rule["cidr_list"] = cidrSetFromList(r.Cidrlist)
+				rule["dest_cidr_list"] = cidrSetFromList(r.Destcidrlist)
 				rules.Add(rule)
-			}
-
-			// If protocol is not ICMP, loop through all ports
-			if rule["protocol"].(string) != "icmp" && strings.ToLower(rule["protocol"].(string)) != "all" {
-				if ps := rule["ports"].(*schema.Set); ps.Len() > 0 {
-
-					// Create an empty schema.Set to hold all ports
-					ports := &schema.Set{F: schema.HashString}
-
-					// Loop through all ports and retrieve their info
-					for _, port := range ps.List() {
-						id, ok := uuids[port.(string)]
-						if !ok {
-							continue
-						}
-
-						// Get the rule
-						r, ok := ruleMap[id.(string)]
-						if !ok {
-							delete(uuids, port.(string))
-							continue
-						}
-
-						// Delete the known rule so only unknown rules remain in the ruleMap
-						delete(ruleMap, id.(string))
-
-						// Create a set with all CIDR's
-						cidrs := &schema.Set{F: schema.HashString}
-						for _, cidr := range strings.Split(r.Cidrlist, ",") {
-							cidrs.Add(cidr)
-						}
-
-						// Create a set with all destination CIDR's
-						destCidrs := &schema.Set{F: schema.HashString}
-						if r.Destcidrlist != "" {
-							for _, cidr := range strings.Split(r.Destcidrlist, ",") {
-								destCidrs.Add(cidr)
-							}
-						}
-
-						// Update the values
-						rule["protocol"] = r.Protocol
-						rule["cidr_list"] = cidrs
-						rule["dest_cidr_list"] = destCidrs
-						ports.Add(port)
-					}
-
-					// If there is at least one port found, add this rule to the rules set
-					if ports.Len() > 0 {
-						rule["ports"] = ports
-						rules.Add(rule)
-					}
-				}
-			}
-			if strings.ToLower(rule["protocol"].(string)) == "all" {
+			case "all":
 				id, ok := uuids["all"]
 				if !ok {
 					continue
@@ -420,27 +368,44 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 				// Delete the known rule so only unknown rules remain in the ruleMap
 				delete(ruleMap, id.(string))
 
-				// Create a set with all CIDR's
-				if _, ok := rule["cidr_list"]; ok {
-					cidrs := &schema.Set{F: schema.HashString}
-					for _, cidr := range strings.Split(r.Cidrlist, ",") {
-						cidrs.Add(cidr)
-					}
-					rule["cidr_list"] = cidrs
-				}
-
-				// Create a set with all destination CIDR's
-				destCidrs := &schema.Set{F: schema.HashString}
-				if r.Destcidrlist != "" {
-					for _, cidr := range strings.Split(r.Destcidrlist, ",") {
-						destCidrs.Add(cidr)
-					}
-				}
-				rule["dest_cidr_list"] = destCidrs
-
 				// Update the values
 				rule["protocol"] = r.Protocol
+				rule["cidr_list"] = cidrSetFromList(r.Cidrlist)
+				rule["dest_cidr_list"] = cidrSetFromList(r.Destcidrlist)
 				rules.Add(rule)
+			default:
+				// Create an empty schema.Set to hold all ports
+				ports := &schema.Set{F: schema.HashString}
+
+				// Loop through all ports and retrieve their info
+				for _, port := range rule["ports"].(*schema.Set).List() {
+					id, ok := uuids[port.(string)]
+					if !ok {
+						continue
+					}
+
+					// Get the rule
+					r, ok := ruleMap[id.(string)]
+					if !ok {
+						delete(uuids, port.(string))
+						continue
+					}
+
+					// Delete the known rule so only unknown rules remain in the ruleMap
+					delete(ruleMap, id.(string))
+
+					// Update the values
+					rule["protocol"] = r.Protocol
+					rule["cidr_list"] = cidrSetFromList(r.Cidrlist)
+					rule["dest_cidr_list"] = cidrSetFromList(r.Destcidrlist)
+					ports.Add(port)
+				}
+
+				// If there is at least one port found, add this rule to the rules set
+				if ports.Len() > 0 {
+					rule["ports"] = ports
+					rules.Add(rule)
+				}
 			}
 		}
 	}

@@ -32,3 +32,4 @@ website/vendor
 .terraform.lock.hcl
 provider.tf
 .worktrees/
+.env
