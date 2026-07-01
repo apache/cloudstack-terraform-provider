@@ -143,6 +143,7 @@ func Provider() *schema.Provider {
 			"cloudstack_ssh_keypair":                    resourceCloudStackSSHKeyPair(),
 			"cloudstack_static_nat":                     resourceCloudStackStaticNAT(),
 			"cloudstack_static_route":                   resourceCloudStackStaticRoute(),
+			"cloudstack_storage_network_ip_range":       resourceCloudStackStorageNetworkIpRange(),
 			"cloudstack_storage_pool":                   resourceCloudStackStoragePool(),
 			"cloudstack_template":                       resourceCloudStackTemplate(),
 			"cloudstack_traffic_type":                   resourceCloudStackTrafficType(),
