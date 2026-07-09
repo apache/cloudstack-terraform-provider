@@ -162,6 +162,7 @@ func Provider() *schema.Provider {
 			"cloudstack_domain":                         resourceCloudStackDomain(),
 			"cloudstack_network_service_provider":       resourceCloudStackNetworkServiceProvider(),
 			"cloudstack_role":                           resourceCloudStackRole(),
+			"cloudstack_role_permission":                resourceCloudStackRolePermission(),
 			"cloudstack_limits":                         resourceCloudStackLimits(),
 			"cloudstack_snapshot_policy":                resourceCloudStackSnapshotPolicy(),
 			"cloudstack_quota_tariff":                   resourceCloudStackQuotaTariff(),
