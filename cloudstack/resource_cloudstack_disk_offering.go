@@ -119,9 +119,14 @@ func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface
 		p.SetDisksize(int64(v.(int)))
 	}
 
+	customized := false
 	if v, ok := d.GetOk("customized"); ok {
-		p.SetCustomized(v.(bool))
+		customized = v.(bool)
 	}
+	if _, ok := d.GetOk("disk_size"); !ok {
+		customized = true
+	}
+	p.SetCustomized(customized)
 
 	if v, ok := d.GetOk("storage_type"); ok {
 		p.SetStoragetype(v.(string))

@@ -45,6 +45,11 @@ func TestAccCloudStackDiskOffering_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_disk_offering.test1", "storage_type", "shared"),
 				),
 			},
+			{
+				ResourceName:      "cloudstack_disk_offering.test1",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

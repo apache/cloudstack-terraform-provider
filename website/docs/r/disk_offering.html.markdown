@@ -28,10 +28,12 @@ The following arguments are supported:
 * `name` - (Required) The name of the disk offering.
 * `display_text` - (Required) The display text of the disk offering.
 * `disk_size` - (Optional) The size of the disk offering in GB. Conflicts with
-    `customized`. Changing this forces a new resource to be created.
+    `customized`. If neither `disk_size` nor `customized` is set, the offering is
+    created as customized. Changing this forces a new resource to be created.
 * `customized` - (Optional) Whether the disk offering allows a custom disk size
-    to be specified at deployment time. Conflicts with `disk_size`. Defaults to
-    `false`. Changing this forces a new resource to be created.
+    to be specified at deployment time. Conflicts with `disk_size`, and is
+    implied when `disk_size` is omitted. Defaults to `false`. Changing this
+    forces a new resource to be created.
 * `storage_type` - (Optional) The storage type of the disk offering. Values are
     `local` and `shared`. Defaults to `shared`. Changing this forces a new
     resource to be created.
