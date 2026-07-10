@@ -83,6 +83,10 @@ func testAccCheckCloudStackRolePermissionExists(n string, rolePermission *clouds
 
 		for _, rp := range l.RolePermissions {
 			if rp.Id == rs.Primary.ID {
+				if rolePermission.Id != "" && rolePermission.Id != rp.Id {
+					return fmt.Errorf("Role Permission was recreated (old ID: %s, new ID: %s)", rolePermission.Id, rp.Id)
+				}
+
 				*rolePermission = *rp
 				return nil
 			}
