@@ -462,13 +462,11 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if userdataDetails, ok := d.GetOk("userdata_details"); ok {
-		udDetails := make(map[string]string)
-		index := 0
+		ud := make(map[string]string)
 		for k, v := range userdataDetails.(map[string]interface{}) {
-			udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
-			index++
+			ud[k] = v.(string)
 		}
-		p.SetUserdatadetails(udDetails)
+		p.SetUserdatadetails(ud)
 	}
 
 	// Create the new instance
@@ -825,13 +823,11 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
 			if userdataDetails, ok := d.GetOk("userdata_details"); ok {
-				udDetails := make(map[string]string)
-				index := 0
+				ud := make(map[string]string)
 				for k, v := range userdataDetails.(map[string]interface{}) {
-					udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
-					index++
+					ud[k] = v.(string)
 				}
-				p.SetUserdatadetails(udDetails)
+				p.SetUserdatadetails(ud)
 			}
 			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
 			if err != nil {
