@@ -180,7 +180,7 @@ func resourceCloudStackPrivateGatewayUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	return resourceCloudStackNetworkRead(d, meta)
+	return resourceCloudStackPrivateGatewayRead(d, meta)
 }
 
 func resourceCloudStackPrivateGatewayDelete(d *schema.ResourceData, meta interface{}) error {
