@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"net"
 	"strings"
 	"testing"
 
@@ -299,23 +300,27 @@ func TestParseCIDRv6_NonAlignedPrefix(t *testing.T) {
 	}
 }
 
-func TestParseCIDRv6_CarryAcrossBytes(t *testing.T) {
-	// Test carry across byte boundaries
-	// Use a network address ending in ::ff to test carry to next byte
-	d := schema.TestResourceDataRaw(t, resourceCloudStackNetwork().Schema, map[string]interface{}{
-		"ip6cidr": "2001:db8::ff/120",
-	})
-
-	result, err := parseCIDRv6(d, true)
-	if err != nil {
-		t.Fatalf("parseCIDRv6 failed: %v", err)
+func TestAddToIPv6_CarryAcrossBytes(t *testing.T) {
+	// Exercise addToIPv6 directly with addresses that force a carry from the
+	// low byte into higher bytes (which a masked network address never would).
+	cases := []struct {
+		name     string
+		input    string
+		offset   uint64
+		expected string
+	}{
+		{"carry into next byte", "2001:db8::ff", 1, "2001:db8::100"},
+		{"carry across two bytes", "2001:db8::ffff", 1, "2001:db8::1:0"},
+		{"offset of two with carry", "2001:db8::ff", 2, "2001:db8::101"},
+		{"no carry", "2001:db8::", 1, "2001:db8::1"},
 	}
 
-	// For 2001:db8::ff/120, network is 2001:db8::0 (masked)
-	// But let's test with an address that will actually carry
-	// Gateway should be network + 1
-	expectedGateway := "2001:db8::1"
-	if result["ip6gateway"] != expectedGateway {
-		t.Errorf("Expected gateway %s, got %s", expectedGateway, result["ip6gateway"])
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := addToIPv6(net.ParseIP(tc.input), tc.offset).String()
+			if got != tc.expected {
+				t.Errorf("addToIPv6(%s, %d) = %s, expected %s", tc.input, tc.offset, got, tc.expected)
+			}
+		})
 	}
 }

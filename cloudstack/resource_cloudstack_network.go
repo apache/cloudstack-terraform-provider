@@ -568,6 +568,20 @@ func addToIPv6(ip net.IP, offset uint64) net.IP {
 	return result
 }
 
+// validateIPv6InCIDR verifies that a user-supplied IPv6 address parses and falls
+// within the given network. It returns a clear local error instead of letting an
+// out-of-subnet value surface as an opaque CloudStack API failure at apply time.
+func validateIPv6InCIDR(field, value string, ipnet *net.IPNet) error {
+	ip := net.ParseIP(value)
+	if ip == nil {
+		return fmt.Errorf("%s %q is not a valid IP address", field, value)
+	}
+	if !ipnet.Contains(ip) {
+		return fmt.Errorf("%s %q is not within ip6cidr %s", field, value, ipnet.String())
+	}
+	return nil
+}
+
 func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string, error) {
 	m := make(map[string]string, 4)
 
@@ -605,7 +619,11 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 	}
 
 	if gateway, ok := d.GetOk("ip6gateway"); ok {
-		m["ip6gateway"] = gateway.(string)
+		gw := gateway.(string)
+		if err := validateIPv6InCIDR("ip6gateway", gw, ipnet); err != nil {
+			return nil, err
+		}
+		m["ip6gateway"] = gw
 	} else {
 		// Default gateway to network address + 1 (e.g., 2001:db8::1)
 		gwip := addToIPv6(ipnet.IP, 1)
@@ -613,7 +631,11 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 	}
 
 	if startipv6, ok := d.GetOk("startipv6"); ok {
-		m["startipv6"] = startipv6.(string)
+		start := startipv6.(string)
+		if err := validateIPv6InCIDR("startipv6", start, ipnet); err != nil {
+			return nil, err
+		}
+		m["startipv6"] = start
 	} else if specifyiprange {
 		// Default start IP to network address + 2
 		startip := addToIPv6(ipnet.IP, 2)
@@ -621,7 +643,11 @@ func parseCIDRv6(d *schema.ResourceData, specifyiprange bool) (map[string]string
 	}
 
 	if endip, ok := d.GetOk("endipv6"); ok {
-		m["endipv6"] = endip.(string)
+		end := endip.(string)
+		if err := validateIPv6InCIDR("endipv6", end, ipnet); err != nil {
+			return nil, err
+		}
+		m["endipv6"] = end
 	} else if specifyiprange {
 		ip16 := ipnet.IP.To16()
 		if ip16 == nil {

@@ -55,18 +55,25 @@ The following arguments are supported:
 * `endip` - (Optional) End of the IP block that will be available on the
     network. Defaults to the last available IP in the range.
 
-* `ip6cidr` - (Optional) The IPv6 CIDR block for the network.  Changing this
+* `ip6cidr` - (Optional) The IPv6 CIDR block for the network. Must be a valid
+    IPv6 CIDR (IPv4 CIDRs are rejected). The prefix must be at least `/127` (or
+    `/126` when the network offering has `specifyipranges` enabled) so that the
+    gateway and, when applicable, the IP range can be derived. Changing this
     forces a new resource to be created.
 
 * `ip6gateway` - (Optional) IPv6 Gateway that will be provided to the instances
-    in this network. Defaults to the second address in the subnet (network address + 1,
-    e.g., 2001:db8::1 for 2001:db8::/64).
+    in this network. Must fall within `ip6cidr`. Defaults to the second address
+    in the subnet (network address + 1, e.g., 2001:db8::1 for 2001:db8::/64).
 
 * `startipv6` - (Optional) Start of the IPv6 block that will be available on the
-    network. Defaults to the second available IP in the range.
+    network. Must fall within `ip6cidr`. Only applied when the network offering
+    has `specifyipranges` enabled; in that case it defaults to the second
+    available IP in the range (otherwise it is not sent to the API).
 
 * `endipv6` - (Optional) End of the IPv6 block that will be available on the
-    network. Defaults to the last available IP in the range.
+    network. Must fall within `ip6cidr`. Only applied when the network offering
+    has `specifyipranges` enabled; in that case it defaults to the last
+    available IP in the range (otherwise it is not sent to the API).
 
 * `network_domain` - (Optional) DNS domain for the network.
 
