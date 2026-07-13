@@ -101,12 +101,16 @@ jobs:
       - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.opentofu-version }}
+          tofu_wrapper: false
       - name: Run acceptance test
         env:
           CLOUDSTACK_USER_ID: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_USER_ID }}
           CLOUDSTACK_API_KEY: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_API_KEY }}
           CLOUDSTACK_SECRET_KEY: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_SECRET_KEY }}
+          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
+          export TF_ACC_TERRAFORM_PATH="$(which tofu)"
           make testacc
     services:
       cloudstack-simulator:
