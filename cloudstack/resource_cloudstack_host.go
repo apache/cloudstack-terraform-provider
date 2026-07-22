@@ -37,6 +37,9 @@ func resourceCloudStackHost() *schema.Resource {
 		Update: resourceCloudStackHostUpdate,
 		Create: resourceCloudStackHostCreate,
 		Delete: resourceCloudStackHostDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"hypervisor": {
 				Type:     schema.TypeString,

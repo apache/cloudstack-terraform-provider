@@ -41,3 +41,11 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The counter ID.
+
+## Import
+
+Counters can be imported using the `id`, e.g.
+
+```shell
+$ terraform import cloudstack_counter.default eb22f91-7454-4107-89f4-36afcdf33021
+```

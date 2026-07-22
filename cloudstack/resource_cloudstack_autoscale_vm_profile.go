@@ -35,6 +35,9 @@ func resourceCloudStackAutoScaleVMProfile() *schema.Resource {
 		Read:   resourceCloudStackAutoScaleVMProfileRead,
 		Update: resourceCloudStackAutoScaleVMProfileUpdate,
 		Delete: resourceCloudStackAutoScaleVMProfileDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"service_offering": {

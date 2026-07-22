@@ -49,6 +49,25 @@ func TestAccCloudStackIPAddress_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackIPAddress_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackIPAddressDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackIPAddress_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_ipaddress.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccCloudStackIPAddress_vpc(t *testing.T) {
 	var ipaddr cloudstack.PublicIpAddress
 

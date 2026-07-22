@@ -32,6 +32,9 @@ func resourceCloudStackCounter() *schema.Resource {
 		Create: resourceCloudStackCounterCreate,
 		Read:   resourceCloudStackCounterRead,
 		Delete: resourceCloudStackCounterDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {

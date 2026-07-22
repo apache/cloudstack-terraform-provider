@@ -49,6 +49,25 @@ func TestAccCloudStackVPNConnection_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackVPNConnection_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackVPNConnectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackVPNConnection_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_vpn_connection.foo-bar",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackVPNConnectionExists(
 	n string, vpnConnection *cloudstack.VpnConnection) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

@@ -48,6 +48,25 @@ func TestAccCloudStackStaticNAT_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackStaticNAT_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackStaticNATDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackStaticNAT_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_static_nat.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackStaticNATExists(
 	n string, ipaddr *cloudstack.PublicIpAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

@@ -33,6 +33,9 @@ func resourceCloudStackIPAddress() *schema.Resource {
 		Create: resourceCloudStackIPAddressCreate,
 		Read:   resourceCloudStackIPAddressRead,
 		Delete: resourceCloudStackIPAddressDelete,
+		Importer: &schema.ResourceImporter{
+			State: importStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"is_portable": {

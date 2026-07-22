@@ -47,6 +47,24 @@ func TestAccCloudStackServiceOffering_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackServiceOffering_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackServiceOffering_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_service_offering.test1",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 const testAccCloudStackServiceOffering_basic = `
 resource "cloudstack_service_offering" "test1" {
   name 			= "service_offering_1"

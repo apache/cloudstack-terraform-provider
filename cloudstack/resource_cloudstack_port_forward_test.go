@@ -57,6 +57,28 @@ func TestAccCloudStackPortForward_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackPortForward_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackPortForwardDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackPortForward_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_port_forward.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// The importer sets managed=true so unrelated forwards on the same IP
+				// aren't silently dropped; the applied config leaves it at its default.
+				ImportStateVerifyIgnore: []string{"managed"},
+			},
+		},
+	})
+}
+
 func TestAccCloudStackPortForward_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

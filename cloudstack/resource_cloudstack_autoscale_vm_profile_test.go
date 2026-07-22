@@ -85,6 +85,27 @@ func TestAccCloudStackAutoscaleVMProfile_update(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackAutoscaleVMProfile_import(t *testing.T) {
+	t.Skip("Skipping due to bug in cloudstack-go library")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackAutoscaleVMProfileDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackAutoscaleVMProfile_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_autoscale_vm_profile.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckResourceMetadata(vmProfile *cloudstack.AutoScaleVmProfile) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)

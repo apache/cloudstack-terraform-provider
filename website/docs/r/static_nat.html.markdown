@@ -43,3 +43,18 @@ The following attributes are exported:
 * `id` - The static nat ID.
 * `vm_guest_ip` - The IP address of the virtual machine that is used
     to forward the static NAT traffic to.
+
+## Import
+
+Static NAT can be imported; use the `<IPADDRESSID>` for which static NAT is
+enabled as the import ID. For example:
+
+```shell
+$ terraform import cloudstack_static_nat.default 6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+
+When importing into a project you need to prefix the import ID with the project name:
+
+```shell
+$ terraform import cloudstack_static_nat.default my-project/6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```

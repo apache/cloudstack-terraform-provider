@@ -53,6 +53,27 @@ func TestAccCloudStackLoadBalancerRule_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackLoadBalancerRule_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackLoadBalancerRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackLoadBalancerRule_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_loadbalancer_rule.foo",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// certificate_id can't be read back from the CloudStack API (write-only field)
+				ImportStateVerifyIgnore: []string{"certificate_id"},
+			},
+		},
+	})
+}
+
 func TestAccCloudStackLoadBalancerRule_update(t *testing.T) {
 	var id string
 

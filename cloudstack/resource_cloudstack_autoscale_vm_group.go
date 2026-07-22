@@ -35,6 +35,9 @@ func resourceCloudStackAutoScaleVMGroup() *schema.Resource {
 		Read:   resourceCloudStackAutoScaleVMGroupRead,
 		Update: resourceCloudStackAutoScaleVMGroupUpdate,
 		Delete: resourceCloudStackAutoScaleVMGroupDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"lbrule_id": {
