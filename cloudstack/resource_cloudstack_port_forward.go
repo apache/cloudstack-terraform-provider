@@ -244,6 +244,7 @@ func resourceCloudStackPortForwardImport(d *schema.ResourceData, meta interface{
 
 	ipAddressID := s[len(s)-1]
 	d.SetId(ipAddressID)
+	d.Set("ip_address_id", ipAddressID)
 
 	// Make sure the IP address exists
 	if _, count, err := cs.Address.GetPublicIpAddressByID(
@@ -334,6 +335,8 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 
 		return err
 	}
+
+	d.Set("ip_address_id", d.Id())
 
 	// Get all the forwards from the running environment
 	p := cs.Firewall.NewListPortForwardingRulesParams()
