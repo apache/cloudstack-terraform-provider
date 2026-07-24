@@ -163,6 +163,7 @@ func resourceCloudStackStaticNATRead(d *schema.ResourceData, meta interface{}) e
 
 	d.Set("virtual_machine_id", ip.Virtualmachineid)
 	d.Set("vm_guest_ip", ip.Vmipaddress)
+	d.Set("ip_address_id", ip.Id)
 
 	setValueOrID(d, "project", ip.Project, ip.Projectid)
 
