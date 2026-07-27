@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-mux/tf5to6server"
@@ -144,4 +145,43 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("CLOUDSTACK_SECRET_KEY"); v == "" {
 		t.Fatal("CLOUDSTACK_SECRET_KEY must be set for acceptance tests")
 	}
+}
+
+// newTestClient creates a CloudStack client from environment variables for use in test PreCheck functions.
+// This is needed because PreCheck functions run before the test framework configures the provider,
+// so testAccProvider.Meta() is nil at that point.
+func newTestClient(t *testing.T) *cloudstack.CloudStackClient {
+	t.Helper()
+	testAccPreCheck(t)
+
+	cfg := Config{
+		APIURL:      os.Getenv("CLOUDSTACK_API_URL"),
+		APIKey:      os.Getenv("CLOUDSTACK_API_KEY"),
+		SecretKey:   os.Getenv("CLOUDSTACK_SECRET_KEY"),
+		HTTPGETOnly: true,
+		Timeout:     60,
+	}
+	cs, err := cfg.NewClient()
+	if err != nil {
+		t.Fatalf("Failed to create CloudStack client: %v", err)
+	}
+	return cs
+}
+
+// getCloudStackVersion returns the CloudStack version from the API
+func getCloudStackVersion(t *testing.T) string {
+	t.Helper()
+	cs := newTestClient(t)
+
+	p := cs.Configuration.NewListCapabilitiesParams()
+	r, err := cs.Configuration.ListCapabilities(p)
+	if err != nil {
+		t.Fatalf("Failed to get CloudStack capabilities: %v", err)
+	}
+
+	if r.Capabilities != nil {
+		return r.Capabilities.Cloudstackversion
+	}
+
+	return ""
 }

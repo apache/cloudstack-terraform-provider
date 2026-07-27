@@ -142,7 +142,7 @@ resource "cloudstack_cni_configuration" "foo" {
 `
 
 func testAccPreCheckCniSupport(t *testing.T) {
-	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+	cs := newTestClient(t)
 
 	// Try to list CNI configurations to check if the feature is available
 	p := cs.Configuration.NewListCniConfigurationParams()
