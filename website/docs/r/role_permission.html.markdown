@@ -2,18 +2,22 @@
 layout: "cloudstack"
 page_title: "CloudStack: cloudstack_role_permission"
 description: |-
-  Creates a role permission (rule) for a role.
+  Manages ordered role permissions for a role.
 ---
 
 # cloudstack_role_permission
 
-Creates a role permission. A role permission is a single rule that allows or
-denies a role access to an API (or a wildcard set of APIs).
+Manages an ordered list of role permissions for a role. A role permission is a
+single rule that allows or denies access to an API or wildcard set of APIs.
 
-Rules belonging to the same role are evaluated in the order in which they are
-created, and the first matching rule wins. Order the corresponding
-`cloudstack_role_permission` resources accordingly (for example with
-`depends_on`) when precedence matters.
+Rules belonging to the same role are evaluated in order, and the first matching
+rule wins. This resource stores that order explicitly and reapplies it after
+rules are added, removed, or recreated.
+
+By default, only the permissions declared in this resource are managed.
+Undeclared permissions on the role are preserved and ordered after the declared
+permissions. Set `authoritative = true` to delete undeclared permissions and
+make the CloudStack role permission list exactly match this resource.
 
 ## Example Usage
 
@@ -23,21 +27,19 @@ resource "cloudstack_role" "custom" {
   type = "User"
 }
 
-# Allow listing virtual machines
-resource "cloudstack_role_permission" "list_vms" {
-  role_id     = cloudstack_role.custom.id
-  rule        = "listVirtualMachines"
-  permission  = "allow"
-  description = "Allow listing virtual machines"
-}
+resource "cloudstack_role_permission" "custom" {
+  role_id = cloudstack_role.custom.id
 
-# Deny every other API using a wildcard
-resource "cloudstack_role_permission" "deny_all" {
-  role_id    = cloudstack_role.custom.id
-  rule       = "*"
-  permission = "deny"
+  permission {
+    rule        = "listVirtualMachines"
+    permission  = "allow"
+    description = "Allow listing virtual machines"
+  }
 
-  depends_on = [cloudstack_role_permission.list_vms]
+  permission {
+    rule       = "*"
+    permission = "deny"
+  }
 }
 ```
 
@@ -45,17 +47,21 @@ resource "cloudstack_role_permission" "deny_all" {
 
 The following arguments are supported:
 
-* `role_id` - (Required) ID of the role the permission belongs to. Changing this
+* `role_id` - (Required) ID of the role the permissions belong to. Changing this
   forces a new resource to be created.
-* `rule` - (Required) The API name or a wildcard (e.g. `list*` or `*`) the rule
-  applies to. Changing this forces a new resource to be created.
-* `permission` - (Required) Whether the rule is allowed or denied. Valid options
-  are: `allow`, `deny`.
-* `description` - (Optional) A description for the role permission. Changing this
-  forces a new resource to be created.
+* `authoritative` - (Optional) Whether permissions not declared in this resource
+  should be deleted. Defaults to `false`.
+* `permission` - (Optional) Ordered list of role permission rules. Each block
+  supports the following:
+  * `rule` - (Required) The API name or a wildcard (e.g. `list*` or `*`) the
+    rule applies to.
+  * `permission` - (Required) Whether the rule is allowed or denied. Valid
+    options are: `allow`, `deny`.
+  * `description` - (Optional) A description for the role permission.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the role permission.
+* `id` - The role ID.
+* `permission.*.id` - The ID of each role permission rule.
