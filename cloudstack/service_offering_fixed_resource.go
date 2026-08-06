@@ -78,6 +78,7 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var planDiskOffering ServiceOfferingDiskOffering
 	var planDiskQosStorage ServiceOfferingDiskQosStorage
+	var planGpu ServiceOfferingGpu
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
@@ -89,6 +90,9 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	if !plan.ServiceOfferingDiskQosStorage.IsNull() {
 		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosStorage.As(ctx, &planDiskQosStorage, basetypes.ObjectAsOptions{})...)
 	}
+	if !plan.ServiceOfferingGpu.IsNull() {
+		resp.Diagnostics.Append(plan.ServiceOfferingGpu.As(ctx, &planGpu, basetypes.ObjectAsOptions{})...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -99,6 +103,7 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	planDiskQosHypervisor.commonCreateParams(ctx, params)
 	planDiskOffering.commonCreateParams(ctx, params)
 	planDiskQosStorage.commonCreateParams(ctx, params)
+	planGpu.commonCreateParams(ctx, params)
 
 	// resource specific params
 	if !plan.CpuNumber.IsNull() {
@@ -131,6 +136,7 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var stateDiskOffering ServiceOfferingDiskOffering
 	var stateDiskQosStorage ServiceOfferingDiskQosStorage
+	var stateGpu ServiceOfferingGpu
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
@@ -141,6 +147,9 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 	}
 	if !state.ServiceOfferingDiskQosStorage.IsNull() {
 		resp.Diagnostics.Append(state.ServiceOfferingDiskQosStorage.As(ctx, &stateDiskQosStorage, basetypes.ObjectAsOptions{})...)
+	}
+	if !state.ServiceOfferingGpu.IsNull() {
+		resp.Diagnostics.Append(state.ServiceOfferingGpu.As(ctx, &stateGpu, basetypes.ObjectAsOptions{})...)
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -170,6 +179,7 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 	stateDiskQosHypervisor.commonRead(ctx, cs)
 	stateDiskOffering.commonRead(ctx, cs)
 	stateDiskQosStorage.commonRead(ctx, cs)
+	stateGpu.commonRead(ctx, cs)
 	if resp.Diagnostics.HasError() {
 		return
 	}

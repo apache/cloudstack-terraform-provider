@@ -58,6 +58,7 @@ type serviceOfferingCommonResourceModel struct {
 	ServiceOfferingDiskQosHypervisor types.Object `tfsdk:"disk_hypervisor"`
 	ServiceOfferingDiskOffering      types.Object `tfsdk:"disk_offering"`
 	ServiceOfferingDiskQosStorage    types.Object `tfsdk:"disk_storage"`
+	ServiceOfferingGpu               types.Object `tfsdk:"gpu"`
 }
 
 type ServiceOfferingDiskQosHypervisor struct {
@@ -83,4 +84,10 @@ type ServiceOfferingDiskQosStorage struct {
 	HypervisorSnapshotReserve types.Int32 `tfsdk:"hypervisor_snapshot_reserve"`
 	MaxIops                   types.Int64 `tfsdk:"max_iops"`
 	MinIops                   types.Int64 `tfsdk:"min_iops"`
+}
+
+type ServiceOfferingGpu struct {
+	VgpuProfileId types.String `tfsdk:"vgpu_profile_id"`
+	Count         types.Int32  `tfsdk:"count"`
+	Display       types.Bool   `tfsdk:"display"`
 }

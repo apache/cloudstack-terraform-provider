@@ -170,6 +170,16 @@ func (state *ServiceOfferingDiskQosStorage) commonRead(ctx context.Context, cs *
 
 }
 
+func (state *ServiceOfferingGpu) commonRead(ctx context.Context, cs *cloudstack.ServiceOffering) {
+	if cs.Vgpuprofileid != "" {
+		state.VgpuProfileId = types.StringValue(cs.Vgpuprofileid)
+	}
+	if cs.Gpucount > 0 {
+		state.Count = types.Int32Value(int32(cs.Gpucount))
+	}
+	state.Display = types.BoolValue(cs.Gpudisplay)
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------
 // common Create methods
 // -
@@ -274,6 +284,20 @@ func (plan *ServiceOfferingDiskQosStorage) commonCreateParams(ctx context.Contex
 	}
 	if !plan.MinIops.IsNull() {
 		p.SetMiniops((plan.MinIops.ValueInt64()))
+	}
+
+	return p
+}
+
+func (plan *ServiceOfferingGpu) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
+	if !plan.VgpuProfileId.IsNull() {
+		p.SetVgpuprofileid(plan.VgpuProfileId.ValueString())
+	}
+	if !plan.Count.IsNull() {
+		p.SetGpucount(int(plan.Count.ValueInt32()))
+	}
+	if !plan.Display.IsNull() {
+		p.SetGpudisplay(plan.Display.ValueBool())
 	}
 
 	return p

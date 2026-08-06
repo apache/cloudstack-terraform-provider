@@ -72,6 +72,15 @@ func TestAccServiceOfferingConstrained(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.disk_storage", "name", "disk_storage"),
 				),
 			},
+			{
+				Config: testAccServiceOfferingCustomConstrained_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "name", "gpu"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "gpu.vgpu_profile_id", "a6000-8a-profile"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "gpu.count", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "gpu.display", "true"),
+				),
+			},
 		},
 	})
 }
@@ -270,6 +279,39 @@ resource "cloudstack_service_offering_constrained" "disk_hypervisor" {
 		bytes_write_rate            = 1024
 		bytes_write_rate_max        = 1024
 		bytes_write_rate_max_length = 1024
+	}
+}
+`
+
+const testAccServiceOfferingCustomConstrained_gpu = `
+resource "cloudstack_service_offering_constrained" "gpu" {
+	display_text = "gpu"
+	name         = "gpu"
+
+	// compute
+	cpu_speed  = 2500
+	max_cpu_number = 10
+	min_cpu_number = 2
+
+	// memory
+	max_memory     = 4096
+	min_memory     = 1024
+
+	// other
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	// Feature flags
+	dynamic_scaling_enabled = false
+	is_volatile             = false
+	limit_cpu_use           = false
+	offer_ha                = false
+
+	gpu = {
+		vgpu_profile_id = "a6000-8a-profile"
+		count           = 1
+		display         = true
 	}
 }
 `

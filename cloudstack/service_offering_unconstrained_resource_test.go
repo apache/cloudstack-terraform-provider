@@ -66,6 +66,15 @@ func TestAccServiceOfferingUnconstrained(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.disk_storage", "name", "disk_storage"),
 				),
 			},
+			{
+				Config: testAccServiceOfferingUnconstrained_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "name", "gpu"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.vgpu_profile_id", "a6000-8a-profile"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.count", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.display", "true"),
+				),
+			},
 		},
 	})
 }
@@ -202,6 +211,28 @@ resource "cloudstack_service_offering_unconstrained" "disk_storage" {
 	disk_storage = {
 		min_iops = 100
 		max_iops = 100
+	}
+}
+`
+
+const testAccServiceOfferingUnconstrained_gpu = `
+resource "cloudstack_service_offering_unconstrained" "gpu" {
+	display_text = "gpu"
+	name         = "gpu"
+
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+
+	gpu = {
+		vgpu_profile_id = "a6000-8a-profile"
+		count           = 1
+		display         = true
 	}
 }
 `

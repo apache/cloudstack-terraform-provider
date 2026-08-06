@@ -66,6 +66,15 @@ func TestAccServiceOfferingFixed(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.disk_storage", "name", "disk_storage"),
 				),
 			},
+			{
+				Config: testAccServiceOfferingFixed_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "name", "gpu"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.vgpu_profile_id", "a6000-8a-profile"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.count", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.display", "true"),
+				),
+			},
 		},
 	})
 }
@@ -234,6 +243,34 @@ resource "cloudstack_service_offering_fixed" "disk_storage" {
 	disk_storage = {
 		min_iops = 100
 		max_iops = 100
+	}
+}
+`
+
+const testAccServiceOfferingFixed_gpu = `
+resource "cloudstack_service_offering_fixed" "gpu" {
+	display_text = "gpu"
+	name         = "gpu"
+
+	// compute
+	cpu_number     = 2
+	cpu_speed      = 2500
+	memory         = 2048
+
+	// other
+	host_tags          = "test0101, test0202"
+	network_rate       = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = false
+	is_volatile             = false
+	limit_cpu_use           = false
+	offer_ha                = false
+
+	gpu = {
+		vgpu_profile_id = "a6000-8a-profile"
+		count           = 1
+		display         = true
 	}
 }
 `
