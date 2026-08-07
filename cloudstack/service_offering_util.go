@@ -62,9 +62,6 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 		p.SetName(plan.Name.ValueString())
 	}
 	zoneIDs := plan.ZoneIds
-	if zoneIDs.IsNull() || len(zoneIDs.Elements()) == 0 {
-		zoneIDs = plan.ZoneId
-	}
 	if !zoneIDs.IsNull() && len(zoneIDs.Elements()) > 0 {
 		p.SetZoneid(zoneIDs.String())
 	} else {
@@ -214,9 +211,6 @@ func (plan *serviceOfferingCommonResourceModel) commonCreateParams(ctx context.C
 		p.SetOfferha(plan.OfferHa.ValueBool())
 	}
 	zoneIDs := plan.ZoneIds
-	if zoneIDs.IsNull() || len(zoneIDs.Elements()) == 0 {
-		zoneIDs = plan.ZoneId
-	}
 	if !zoneIDs.IsNull() {
 		zoneIds := make([]string, len(zoneIDs.Elements()))
 		zoneIDs.ElementsAs(ctx, &zoneIds, false)
@@ -274,7 +268,7 @@ func (plan *ServiceOfferingDiskOffering) commonCreateParams(ctx context.Context,
 
 }
 
-func (plan *serviceOfferingCommonResourceModel) applyLegacyTagsAlias(p *cloudstack.CreateServiceOfferingParams) {
+func (plan *serviceOfferingCommonResourceModel) applyTags(p *cloudstack.CreateServiceOfferingParams) {
 	if !plan.Tags.IsNull() {
 		p.SetTags(plan.Tags.ValueString())
 	}

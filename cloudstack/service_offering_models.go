@@ -55,7 +55,6 @@ type serviceOfferingCommonResourceModel struct {
 	NetworkRate                      types.Int32  `tfsdk:"network_rate"`
 	OfferHa                          types.Bool   `tfsdk:"offer_ha"`
 	Tags                             types.String `tfsdk:"tags"`
-	ZoneId                           types.Set    `tfsdk:"zone_id"`
 	ZoneIds                          types.Set    `tfsdk:"zone_ids"`
 	ServiceOfferingDiskQosHypervisor types.Object `tfsdk:"disk_hypervisor"`
 	ServiceOfferingDiskOffering      types.Object `tfsdk:"disk_offering"`

@@ -111,7 +111,7 @@ func (r *serviceOfferingConstrainedResource) Create(ctx context.Context, req res
 	// common params
 	params := r.client.ServiceOffering.NewCreateServiceOfferingParams(plan.DisplayText.ValueString(), plan.Name.ValueString())
 	plan.commonCreateParams(ctx, params)
-	plan.applyLegacyTagsAlias(params)
+	plan.applyTags(params)
 	planDiskQosHypervisor.commonCreateParams(ctx, params)
 	planDiskOffering.commonCreateParams(ctx, params)
 	planDiskQosStorage.commonCreateParams(ctx, params)
