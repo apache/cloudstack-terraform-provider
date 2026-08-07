@@ -24,6 +24,11 @@ website/node_modules
 *.test
 *.iml
 
+# gocache
+.gocache
+.gomodcache
+
+# 
 website/vendor
 
 # Test exclusions
