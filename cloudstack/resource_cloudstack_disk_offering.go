@@ -21,6 +21,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -311,7 +312,11 @@ func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}
 	d.Set("cache_mode", r.CacheMode)
 	d.Set("disk_size", r.Disksize)
 	d.Set("disk_offering_strictness", r.Disksizestrictness)
-	d.Set("domain_id", r.Domainid)
+	if r.Domainid != "" {
+		d.Set("domain_id", strings.Split(r.Domainid, ","))
+	} else {
+		d.Set("domain_id", []string{})
+	}
 	d.Set("iops_read_rate", r.DiskIopsReadRate)
 	d.Set("iops_read_rate_max", r.DiskIopsReadRateMax)
 	d.Set("iops_read_rate_max_length", r.DiskIopsReadRateMaxLength)
