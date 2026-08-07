@@ -45,8 +45,7 @@ func (state *serviceOfferingCommonResourceModel) commonUpdate(ctx context.Contex
 		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
 		state.ZoneIds = z
 	} else {
-		z, _ := types.SetValueFrom(ctx, types.StringType, []string{})
-		state.ZoneIds = z
+		state.ZoneIds = types.SetNull(types.StringType)
 	}
 }
 
@@ -111,8 +110,7 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
 		state.ZoneIds = z
 	} else {
-		z, _ := types.SetValueFrom(ctx, types.StringType, []string{})
-		state.ZoneIds = z
+		state.ZoneIds = types.SetNull(types.StringType)
 	}
 
 	state.DynamicScalingEnabled = types.BoolValue(cs.Dynamicscalingenabled)
