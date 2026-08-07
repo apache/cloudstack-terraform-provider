@@ -310,7 +310,7 @@ func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}
 	//
 	d.Set("cache_mode", r.CacheMode)
 	d.Set("disk_size", r.Disksize)
-	d.Set("disk_offering_strictness", r.Disksize)
+	d.Set("disk_offering_strictness", r.Disksizestrictness)
 	d.Set("domain_id", r.Domainid)
 	d.Set("iops_read_rate", r.DiskIopsReadRate)
 	d.Set("iops_read_rate_max", r.DiskIopsReadRateMax)
