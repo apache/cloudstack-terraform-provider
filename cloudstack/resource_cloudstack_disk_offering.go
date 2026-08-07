@@ -20,7 +20,6 @@
 package cloudstack
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -241,6 +240,8 @@ func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface
 			items[i] = raw.(string)
 		}
 		p.SetZoneid(items)
+	} else {
+		p.SetZoneid([]string{"all"})
 	}
 
 	// storage qos
@@ -326,7 +327,11 @@ func resourceCloudStackDiskOfferingRead(d *schema.ResourceData, meta interface{}
 	d.Set("provisioning_type", r.Provisioningtype)
 	d.Set("storage_type", r.Storagetype)
 	d.Set("tags", r.Tags)
-	d.Set("zone_id", r.Zoneid)
+	if r.Zoneid != "" && r.Zoneid != "all" {
+		d.Set("zone_id", strings.Split(r.Zoneid, ","))
+	} else {
+		d.Set("zone_id", []string{})
+	}
 
 	// Only emit the hypervisor block when the API returns non-default QoS values,
 	// otherwise leave it null so configs that omit the block don't show perpetual drift.
@@ -398,7 +403,14 @@ func resourceCloudStackDiskOfferingUpdate(d *schema.ResourceData, meta interface
 		p.SetTags(v.(string))
 	}
 	if v, ok := d.GetOk("zone_id"); ok {
-		p.SetZoneid(fmt.Sprintf("%v", v))
+		zone_id := v.([]interface{})
+		items := make([]string, len(zone_id))
+		for i, raw := range zone_id {
+			items[i] = raw.(string)
+		}
+		p.SetZoneid(strings.Join(items, ","))
+	} else {
+		p.SetZoneid("all")
 	}
 
 	// hypervisor qos
