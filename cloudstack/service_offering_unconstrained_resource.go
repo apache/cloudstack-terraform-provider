@@ -73,6 +73,7 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 	// cloudstack params
 	params := r.client.ServiceOffering.NewCreateServiceOfferingParams(plan.DisplayText.ValueString(), plan.Name.ValueString())
 	plan.commonCreateParams(ctx, params)
+	plan.applyLegacyTagsAlias(params)
 	planDiskQosHypervisor.commonCreateParams(ctx, params)
 	planDiskOffering.commonCreateParams(ctx, params)
 	planDiskQosStorage.commonCreateParams(ctx, params)

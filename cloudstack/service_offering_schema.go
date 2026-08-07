@@ -108,6 +108,15 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 			},
 			Default: booldefault.StaticBool(false),
 		},
+		"tags": schema.StringAttribute{
+			Description: "Legacy alias for storage tags",
+			Optional:    true,
+		},
+		"zone_id": schema.SetAttribute{
+			Description: "Legacy alias for zone_ids",
+			Optional:    true,
+			ElementType: types.StringType,
+		},
 		"zone_ids": schema.SetAttribute{
 			Description: "The ID of the zone(s)",
 			Optional:    true,

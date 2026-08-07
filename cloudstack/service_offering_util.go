@@ -42,7 +42,9 @@ func (state *serviceOfferingCommonResourceModel) commonUpdate(ctx context.Contex
 		state.Name = types.StringValue(cs.Name)
 	}
 	if cs.Zoneid != "" {
-		state.ZoneIds, _ = types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+		state.ZoneIds = z
+		state.ZoneId = z
 	}
 }
 
@@ -59,8 +61,12 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 	if !plan.Name.IsNull() {
 		p.SetName(plan.Name.ValueString())
 	}
-	if !plan.ZoneIds.IsNull() && len(plan.ZoneIds.Elements()) > 0 {
-		p.SetZoneid(plan.ZoneIds.String())
+	zoneIDs := plan.ZoneIds
+	if zoneIDs.IsNull() || len(zoneIDs.Elements()) == 0 {
+		zoneIDs = plan.ZoneId
+	}
+	if !zoneIDs.IsNull() && len(zoneIDs.Elements()) > 0 {
+		p.SetZoneid(zoneIDs.String())
 	} else {
 		p.SetZoneid("all")
 	}
@@ -100,7 +106,9 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 		state.NetworkRate = types.Int32Value(int32(cs.Networkrate))
 	}
 	if cs.Zoneid != "" {
-		state.ZoneIds, _ = types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+		state.ZoneIds = z
+		state.ZoneId = z
 	}
 
 	state.DynamicScalingEnabled = types.BoolValue(cs.Dynamicscalingenabled)
@@ -205,9 +213,13 @@ func (plan *serviceOfferingCommonResourceModel) commonCreateParams(ctx context.C
 	if !plan.OfferHa.IsNull() {
 		p.SetOfferha(plan.OfferHa.ValueBool())
 	}
-	if !plan.ZoneIds.IsNull() {
-		zoneIds := make([]string, len(plan.ZoneIds.Elements()))
-		plan.ZoneIds.ElementsAs(ctx, &zoneIds, false)
+	zoneIDs := plan.ZoneIds
+	if zoneIDs.IsNull() || len(zoneIDs.Elements()) == 0 {
+		zoneIDs = plan.ZoneId
+	}
+	if !zoneIDs.IsNull() {
+		zoneIds := make([]string, len(zoneIDs.Elements()))
+		zoneIDs.ElementsAs(ctx, &zoneIds, false)
 		p.SetZoneid(zoneIds)
 	}
 
@@ -260,6 +272,12 @@ func (plan *ServiceOfferingDiskOffering) commonCreateParams(ctx context.Context,
 
 	return p
 
+}
+
+func (plan *serviceOfferingCommonResourceModel) applyLegacyTagsAlias(p *cloudstack.CreateServiceOfferingParams) {
+	if !plan.Tags.IsNull() {
+		p.SetTags(plan.Tags.ValueString())
+	}
 }
 
 func (plan *ServiceOfferingDiskQosStorage) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
