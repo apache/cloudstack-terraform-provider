@@ -240,8 +240,6 @@ func resourceCloudStackDiskOfferingCreate(d *schema.ResourceData, meta interface
 			items[i] = raw.(string)
 		}
 		p.SetZoneid(items)
-	} else {
-		p.SetZoneid([]string{"all"})
 	}
 
 	// storage qos
@@ -438,6 +436,11 @@ func resourceCloudStackDiskOfferingUpdate(d *schema.ResourceData, meta interface
 				p.SetBytesreadrate(int64(v2.(int)))
 			}
 		}
+	}
+
+	_, err := cs.DiskOffering.UpdateDiskOffering(p)
+	if err != nil {
+		return err
 	}
 
 	return resourceCloudStackDiskOfferingRead(d, meta)
