@@ -44,9 +44,8 @@ func (state *serviceOfferingCommonResourceModel) commonUpdate(ctx context.Contex
 	if cs.Zoneid != "" && cs.Zoneid != "all" {
 		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
 		state.ZoneIds = z
-	} else {
-		state.ZoneIds = types.SetNull(types.StringType)
 	}
+	// else: preserve prior state value (null or []) — both mean "all zones"
 }
 
 func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.Context, p *cloudstack.UpdateServiceOfferingParams) *cloudstack.UpdateServiceOfferingParams {
@@ -109,9 +108,8 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 	if cs.Zoneid != "" && cs.Zoneid != "all" {
 		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
 		state.ZoneIds = z
-	} else {
-		state.ZoneIds = types.SetNull(types.StringType)
 	}
+	// else: preserve prior state value (null or []) — both mean "all zones"
 
 	state.DynamicScalingEnabled = types.BoolValue(cs.Dynamicscalingenabled)
 	state.IsVolatile = types.BoolValue(cs.Isvolatile)
