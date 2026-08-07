@@ -89,10 +89,12 @@ func resourceCloudStackDiskOffering() *schema.Resource {
 			"provisioning_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"storage_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"tags": {
 				Type:     schema.TypeString,
