@@ -37,6 +37,11 @@ func TestAccServiceOfferingFixed(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      "cloudstack_service_offering_fixed.fixed1",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccServiceOfferingFixed2,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.fixed2", "name", "fixed2"),

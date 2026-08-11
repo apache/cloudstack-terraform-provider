@@ -53,7 +53,9 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 		p.SetDisplaytext(plan.DisplayText.ValueString())
 	}
 	if !plan.DomainIds.IsNull() {
-		p.SetDomainid(plan.DomainIds.String())
+		domainIDs := make([]string, len(plan.DomainIds.Elements()))
+		plan.DomainIds.ElementsAs(ctx, &domainIDs, false)
+		p.SetDomainid(strings.Join(domainIDs, ","))
 	}
 	if !plan.HostTags.IsNull() {
 		p.SetHosttags(plan.HostTags.ValueString())
@@ -63,7 +65,9 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 	}
 	zoneIDs := plan.ZoneIds
 	if !zoneIDs.IsNull() && len(zoneIDs.Elements()) > 0 {
-		p.SetZoneid(zoneIDs.String())
+		zoneIDSlice := make([]string, len(zoneIDs.Elements()))
+		zoneIDs.ElementsAs(ctx, &zoneIDSlice, false)
+		p.SetZoneid(strings.Join(zoneIDSlice, ","))
 	} else {
 		p.SetZoneid("all")
 	}
