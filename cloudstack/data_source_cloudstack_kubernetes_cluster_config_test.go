@@ -84,20 +84,13 @@ users:
 			},
 		},
 		{
-			name:       "unknown current context falls back to the first entry",
+			// Ambiguous among several contexts: error rather than guess.
+			name:       "unknown current context among several contexts is an error",
 			configData: testKubeConfigTwoClusters("missing@missing"),
-			expected: kubernetesClusterCredentials{
-				Endpoint:             "https://10.1.1.1:6443",
-				ClusterCACertificate: "first-ca-certificate",
-				ClientCertificate:    "first-client-certificate",
-				ClientKey:            "first-client-key",
-			},
+			expectErr:  "does not define",
 		},
 		{
-			// The context resolves, but names a cluster and user that the
-			// kubeconfig does not define. With only one entry of each,
-			// there's only one reasonable candidate, so this still falls
-			// back rather than erroring.
+			// Only one candidate exists, so this falls back instead of erroring.
 			name: "current context naming a missing cluster falls back to the only entry",
 			configData: fmt.Sprintf(`apiVersion: v1
 kind: Config
@@ -127,12 +120,8 @@ users:
 			},
 		},
 		{
-			// Here the context resolves and names a cluster absent from a
-			// list of more than one: guessing which of the two is intended
-			// could silently pair the wrong cluster/user together, so this
-			// must be a hard error instead of a silent fallback. Clusters are
-			// resolved before users, so no users section is needed to reach
-			// this error.
+			// Ambiguous among several clusters: error rather than guess.
+			// No users section needed; the cluster error returns first.
 			name: "current context naming an undefined cluster among several is an error",
 			configData: fmt.Sprintf(`apiVersion: v1
 kind: Config
@@ -152,13 +141,10 @@ contexts:
     user: third
   name: third@third
 `, testBase64("first-ca-certificate"), testBase64("second-ca-certificate")),
-			expectErr: "which is not defined",
+			expectErr: "does not define",
 		},
 		{
-			// The same hard error, but reached through the user branch
-			// instead of the cluster branch, so a future edit that swaps
-			// clusterName/userName or config.Clusters/config.Users between
-			// the two findKubeConfigEntry call sites would still be caught.
+			// Same error, but via the user branch instead of the cluster branch.
 			name: "current context naming an undefined user among several is an error",
 			configData: fmt.Sprintf(`apiVersion: v1
 kind: Config
@@ -185,7 +171,7 @@ users:
 `, testBase64("ca-certificate"),
 				testBase64("first-client-certificate"), testBase64("first-client-key"),
 				testBase64("second-client-certificate"), testBase64("second-client-key")),
-			expectErr: "which is not defined",
+			expectErr: "does not define",
 		},
 		{
 			// A kubeconfig without client certificates must not fail the data
@@ -284,12 +270,9 @@ func testBase64(value string) string {
 	return base64.StdEncoding.EncodeToString([]byte(value))
 }
 
-// testKubeConfigTwoClusters renders a kubeconfig holding two clusters and two
-// users, so that context resolution can be told apart from taking the first
-// entry. currentContext selects which one context resolution should pick; an
-// empty string omits the current-context key entirely. Every %s verb appears
-// in the same order as its argument below, so the substitution can be checked
-// by reading both top to bottom in lockstep.
+// testKubeConfigTwoClusters renders a two-cluster, two-user kubeconfig;
+// currentContext picks the context ("" omits current-context). Args are
+// listed in template order so the substitution can be eyeballed.
 func testKubeConfigTwoClusters(currentContext string) string {
 	return fmt.Sprintf(`apiVersion: v1
 kind: Config

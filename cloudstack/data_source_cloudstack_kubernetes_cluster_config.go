@@ -157,8 +157,8 @@ func datasourceCloudStackKubernetesClusterConfigRead(d *schema.ResourceData, met
 	}
 
 	if *credentials == (kubernetesClusterCredentials{}) {
-		return fmt.Errorf("The config of Kubernetes Cluster %s does not contain a cluster endpoint, "+
-			"CA certificate, client certificate or client key; use config_data directly instead", clusterID)
+		log.Printf("[WARN] Could not derive a cluster endpoint, CA certificate, client certificate or "+
+			"client key from the config of Kubernetes Cluster %s; use config_data directly instead", clusterID)
 	}
 
 	d.SetId(config.Id)
@@ -172,26 +172,25 @@ func datasourceCloudStackKubernetesClusterConfigRead(d *schema.ResourceData, met
 	return nil
 }
 
-// parseKubernetesClusterConfig extracts the endpoint and the client credentials
-// from a kubeconfig document. An unparsable document, an undecodable
-// certificate, or a current context that names a cluster/user absent from a
-// multi-entry list is an error; a kubeconfig that simply does not carry a
-// cluster or a user entry at all only yields empty values, so that config_data
-// stays usable.
+// parseKubernetesClusterConfig extracts the endpoint and client credentials
+// from a kubeconfig document.
 func parseKubernetesClusterConfig(configData string) (*kubernetesClusterCredentials, error) {
 	var config kubeConfig
 	if err := yaml.Unmarshal([]byte(configData), &config); err != nil {
 		return nil, fmt.Errorf("Invalid kubeconfig: %s", err)
 	}
 
-	// Resolve which cluster and user the current context points at.
+	// The current context is resolved the same way as the cluster/user it names.
+	contextIndex, err := findKubeConfigEntry(config.Contexts, config.CurrentContext, "context",
+		func(c kubeConfigContext) string { return c.Name })
+	if err != nil {
+		return nil, err
+	}
+
 	clusterName, userName := "", ""
-	for _, context := range config.Contexts {
-		if context.Name == config.CurrentContext {
-			clusterName = context.Context.Cluster
-			userName = context.Context.User
-			break
-		}
+	if contextIndex >= 0 {
+		clusterName = config.Contexts[contextIndex].Context.Cluster
+		userName = config.Contexts[contextIndex].Context.User
 	}
 
 	credentials := &kubernetesClusterCredentials{}
@@ -237,15 +236,9 @@ func parseKubernetesClusterConfig(configData string) (*kubernetesClusterCredenti
 	return credentials, nil
 }
 
-// findKubeConfigEntry returns the index of the named entry in a kubeconfig
-// list. It returns -1 with no error when the list is empty, so that a
-// kubeconfig which does not carry the entry at all still leaves config_data
-// usable. When the current context does not name an entry at all, or there is
-// only one entry to begin with, it falls back to the first one, since there is
-// only one reasonable candidate either way. But when the current context names
-// a specific entry that is absent from a list of more than one, guessing is
-// refused: picking some other entry could silently pair one cluster's endpoint
-// with a different cluster's client credentials.
+// findKubeConfigEntry finds an entry by name, falling back to the sole entry
+// when there's only one. With more than one and no match, it errors instead
+// of guessing, since a wrong guess could pair the wrong cluster and user.
 func findKubeConfigEntry[T any](entries []T, name string, kind string, nameOf func(T) string) (int, error) {
 	if len(entries) == 0 {
 		log.Printf("[WARN] Kubeconfig does not contain any %s", kind)
@@ -258,11 +251,11 @@ func findKubeConfigEntry[T any](entries []T, name string, kind string, nameOf fu
 		}
 
 		if len(entries) > 1 {
-			return -1, fmt.Errorf("kubeconfig context references %s %q, which is not defined among %d %s entries",
+			return -1, fmt.Errorf("kubeconfig does not define %s %q among its %d %s entries",
 				kind, name, len(entries), kind)
 		}
 
-		log.Printf("[WARN] Kubeconfig does not contain the %s %q referenced by its current context, using the only %s instead", kind, name, kind)
+		log.Printf("[WARN] Kubeconfig does not define the %s %q, using the only %s available instead", kind, name, kind)
 		return 0, nil
 	}
 
