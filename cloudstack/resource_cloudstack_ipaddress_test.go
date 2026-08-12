@@ -68,6 +68,27 @@ func TestAccCloudStackIPAddress_vpc(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackIPAddress_specificIP(t *testing.T) {
+	var ipaddr cloudstack.PublicIpAddress
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackIPAddressDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackIPAddress_specificIP,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackIPAddressExists(
+						"cloudstack_ipaddress.foo", &ipaddr),
+					resource.TestCheckResourceAttr(
+						"cloudstack_ipaddress.foo", "ip_address", "10.2.2.10"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackIPAddress_vpcid_with_network_id(t *testing.T) {
 
 	regex := regexp.MustCompile("set only network_id or vpc_id")
@@ -162,6 +183,46 @@ resource "cloudstack_vpc" "foo" {
 resource "cloudstack_ipaddress" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   zone = cloudstack_vpc.foo.zone
+}`
+
+const testAccCloudStackIPAddress_specificIP = `
+data "cloudstack_zone" "zone" {
+  filter {
+    name  = "name"
+    value = "Sandbox-simulator"
+  }
+}
+
+data "cloudstack_physical_network" "pn" {
+  filter {
+    name  = "zone_name"
+    value = "Sandbox-simulator"
+  }
+}
+
+resource "cloudstack_vlan_ip_range" "foo" {
+  physical_network_id = data.cloudstack_physical_network.pn.id
+  zone_id              = data.cloudstack_zone.zone.id
+  for_virtual_network  = true
+  vlan                 = "vlan://456"
+  gateway              = "10.2.2.1"
+  netmask              = "255.255.255.0"
+  start_ip             = "10.2.2.10"
+  end_ip               = "10.2.2.10"
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  network_id = cloudstack_network.foo.id
+  ip_address = cloudstack_vlan_ip_range.foo.start_ip
 }`
 
 const testAccCloudStackIPAddress_vpcid_with_network_id = `

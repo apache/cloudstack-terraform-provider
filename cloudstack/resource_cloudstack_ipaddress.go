@@ -69,7 +69,9 @@ func resourceCloudStackIPAddress() *schema.Resource {
 
 			"ip_address": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 
 			"is_source_nat": {
@@ -123,6 +125,10 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 	// If there is a project supplied, we retrieve and set the project id
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
+	}
+
+	if ipaddress, ok := d.GetOk("ip_address"); ok {
+		p.SetIpaddress(ipaddress.(string))
 	}
 
 	// Associate a new IP address
