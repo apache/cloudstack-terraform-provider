@@ -82,7 +82,7 @@ func TestAccCloudStackIPAddress_specificIP(t *testing.T) {
 					testAccCheckCloudStackIPAddressExists(
 						"cloudstack_ipaddress.foo", &ipaddr),
 					resource.TestCheckResourceAttr(
-						"cloudstack_ipaddress.foo", "ip_address", "10.2.2.10"),
+						"cloudstack_ipaddress.foo", "ip_address", "10.2.2.11"),
 				),
 			},
 		},
@@ -208,7 +208,7 @@ resource "cloudstack_vlan_ip_range" "foo" {
   gateway              = "10.2.2.1"
   netmask              = "255.255.255.0"
   start_ip             = "10.2.2.10"
-  end_ip               = "10.2.2.10"
+  end_ip               = "10.2.2.11"
 }
 
 resource "cloudstack_network" "foo" {
@@ -222,7 +222,7 @@ resource "cloudstack_network" "foo" {
 
 resource "cloudstack_ipaddress" "foo" {
   network_id = cloudstack_network.foo.id
-  ip_address = cloudstack_vlan_ip_range.foo.start_ip
+  ip_address = cloudstack_vlan_ip_range.foo.end_ip
 }`
 
 const testAccCloudStackIPAddress_vpcid_with_network_id = `
