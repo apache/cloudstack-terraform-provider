@@ -50,9 +50,14 @@ func resourceCloudStackLoadBalancerRule() *schema.Resource {
 				Computed: true,
 			},
 
+			// Optional, not Required: CloudStack's own createLoadBalancerRule
+			// marks publicipid as optional -- an internal LB in a VPC (no
+			// public IP at all, just network_id) is a real, supported case.
+			// See verifyLoadBalancerRule, which enforces that at least one of
+			// ip_address_id/network_id is set instead.
 			"ip_address_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 
@@ -163,8 +168,12 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 		p.SetCidrlist(cidrList)
 	}
 
-	// Set the ipaddress id
-	p.SetPublicipid(d.Get("ip_address_id").(string))
+	// Set the ipaddress id, when given -- omitted entirely for an internal
+	// LB (network_id-only, no public IP), matching real CloudStack's own
+	// optional publicipid semantics.
+	if ipAddressID, ok := d.GetOk("ip_address_id"); ok {
+		p.SetPublicipid(ipAddressID.(string))
+	}
 
 	// Create the load balancer rule
 	r, err := cs.LoadBalancer.CreateLoadBalancerRule(p)
@@ -230,7 +239,13 @@ func resourceCloudStackLoadBalancerRuleRead(d *schema.ResourceData, meta interfa
 	}
 
 	d.Set("name", lb.Name)
-	d.Set("ip_address_id", lb.Publicipid)
+	// Only set ip_address_id if the user specified it, mirroring network_id's
+	// own guard below -- an internal LB's lb.Publicipid comes back empty
+	// from CloudStack, and setting that explicitly would fight the schema's
+	// Optional (no Computed) declaration.
+	if _, ok := d.GetOk("ip_address_id"); ok {
+		d.Set("ip_address_id", lb.Publicipid)
+	}
 	d.Set("algorithm", lb.Algorithm)
 	d.Set("public_port", public_port)
 	d.Set("private_port", private_port)
@@ -534,6 +549,12 @@ func resourceCloudStackLoadBalancerRuleDelete(d *schema.ResourceData, meta inter
 }
 
 func verifyLoadBalancerRule(d *schema.ResourceData) error {
+	_, hasIP := d.GetOk("ip_address_id")
+	_, hasNetwork := d.GetOk("network_id")
+	if !hasIP && !hasNetwork {
+		return fmt.Errorf("at least one of ip_address_id or network_id must be set")
+	}
+
 	if protocol, ok := d.GetOk("protocol"); ok {
 		protocol := protocol.(string)
 
