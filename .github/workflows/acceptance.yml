@@ -58,7 +58,7 @@ jobs:
         id: setup-cloudstack
         with:
           cloudstack-version: ${{ matrix.cloudstack-version }}
-      - uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false
@@ -98,15 +98,19 @@ jobs:
         id: setup-cloudstack
         with:
           cloudstack-version: ${{ matrix.cloudstack-version }}
-      - uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1.0.8
+      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.opentofu-version }}
+          tofu_wrapper: false
       - name: Run acceptance test
         env:
           CLOUDSTACK_USER_ID: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_USER_ID }}
           CLOUDSTACK_API_KEY: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_API_KEY }}
           CLOUDSTACK_SECRET_KEY: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_SECRET_KEY }}
+          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
+          export TF_ACC_TERRAFORM_PATH="$(which tofu)"
           make testacc
     services:
       cloudstack-simulator:
