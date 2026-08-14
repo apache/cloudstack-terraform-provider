@@ -130,6 +130,7 @@ func Provider() *schema.Provider {
 			"cloudstack_network":                        resourceCloudStackNetwork(),
 			"cloudstack_network_acl":                    resourceCloudStackNetworkACL(),
 			"cloudstack_network_acl_rule":               resourceCloudStackNetworkACLRule(),
+			"cloudstack_network_acl_ruleset":            resourceCloudStackNetworkACLRuleset(),
 			"cloudstack_nic":                            resourceCloudStackNIC(),
 			"cloudstack_physical_network":               resourceCloudStackPhysicalNetwork(),
 			"cloudstack_pod":                            resourceCloudStackPod(),
