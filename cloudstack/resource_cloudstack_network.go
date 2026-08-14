@@ -74,29 +74,33 @@ func resourceCloudStackNetwork() *schema.Resource {
 
 			"cidr": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 
 			"gateway": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"cidr"},
 			},
 
 			"startip": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"cidr"},
 			},
 
 			"endip": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				RequiredWith: []string{"cidr"},
 			},
 
 			"network_domain": {
@@ -184,29 +188,31 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		p.SetDisplaytext(name)
 	}
 
-	// Get the network offering to check if it supports specifying IP ranges
-	no, _, err := cs.NetworkOffering.GetNetworkOfferingByID(networkofferingid)
-	if err != nil {
-		return err
-	}
+	if _, ok := d.GetOk("cidr"); ok {
+		// Get the network offering to check if it supports specifying IP ranges
+		no, _, err := cs.NetworkOffering.GetNetworkOfferingByID(networkofferingid)
+		if err != nil {
+			return err
+		}
 
-	m, err := parseCIDR(d, no.Specifyipranges)
-	if err != nil {
-		return err
-	}
+		m, err := parseCIDR(d, no.Specifyipranges)
+		if err != nil {
+			return err
+		}
 
-	// Set the needed IP config
-	p.SetGateway(m["gateway"])
-	p.SetNetmask(m["netmask"])
+		// Set the needed IP config
+		p.SetGateway(m["gateway"])
+		p.SetNetmask(m["netmask"])
 
-	// Only set the start IP if we have one
-	if startip, ok := m["startip"]; ok {
-		p.SetStartip(startip)
-	}
+		// Only set the start IP if we have one
+		if startip, ok := m["startip"]; ok {
+			p.SetStartip(startip)
+		}
 
-	// Only set the end IP if we have one
-	if endip, ok := m["endip"]; ok {
-		p.SetEndip(endip)
+		// Only set the end IP if we have one
+		if endip, ok := m["endip"]; ok {
+			p.SetEndip(endip)
+		}
 	}
 
 	// Set the network domain if we have one
