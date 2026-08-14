@@ -249,10 +249,21 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// First check if the IP address is still associated
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	ip, count, err := cs.Address.GetPublicIpAddressByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from the IP address
+	if count == 0 && project == "" {
+		ip, count, err = cs.Address.GetPublicIpAddressByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
 
 	if err != nil {
 		if count == 0 {

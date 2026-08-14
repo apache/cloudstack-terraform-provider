@@ -113,10 +113,21 @@ func resourceCloudStackNetworkACLRead(d *schema.ResourceData, meta interface{}) 
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the network ACL list details
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	f, count, err := cs.NetworkACL.GetNetworkACLListByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from the VPC
+	if count == 0 && project == "" {
+		f, count, err = cs.NetworkACL.GetNetworkACLListByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
 
 	if err != nil {
 		if count == 0 {
