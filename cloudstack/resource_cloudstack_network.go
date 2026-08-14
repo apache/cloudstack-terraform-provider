@@ -235,13 +235,13 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		p.SetDisplaytext(name)
 	}
 
-	if _, ok := d.GetOk("cidr"); ok {
-		// Get the network offering to check if it supports specifying IP ranges
-		no, _, err := cs.NetworkOffering.GetNetworkOfferingByID(networkofferingid)
-		if err != nil {
-			return err
-		}
+	// Get the network offering to check if it supports specifying IP ranges
+	no, _, err := cs.NetworkOffering.GetNetworkOfferingByID(networkofferingid)
+	if err != nil {
+		return err
+	}
 
+	if _, ok := d.GetOk("cidr"); ok {
 		m, err := parseCIDR(d, no.Specifyipranges)
 		if err != nil {
 			return err
