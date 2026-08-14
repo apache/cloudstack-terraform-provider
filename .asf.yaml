@@ -37,3 +37,9 @@ github:
   collaborators:
     - fabiomatavelli
     - bhouse-nexthop
+    - Damans227
+
+  copilot_code_review:
+    enabled: true
+    review_drafts: true
+    review_on_push: true
