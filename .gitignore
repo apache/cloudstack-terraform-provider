@@ -31,3 +31,5 @@ website/vendor
 !command/test-fixtures/**/.terraform/
 .terraform.lock.hcl
 provider.tf
+.worktrees/
+.env
