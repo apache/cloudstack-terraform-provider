@@ -102,11 +102,33 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 		if vpcid, ok := d.GetOk("vpc_id"); ok && vpcid.(string) != "" {
 			return fmt.Errorf("set only network_id or vpc_id")
 		}
+
+		// If no project is explicitly set, try to inherit it from the network
+		if _, ok := d.GetOk("project"); !ok {
+			// Get the network to retrieve its project
+			// Use projectid=-1 to search across all projects
+			network, count, err := cs.Network.GetNetworkByID(networkid.(string), cloudstack.WithProject("-1"))
+			if err == nil && count > 0 && network.Projectid != "" {
+				log.Printf("[DEBUG] Inheriting project %s from network %s", network.Projectid, networkid.(string))
+				p.SetProjectid(network.Projectid)
+			}
+		}
 	}
 
 	if vpcid, ok := d.GetOk("vpc_id"); ok {
 		// Set the vpcid
 		p.SetVpcid(vpcid.(string))
+
+		// If no project is explicitly set, try to inherit it from the VPC
+		if _, ok := d.GetOk("project"); !ok {
+			// Get the VPC to retrieve its project
+			// Use projectid=-1 to search across all projects
+			vpc, count, err := cs.VPC.GetVPCByID(vpcid.(string), cloudstack.WithProject("-1"))
+			if err == nil && count > 0 && vpc.Projectid != "" {
+				log.Printf("[DEBUG] Inheriting project %s from VPC %s", vpc.Projectid, vpcid.(string))
+				p.SetProjectid(vpc.Projectid)
+			}
+		}
 	}
 
 	if zone, ok := d.GetOk("zone"); ok {
@@ -121,6 +143,7 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
+	// This will override the inherited project from VPC or network if explicitly set
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
 	}
@@ -146,10 +169,22 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the IP address details
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	ip, count, err := cs.Address.GetPublicIpAddressByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from the VPC or network
+	if count == 0 && project == "" {
+		ip, count, err = cs.Address.GetPublicIpAddressByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
+
 	if err != nil {
 		if count == 0 {
 			log.Printf(

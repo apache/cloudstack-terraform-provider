@@ -234,6 +234,29 @@ func TestAccCloudStackInstance_project(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_networkProjectInheritance(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackInstance_networkProjectInheritance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists(
+						"cloudstack_instance.foobar", &instance),
+					// Verify the project was inherited from the network
+					resource.TestCheckResourceAttr(
+						"cloudstack_instance.foobar", "project", "terraform"),
+					testAccCheckCloudStackInstanceProjectInherited(&instance),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackInstance_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -365,6 +388,18 @@ func testAccCheckCloudStackInstanceRenamedAndResized(
 
 		if instance.Serviceofferingname != "Medium Instance" {
 			return fmt.Errorf("Bad service offering: %s", instance.Serviceofferingname)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackInstanceProjectInherited(
+	instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if instance.Project != "terraform" {
+			return fmt.Errorf("Expected project to be 'terraform' (inherited from network), got: %s", instance.Project)
 		}
 
 		return nil
@@ -575,4 +610,25 @@ echo <<EOF
 ${random_bytes.string.base64}
 EOF
 EOFTF
+}`
+
+const testAccCloudStackInstance_networkProjectInheritance = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering= "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = cloudstack_network.foo.zone
+  expunge = true
+  # Note: project is NOT specified here - it should be inherited from the network
 }`
