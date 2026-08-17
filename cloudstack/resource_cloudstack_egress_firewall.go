@@ -45,6 +45,13 @@ func resourceCloudStackEgressFirewall() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
 			"managed": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -264,6 +271,11 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 	p := cs.Firewall.NewListEgressFirewallRulesParams()
 	p.SetNetworkid(d.Id())
 	p.SetListall(true)
+
+	// If there is a project supplied, we retrieve and set the project id
+	if err := setProjectid(p, cs, d); err != nil {
+		return err
+	}
 
 	l, err := cs.Firewall.ListEgressFirewallRules(p)
 	if err != nil {

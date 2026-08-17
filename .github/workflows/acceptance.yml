@@ -30,7 +30,7 @@ permissions:
 
 env:
   CLOUDSTACK_API_URL: http://localhost:8080/client/api
-  CLOUDSTACK_VERSIONS: "['4.18.2.1', '4.19.0.2']"
+  CLOUDSTACK_VERSIONS: "['4.20.2.0', '4.22.0.0']"
 
 jobs:
   prepare-matrix:
@@ -48,17 +48,17 @@ jobs:
     needs: [prepare-matrix]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - name: Configure Cloudstack v${{ matrix.cloudstack-version }}
-        uses: ./.github/workflows/setup-cloudstack
+        uses: ./.github/actions/setup-cloudstack
         id: setup-cloudstack
         with:
           cloudstack-version: ${{ matrix.cloudstack-version }}
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false
@@ -78,8 +78,9 @@ jobs:
       fail-fast: false
       matrix:
         terraform-version:
-          - '1.8.*'
-          - '1.9.*'
+          - '1.12.*'
+          - '1.13.*'
+          - '1.14.*'
         cloudstack-version: ${{ fromJson(needs.prepare-matrix.outputs.cloudstack-versions) }}
 
   acceptance-opentofu:
@@ -87,25 +88,29 @@ jobs:
     needs: [prepare-matrix]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
       - name: Configure Cloudstack v${{ matrix.cloudstack-version }}
-        uses: ./.github/workflows/setup-cloudstack
+        uses: ./.github/actions/setup-cloudstack
         id: setup-cloudstack
         with:
           cloudstack-version: ${{ matrix.cloudstack-version }}
-      - uses: opentofu/setup-opentofu@v1
+      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
         with:
           tofu_version: ${{ matrix.opentofu-version }}
+          tofu_wrapper: false
       - name: Run acceptance test
         env:
           CLOUDSTACK_USER_ID: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_USER_ID }}
           CLOUDSTACK_API_KEY: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_API_KEY }}
           CLOUDSTACK_SECRET_KEY: ${{ steps.setup-cloudstack.outputs.CLOUDSTACK_SECRET_KEY }}
+          TF_ACC_PROVIDER_NAMESPACE: hashicorp
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
         run: |
+          export TF_ACC_TERRAFORM_PATH="$(which tofu)"
           make testacc
     services:
       cloudstack-simulator:
@@ -116,8 +121,9 @@ jobs:
       fail-fast: false
       matrix:
         opentofu-version:
-          - '1.6.*'
-          - '1.7.*'
+          - '1.9.*'
+          - '1.10.*'
+          - '1.11.*'
         cloudstack-version: ${{ fromJson(needs.prepare-matrix.outputs.cloudstack-versions) }}
 
   all-jobs-passed: # Will succeed if it is skipped

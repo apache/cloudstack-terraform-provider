@@ -50,6 +50,100 @@ func resourceCloudStackNetworkOffering() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"domain_id": {
+				Type: schema.TypeList,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:    true,
+				Description: "the ID of the containing domain(s), null for public offerings",
+				ForceNew:    true,
+			},
+			"network_rate": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "data transfer rate in megabits per second allowed",
+				ForceNew:    true,
+			},
+			"network_mode": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Indicates the mode with which the network will operate. Valid option: NATTED or ROUTED",
+				ForceNew:    true,
+			},
+			"max_connections": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "maximum number of concurrent connections supported by the network offering",
+				ForceNew:    true,
+			},
+			"conserve_mode": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "true if the network offering is IP conserve mode enabled",
+				ForceNew:    true,
+			},
+			"enable": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "set to true if the offering is to be enabled during creation. Default is false",
+				ForceNew:    true,
+			},
+			"for_vpc": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "true if network offering is meant to be used for VPC, false otherwise.",
+				ForceNew:    true,
+			},
+			"for_nsx": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "true if network offering is meant to be used for NSX, false otherwise",
+				ForceNew:    true,
+			},
+			"internet_protocol": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The internet protocol of network offering. Options are ipv4 and dualstack. Default is ipv4. dualstack will create a network offering that supports both IPv4 and IPv6",
+				ForceNew:    true,
+			},
+			"routing_mode": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "the routing mode for the network offering. Supported types are: Static or Dynamic.",
+				ForceNew:    true,
+			},
+			"specify_vlan": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "true if network offering supports vlans, false otherwise",
+				ForceNew:    true,
+			},
+			"supported_services": {
+				Type:        schema.TypeSet,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Optional:    true,
+				Description: "the list of supported services",
+				ForceNew:    true,
+			},
+			"service_provider_list": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Description: "provider to service mapping. If not specified, the provider for the service will be mapped to the default provider on the physical network",
+				ForceNew:    true,
+			},
+			"specify_ip_ranges": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "true if network offering supports specifying ip ranges; defaulted to false if not specified",
+				ForceNew:    true,
+			},
+			"specify_as_number": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "true if network offering supports choosing AS number",
+				ForceNew:    true,
+			},
 		},
 	}
 }
@@ -67,6 +161,74 @@ func resourceCloudStackNetworkOfferingCreate(d *schema.ResourceData, meta interf
 	if guest_ip_type == "Shared" {
 		p.SetSpecifyvlan(true)
 		p.SetSpecifyipranges(true)
+	}
+
+	if v, ok := d.GetOk("domain_id"); ok {
+		p.SetDomainid(v.([]string))
+	}
+
+	if v, ok := d.GetOk("network_rate"); ok {
+		p.SetNetworkrate(v.(int))
+	}
+
+	if v, ok := d.GetOk("network_mode"); ok {
+		p.SetNetworkmode(v.(string))
+	}
+
+	if v, ok := d.GetOk("max_connections"); ok {
+		p.SetMaxconnections(v.(int))
+	}
+
+	if v, ok := d.GetOk("conserve_mode"); ok {
+		p.SetConservemode(v.(bool))
+	}
+
+	if v, ok := d.GetOk("enable"); ok {
+		p.SetEnable(v.(bool))
+	}
+
+	if v, ok := d.GetOk("for_vpc"); ok {
+		p.SetForvpc(v.(bool))
+	}
+
+	if v, ok := d.GetOk("for_nsx"); ok {
+		p.SetFornsx(v.(bool))
+	}
+
+	if v, ok := d.GetOk("internet_protocol"); ok {
+		p.SetInternetprotocol(v.(string))
+	}
+
+	if v, ok := d.GetOk("routing_mode"); ok {
+		p.SetRoutingmode(v.(string))
+	}
+
+	if v, ok := d.GetOk("specify_vlan"); ok {
+		p.SetSpecifyvlan(v.(bool))
+	}
+
+	var supported_services []string
+	if v, ok := d.GetOk("supported_services"); ok {
+		for _, supported_service := range v.(*schema.Set).List() {
+			supported_services = append(supported_services, supported_service.(string))
+		}
+	}
+	p.SetSupportedservices(supported_services)
+
+	if v, ok := d.GetOk("service_provider_list"); ok {
+		m := make(map[string]string)
+		for key, value := range v.(map[string]interface{}) {
+			m[key] = value.(string)
+		}
+		p.SetServiceproviderlist(m)
+	}
+
+	if v, ok := d.GetOk("specify_ip_ranges"); ok {
+		p.SetSpecifyipranges(v.(bool))
+	}
+
+	if v, ok := d.GetOk("specify_as_number"); ok {
+		p.SetSpecifyasnumber(v.(bool))
 	}
 
 	log.Printf("[DEBUG] Creating Network Offering %s", name)
@@ -106,7 +268,7 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 
 	}
 
-	// Check if the display text is changed and if so, update the virtual machine
+	// Check if the display text is changed and if so, update the network offering
 	if d.HasChange("display_text") {
 		log.Printf("[DEBUG] Display text changed for %s, starting update", name)
 
@@ -114,7 +276,7 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
 		// Set the new display text
-		p.SetName(d.Get("display_text").(string))
+		p.SetDisplaytext(d.Get("display_text").(string))
 
 		// Update the display text
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
@@ -125,34 +287,34 @@ func resourceCloudStackNetworkOfferingUpdate(d *schema.ResourceData, meta interf
 
 	}
 
-	// Check if the guest ip type is changed and if so, update the virtual machine
-	if d.HasChange("guest_ip_type") {
-		log.Printf("[DEBUG] Guest ip type changed for %s, starting update", name)
+	// Check if maxconnections is changed and if so, update the network offering
+	if d.HasChange("max_connections") {
+		log.Printf("[DEBUG] Max connections changed for %s, starting update", name)
 
 		// Create a new parameter struct
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
-		// Set the new guest ip type
-		p.SetName(d.Get("guest_ip_type").(string))
+		// Set the new max connections
+		p.SetMaxconnections(d.Get("max_connections").(int))
 
-		// Update the guest ip type
+		// Update the max connections
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
 		if err != nil {
 			return fmt.Errorf(
-				"Error updating the guest ip type for network offering %s: %s", name, err)
+				"Error updating the max connections for network offering %s: %s", name, err)
 		}
 
 	}
 
-	// Check if the traffic type is changed and if so, update the virtual machine
-	if d.HasChange("traffic_type") {
-		log.Printf("[DEBUG] Traffic type changed for %s, starting update", name)
+	// Check if the domain id is changed and if so, update the network offering
+	if d.HasChange("domain_id") {
+		log.Printf("[DEBUG] Domain id changed for %s, starting update", name)
 
 		// Create a new parameter struct
 		p := cs.NetworkOffering.NewUpdateNetworkOfferingParams()
 
-		// Set the new traffic type
-		p.SetName(d.Get("traffic_type").(string))
+		// Set the new domain id
+		p.SetDomainid(d.Get("domain_id").(string))
 
 		// Update the traffic type
 		_, err := cs.NetworkOffering.UpdateNetworkOffering(p)
@@ -202,6 +364,73 @@ func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interfac
 	d.Set("display_text", n.Displaytext)
 	d.Set("guest_ip_type", n.Guestiptype)
 	d.Set("traffic_type", n.Traffictype)
+
+	if _, ok := d.GetOk("network_rate"); ok {
+		d.Set("network_rate", n.Networkrate)
+	}
+	if _, ok := d.GetOk("network_mode"); ok {
+		// Only set if CloudStack supports and returns this field (4.20.0+)
+		// Older versions may not support network_mode
+		if n.Networkmode != "" {
+			d.Set("network_mode", n.Networkmode)
+		}
+	}
+	if _, ok := d.GetOk("conserve_mode"); ok {
+		d.Set("conserve_mode", n.Conservemode)
+	}
+	if _, ok := d.GetOk("enable"); ok {
+		d.Set("enable", n.State == "Enabled")
+	}
+	if _, ok := d.GetOk("for_vpc"); ok {
+		d.Set("for_vpc", n.Forvpc)
+	}
+	if _, ok := d.GetOk("for_nsx"); ok {
+		d.Set("for_nsx", n.Fornsx)
+	}
+	if _, ok := d.GetOk("specify_vlan"); ok {
+		d.Set("specify_vlan", n.Specifyvlan)
+	}
+	if _, ok := d.GetOk("specify_ip_ranges"); ok {
+		d.Set("specify_ip_ranges", n.Specifyipranges)
+	}
+	if _, ok := d.GetOk("specify_as_number"); ok {
+		d.Set("specify_as_number", n.Specifyasnumber)
+	}
+	if _, ok := d.GetOk("internet_protocol"); ok {
+		d.Set("internet_protocol", n.Internetprotocol)
+	}
+	if _, ok := d.GetOk("routing_mode"); ok {
+		// Only set if CloudStack supports and returns this field (4.20.0+)
+		// Older versions may not support routing_mode
+		if n.Routingmode != "" {
+			d.Set("routing_mode", n.Routingmode)
+		}
+	}
+	if _, ok := d.GetOk("max_connections"); ok {
+		log.Printf("[DEBUG] Max connections configured: %d, CloudStack returned: %d", d.Get("max_connections").(int), n.Maxconnections)
+
+		if n.Maxconnections > 0 {
+			d.Set("max_connections", n.Maxconnections)
+		}
+	}
+
+	if _, ok := d.GetOk("supported_services"); ok && len(n.Service) > 0 {
+		services := make([]string, len(n.Service))
+		for i, service := range n.Service {
+			services[i] = service.Name
+		}
+		d.Set("supported_services", services)
+	}
+
+	if _, ok := d.GetOk("service_provider_list"); ok && len(n.Service) > 0 {
+		serviceProviders := make(map[string]string)
+		for _, service := range n.Service {
+			if len(service.Provider) > 0 {
+				serviceProviders[service.Name] = service.Provider[0].Name
+			}
+		}
+		d.Set("service_provider_list", serviceProviders)
+	}
 
 	return nil
 }

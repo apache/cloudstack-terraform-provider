@@ -23,6 +23,39 @@ resource "cloudstack_network" "default" {
 }
 ```
 
+With IPv6 support:
+
+```hcl
+resource "cloudstack_network" "ipv6" {
+  name             = "test-network-ipv6"
+  cidr             = "10.0.0.0/16"
+  ip6cidr          = "2001:db8::/64"
+  network_offering = "Default Network"
+  zone             = "zone-1"
+}
+```
+
+VPC network with automatic project inheritance:
+
+```hcl
+resource "cloudstack_vpc" "default" {
+  name         = "test-vpc"
+  cidr         = "10.0.0.0/8"
+  vpc_offering = "Default VPC Offering"
+  zone         = "zone-1"
+  project      = "my-project"
+}
+
+resource "cloudstack_network" "vpc_network" {
+  name             = "test-vpc-network"
+  cidr             = "10.1.0.0/16"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id           = cloudstack_vpc.default.id
+  zone             = cloudstack_vpc.default.zone
+  # project is automatically inherited from the VPC
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -43,6 +76,26 @@ The following arguments are supported:
 * `endip` - (Optional) End of the IP block that will be available on the
     network. Defaults to the last available IP in the range.
 
+* `ip6cidr` - (Optional) The IPv6 CIDR block for the network. Must be a valid
+    IPv6 CIDR (IPv4 CIDRs are rejected). The prefix must be at least `/127` (or
+    `/126` when the network offering has `specifyipranges` enabled) so that the
+    gateway and, when applicable, the IP range can be derived. Changing this
+    forces a new resource to be created.
+
+* `ip6gateway` - (Optional) IPv6 Gateway that will be provided to the instances
+    in this network. Must fall within `ip6cidr`. Defaults to the second address
+    in the subnet (network address + 1, e.g., 2001:db8::1 for 2001:db8::/64).
+
+* `startipv6` - (Optional) Start of the IPv6 block that will be available on the
+    network. Must fall within `ip6cidr`. Only applied when the network offering
+    has `specifyipranges` enabled; in that case it defaults to the second
+    available IP in the range (otherwise it is not sent to the API).
+
+* `endipv6` - (Optional) End of the IPv6 block that will be available on the
+    network. Must fall within `ip6cidr`. Only applied when the network offering
+    has `specifyipranges` enabled; in that case it defaults to the last
+    available IP in the range (otherwise it is not sent to the API).
+
 * `network_domain` - (Optional) DNS domain for the network.
 
 * `network_offering` - (Required) The name or ID of the network offering to use
@@ -61,7 +114,9 @@ The following arguments are supported:
     `none`, this will force a new resource to be created. (defaults `none`)
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created.
+    network to. Changing this forces a new resource to be created. If not
+    specified and `vpc_id` is provided, the project will be automatically
+    inherited from the VPC.
 
 * `source_nat_ip` - (Optional) If set to `true` a public IP will be associated
     with the network. This is mainly used when the network supports the source
@@ -71,12 +126,18 @@ The following arguments are supported:
 * `zone` - (Required) The name or ID of the zone where this network will be
     available. Changing this forces a new resource to be created.
 
+* `bypass_vlan_check` -  (Optional) if set to `true` it bypasses VLAN id/range overlap
+    check during network creation for shared and L2 networks
+
+
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the network.
 * `display_text` - The display text of the network.
+* `gateway` - The IPv4 gateway of the network.
+* `ip6gateway` - The IPv6 gateway of the network.
 * `network_domain` - DNS domain for the network.
 * `source_nat_ip_address` - The associated source NAT IP.
 * `source_nat_ip_id` - The ID of the associated source NAT IP.

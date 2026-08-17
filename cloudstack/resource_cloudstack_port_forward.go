@@ -55,6 +55,7 @@ func resourceCloudStackPortForward() *schema.Resource {
 			"project": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 
@@ -73,9 +74,21 @@ func resourceCloudStackPortForward() *schema.Resource {
 							Required: true,
 						},
 
+						"private_end_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+
 						"public_port": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+
+						"public_end_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
 						},
 
 						"virtual_machine_id": {
@@ -100,8 +113,22 @@ func resourceCloudStackPortForward() *schema.Resource {
 }
 
 func resourceCloudStackPortForwardCreate(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
 	// We need to set this upfront in order to be able to save a partial state
 	d.SetId(d.Get("ip_address_id").(string))
+
+	// If no project is explicitly set, try to inherit it from the IP address
+	if _, ok := d.GetOk("project"); !ok {
+		// Get the IP address to retrieve its project
+		// Use projectid=-1 to search across all projects
+		ip, count, err := cs.Address.GetPublicIpAddressByID(d.Id(), cloudstack.WithProject("-1"))
+		if err == nil && count > 0 && ip.Projectid != "" {
+			log.Printf("[DEBUG] Inheriting project %s from IP address %s", ip.Projectid, d.Id())
+			// Set the project in the resource data for state management
+			d.Set("project", ip.Project)
+		}
+	}
 
 	// Create all forwards that are configured
 	if nrs := d.Get("forward").(*schema.Set); nrs.Len() > 0 {
@@ -164,9 +191,9 @@ func createPortForward(d *schema.ResourceData, meta interface{}, forward map[str
 		return err
 	}
 
+	// Query VM without project filter - it will be found regardless of project
 	vm, _, err := cs.VirtualMachine.GetVirtualMachineByID(
 		forward["virtual_machine_id"].(string),
-		cloudstack.WithProject(d.Get("project").(string)),
 	)
 	if err != nil {
 		return err
@@ -175,6 +202,12 @@ func createPortForward(d *schema.ResourceData, meta interface{}, forward map[str
 	// Create a new parameter struct
 	p := cs.Firewall.NewCreatePortForwardingRuleParams(d.Id(), forward["private_port"].(int),
 		forward["protocol"].(string), forward["public_port"].(int), vm.Id)
+	if val, ok := forward["private_end_port"]; ok && val != nil && val.(int) != 0 {
+		p.SetPrivateendport(val.(int))
+	}
+	if val, ok := forward["public_end_port"]; ok && val != nil && val.(int) != 0 {
+		p.SetPublicendport(val.(int))
+	}
 
 	if vmGuestIP, ok := forward["vm_guest_ip"]; ok && vmGuestIP.(string) != "" {
 		p.SetVmguestip(vmGuestIP.(string))
@@ -216,10 +249,22 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// First check if the IP address is still associated
-	_, count, err := cs.Address.GetPublicIpAddressByID(
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
+	ip, count, err := cs.Address.GetPublicIpAddressByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from the IP address
+	if count == 0 && project == "" {
+		ip, count, err = cs.Address.GetPublicIpAddressByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
+
 	if err != nil {
 		if count == 0 {
 			log.Printf(
@@ -231,13 +276,18 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
+	// Set the project if the IP address belongs to one
+	setValueOrID(d, "project", ip.Project, ip.Projectid)
+
 	// Get all the forwards from the running environment
 	p := cs.Firewall.NewListPortForwardingRulesParams()
 	p.SetIpaddressid(d.Id())
 	p.SetListall(true)
 
-	if err := setProjectid(p, cs, d); err != nil {
-		return err
+	// Use the project from the IP address if it belongs to one
+	// If no project, don't set projectid (use default scope)
+	if ip.Projectid != "" {
+		p.SetProjectid(ip.Projectid)
 	}
 
 	l, err := cs.Firewall.ListPortForwardingRules(p)
@@ -261,13 +311,17 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 
 			id, ok := forward["uuid"]
 			if !ok || id.(string) == "" {
+				// Forward doesn't have a UUID yet (shouldn't happen after Create, but handle gracefully)
+				log.Printf("[DEBUG] Skipping forward without UUID: %+v", forward)
 				continue
 			}
 
 			// Get the forward
 			f, ok := forwardMap[id.(string)]
 			if !ok {
-				forward["uuid"] = ""
+				// Forward not found in API response - the rule was deleted outside of Terraform
+				log.Printf("[WARN] Port forwarding rule %s not found in API response, removing from state", id.(string))
+				// Don't add this forward to the new set - it will be removed from state
 				continue
 			}
 
@@ -288,6 +342,21 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 			forward["protocol"] = f.Protocol
 			forward["private_port"] = privPort
 			forward["public_port"] = pubPort
+			// Only set end ports if they differ from start ports (indicating a range)
+			if f.Privateendport != "" && f.Privateendport != f.Privateport {
+				privEndPort, err := strconv.Atoi(f.Privateendport)
+				if err != nil {
+					return err
+				}
+				forward["private_end_port"] = privEndPort
+			}
+			if f.Publicendport != "" && f.Publicendport != f.Publicport {
+				pubEndPort, err := strconv.Atoi(f.Publicendport)
+				if err != nil {
+					return err
+				}
+				forward["public_end_port"] = pubEndPort
+			}
 			forward["virtual_machine_id"] = f.Virtualmachineid
 
 			// This one is a bit tricky. We only want to update this optional value
@@ -319,9 +388,11 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if forwards.Len() > 0 {
-		d.Set("forward", forwards)
-	} else if !managed {
+	// Always set the forward attribute to maintain consistent state
+	d.Set("forward", forwards)
+
+	// Only remove the resource from state if it's not managed and has no forwards
+	if forwards.Len() == 0 && !managed {
 		d.SetId("")
 	}
 

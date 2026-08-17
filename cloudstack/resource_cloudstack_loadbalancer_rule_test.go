@@ -57,7 +57,15 @@ func TestAccCloudStackLoadBalancerRule_update(t *testing.T) {
 	var id string
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck: func() {
+			// Skip this test on CloudStack 4.22.0.0 due to a known simulator bug
+			// that causes "530 Internal Server Error" when updating load balancer rules.
+			// This bug does not exist in 4.20.1.0, 4.22.1.0+, or 4.23.0.0+.
+			version := getCloudStackVersion(t)
+			if version == "4.22.0.0" {
+				t.Skip("Skipping TestAccCloudStackLoadBalancerRule_update on CloudStack 4.22.0.0 due to known simulator bug (Error 530: Internal Server Error)")
+			}
+		},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckCloudStackLoadBalancerRuleDestroy,
 		Steps: []resource.TestStep{
@@ -129,6 +137,8 @@ func TestAccCloudStackLoadBalancerRule_forceNew(t *testing.T) {
 						"cloudstack_loadbalancer_rule.foo", "private_port", "443"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_loadbalancer_rule.foo", "protocol", "tcp-proxy"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_loadbalancer_rule.foo", "cidrlist.0", "20.0.0.0/8"),
 				),
 			},
 		},
@@ -192,6 +202,8 @@ func TestAccCloudStackLoadBalancerRule_vpcUpdate(t *testing.T) {
 						"cloudstack_loadbalancer_rule.foo", "public_port", "443"),
 					resource.TestCheckResourceAttr(
 						"cloudstack_loadbalancer_rule.foo", "private_port", "443"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_loadbalancer_rule.foo", "cidrlist.0", "20.0.0.0/8"),
 				),
 			},
 		},
@@ -357,6 +369,7 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   private_port = 443
   protocol = "tcp-proxy"
   member_ids = [cloudstack_instance.foobar1.id]
+  cidrlist = ["20.0.0.0/8"]
 }`
 
 const testAccCloudStackLoadBalancerRule_vpc = `
@@ -451,4 +464,5 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   public_port = 443
   private_port = 443
   member_ids = [cloudstack_instance.foobar1.id, cloudstack_instance.foobar2.id]
+  cidrlist = ["20.0.0.0/8"]
 }`

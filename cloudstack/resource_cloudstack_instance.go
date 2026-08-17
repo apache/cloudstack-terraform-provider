@@ -29,6 +29,7 @@ import (
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCloudStackInstance() *schema.Resource {
@@ -57,6 +58,20 @@ func resourceCloudStackInstance() *schema.Resource {
 			"service_offering": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+
+			"disk_offering": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+
+			"override_disk_offering": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 
 			"network_id": {
@@ -168,6 +183,14 @@ func resourceCloudStackInstance() *schema.Resource {
 				Default:  false,
 			},
 
+			"boot_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Secure", "Legacy"}, true),
+				ForceNew:     true,
+				Description:  "The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.",
+			},
+
 			"start_vm": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -187,6 +210,17 @@ func resourceCloudStackInstance() *schema.Resource {
 						return ""
 					}
 				},
+			},
+
+			"userdata_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"userdata_details": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 
 			"details": {
@@ -248,6 +282,10 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return e.Error()
 	}
 
+	if bootMode, hasBoot := d.GetOk("boot_mode"); hasBoot && !d.Get("uefi").(bool) {
+		return fmt.Errorf("boot_mode can only be specified when uefi is true, got boot_mode=%s with uefi=false", bootMode.(string))
+	}
+
 	// Create a new parameter struct
 	p := cs.VirtualMachine.NewDeployVirtualMachineParams(serviceofferingid, templateid, zone.Id)
 	p.SetStartvm(d.Get("start_vm").(bool))
@@ -297,14 +335,48 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetRootdisksize(int64(rootdisksize.(int)))
 	}
 
+	if diskoffering, ok := d.GetOk("disk_offering"); ok {
+		// Retrieve the disk_offering ID
+		diskofferingid, e := retrieveID(cs, "disk_offering", diskoffering.(string))
+		if e != nil {
+			return e.Error()
+		}
+		p.SetDiskofferingid(diskofferingid)
+	}
+
+	if override_disk_offering, ok := d.GetOk("override_disk_offering"); ok {
+		// Retrieve the override_disk_offering ID
+		override_disk_offeringid, e := retrieveID(cs, "disk_offering", override_disk_offering.(string))
+		if e != nil {
+			return e.Error()
+		}
+		p.SetOverridediskofferingid(override_disk_offeringid)
+	}
+
 	if d.Get("uefi").(bool) {
 		p.SetBoottype("UEFI")
-		p.SetBootmode("Legacy")
+		if bootmode, ok := d.GetOk("boot_mode"); ok {
+			p.SetBootmode(bootmode.(string))
+		} else {
+			p.SetBootmode("Legacy")
+		}
 	}
 
 	if zone.Networktype == "Advanced" {
 		// Set the default network ID
-		p.SetNetworkids([]string{d.Get("network_id").(string)})
+		networkID := d.Get("network_id").(string)
+		p.SetNetworkids([]string{networkID})
+
+		// If no project is explicitly set, try to inherit it from the network
+		if _, ok := d.GetOk("project"); !ok && networkID != "" {
+			// Get the network to retrieve its project
+			// Use projectid=-1 to search across all projects
+			network, count, err := cs.Network.GetNetworkByID(networkID, cloudstack.WithProject("-1"))
+			if err == nil && count > 0 && network.Projectid != "" {
+				log.Printf("[DEBUG] Inheriting project %s from network %s", network.Projectid, networkID)
+				p.SetProjectid(network.Projectid)
+			}
+		}
 	}
 
 	// If there is a ipaddres supplied, add it to the parameter struct
@@ -354,6 +426,7 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
+	// This will override the inherited project from network if explicitly set
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
 	}
@@ -397,6 +470,20 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		p.SetUserdata(ud)
 	}
 
+	if userdataID, ok := d.GetOk("userdata_id"); ok {
+		p.SetUserdataid(userdataID.(string))
+	}
+
+	if userdataDetails, ok := d.GetOk("userdata_details"); ok {
+		udDetails := make(map[string]string)
+		index := 0
+		for k, v := range userdataDetails.(map[string]interface{}) {
+			udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
+			index++
+		}
+		p.SetUserdatadetails(udDetails)
+	}
+
 	// Create the new instance
 	r, err := cs.VirtualMachine.DeployVirtualMachine(p)
 	if err != nil {
@@ -423,10 +510,22 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the virtual machine details
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from network
+	if count == 0 && project == "" {
+		vm, count, err = cs.VirtualMachine.GetVirtualMachineByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
+
 	if err != nil {
 		if count == 0 {
 			log.Printf("[DEBUG] Instance %s does no longer exist", d.Get("name").(string))
@@ -502,9 +601,31 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("tags", tagsToMap(vm.Tags))
 
 	setValueOrID(d, "service_offering", vm.Serviceofferingname, vm.Serviceofferingid)
+	setValueOrID(d, "disk_offering", vm.Diskofferingname, vm.Diskofferingid)
 	setValueOrID(d, "template", vm.Templatename, vm.Templateid)
 	setValueOrID(d, "project", vm.Project, vm.Projectid)
 	setValueOrID(d, "zone", vm.Zonename, vm.Zoneid)
+	d.Set("uefi", strings.EqualFold(vm.Boottype, "UEFI"))
+	if strings.EqualFold(vm.Boottype, "UEFI") && vm.Bootmode != "" {
+		d.Set("boot_mode", vm.Bootmode)
+	}
+
+	if vm.Userdataid != "" {
+		d.Set("userdata_id", vm.Userdataid)
+	}
+
+	if vm.Userdata != "" {
+		decoded, err := base64.StdEncoding.DecodeString(vm.Userdata)
+		if err != nil {
+			d.Set("user_data", vm.Userdata)
+		} else {
+			d.Set("user_data", string(decoded))
+		}
+	}
+
+	if vm.Userdatadetails != "" {
+		log.Printf("[DEBUG] Instance %s has userdata details: %s", vm.Name, vm.Userdatadetails)
+	}
 
 	return nil
 }
@@ -555,7 +676,8 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	// Attributes that require reboot to update
 	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") || d.HasChange("user_data") {
+		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") ||
+		d.HasChange("user_data") || d.HasChange("userdata_id") || d.HasChange("userdata_details") {
 
 		// Before we can actually make these changes, the virtual machine must be stopped
 		_, err := cs.VirtualMachine.StopVirtualMachine(
@@ -709,6 +831,40 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
+		if d.HasChange("userdata_id") {
+			log.Printf("[DEBUG] userdata_id changed for %s, starting update", name)
+
+			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+			if userdataID, ok := d.GetOk("userdata_id"); ok {
+				p.SetUserdataid(userdataID.(string))
+			}
+			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+			if err != nil {
+				return fmt.Errorf(
+					"Error updating userdata_id for instance %s: %s", name, err)
+			}
+		}
+
+		if d.HasChange("userdata_details") {
+			log.Printf("[DEBUG] userdata_details changed for %s, starting update", name)
+
+			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+			if userdataDetails, ok := d.GetOk("userdata_details"); ok {
+				udDetails := make(map[string]string)
+				index := 0
+				for k, v := range userdataDetails.(map[string]interface{}) {
+					udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
+					index++
+				}
+				p.SetUserdatadetails(udDetails)
+			}
+			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+			if err != nil {
+				return fmt.Errorf(
+					"Error updating userdata_details for instance %s: %s", name, err)
+			}
+		}
+
 		// Start the virtual machine again
 		_, err = cs.VirtualMachine.StartVirtualMachine(
 			cs.VirtualMachine.NewStartVirtualMachineParams(d.Id()))
@@ -735,6 +891,11 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 		p.SetDetails(vmDetails)
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the details for instance %s: %s", vmDetails, err)
+		}
 	}
 
 	return resourceCloudStackInstanceRead(d, meta)

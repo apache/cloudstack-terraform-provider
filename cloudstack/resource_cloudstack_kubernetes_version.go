@@ -115,7 +115,7 @@ func resourceCloudStackKubernetesVersionCreate(d *schema.ResourceData, meta inte
 		p.SetName(name.(string))
 	}
 	if checksum, ok := d.GetOk("checksum"); ok {
-		p.SetName(checksum.(string))
+		p.SetChecksum(checksum.(string))
 	}
 	if zone, ok := d.GetOk("zone"); ok {
 		zoneID, e := retrieveID(cs, "zone", zone.(string))
