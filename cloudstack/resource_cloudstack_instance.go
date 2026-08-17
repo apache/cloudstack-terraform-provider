@@ -699,15 +699,26 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			_, err = cs.VirtualMachine.ScaleVirtualMachine(p)
 			if err != nil {
 				return fmt.Errorf(
-					"Error scaling instance %s to service offering %s: %s", name, newOffering, err)
+					"Error scaling VM %s from %s to %s: %s", name, oldOffering, newOffering, err)
 			}
 		}
 
 		// Check if compute-related details have changed and scale the VM
 		if d.HasChange("details") {
 			oldDetails, newDetails := d.GetChange("details")
-			oldDetailsMap := oldDetails.(map[string]interface{})
-			newDetailsMap := newDetails.(map[string]interface{})
+
+			// Safely coerce details, treating nil as empty map
+			var oldDetailsMap, newDetailsMap map[string]interface{}
+			if oldDetails != nil {
+				oldDetailsMap = oldDetails.(map[string]interface{})
+			} else {
+				oldDetailsMap = make(map[string]interface{})
+			}
+			if newDetails != nil {
+				newDetailsMap = newDetails.(map[string]interface{})
+			} else {
+				newDetailsMap = make(map[string]interface{})
+			}
 
 			// Check if any compute-related details changed (cpuNumber, cpuSpeed, memory)
 			computeDetailsChanged := false
@@ -721,13 +732,19 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if computeDetailsChanged {
 				log.Printf("[DEBUG] Compute details changed for %s, scaling VM", name)
 
-				// Convert details map for API call
+				// Convert details map for API call, safely stringifying values
 				detailsForAPI := make(map[string]string)
 				for k, v := range newDetailsMap {
-					detailsForAPI[k] = v.(string)
+					detailsForAPI[k] = fmt.Sprintf("%v", v)
 				}
 
-				p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), "")
+				// Get current service offering ID for details-only scaling
+				currentServiceOfferingID, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+				if e != nil {
+					return e.Error()
+				}
+
+				p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), currentServiceOfferingID)
 				p.SetDetails(detailsForAPI)
 
 				_, err := cs.VirtualMachine.ScaleVirtualMachine(p)

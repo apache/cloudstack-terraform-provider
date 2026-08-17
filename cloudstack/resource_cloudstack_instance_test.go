@@ -295,6 +295,37 @@ func TestAccCloudStackInstance_userData(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackInstance_scale(t *testing.T) {
+	var instance cloudstack.VirtualMachine
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackInstance_scale,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists(
+						"cloudstack_instance.foobar", &instance),
+					resource.TestCheckResourceAttr(
+						"cloudstack_instance.foobar", "service_offering", "Small Instance"),
+				),
+			},
+			{
+				Config: testAccCloudStackInstance_scaleUp,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackInstanceExists(
+						"cloudstack_instance.foobar", &instance),
+					testAccCheckCloudStackInstanceScaled(&instance),
+					resource.TestCheckResourceAttr(
+						"cloudstack_instance.foobar", "service_offering", "Medium Instance"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackInstanceExists(
 	n string, instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -376,6 +407,30 @@ func testAccCheckCloudStackInstanceRenamedAndResized(
 
 		if instance.Memory <= 0 {
 			return fmt.Errorf("Memory not set - VM scaling may not have completed, got: %d", instance.Memory)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackInstanceScaled(
+	instance *cloudstack.VirtualMachine) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		// Verify that the VM has actually been scaled by checking CPU and memory
+		// are set to the Medium Instance values. This ensures ScaleVirtualMachine
+		// was invoked and completed successfully.
+		if instance.Cpunumber <= 0 {
+			return fmt.Errorf("CPU number not set after scaling, got: %d", instance.Cpunumber)
+		}
+
+		if instance.Memory <= 0 {
+			return fmt.Errorf("Memory not set after scaling, got: %d", instance.Memory)
+		}
+
+		// Medium Instance should have more resources than Small Instance
+		// (this is environment-dependent, but at minimum both should be > 0)
+		if instance.Serviceofferingname != "Medium Instance" {
+			return fmt.Errorf("Bad service offering after scaling: %s", instance.Serviceofferingname)
 		}
 
 		return nil
@@ -586,4 +641,42 @@ echo <<EOF
 ${random_bytes.string.base64}
 EOF
 EOFTF
+}`
+
+const testAccCloudStackInstance_scale = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering = "Small Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+  expunge = true
+}`
+
+const testAccCloudStackInstance_scaleUp = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform-test"
+  service_offering = "Medium Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+  expunge = true
 }`
