@@ -220,10 +220,7 @@ func applyVPCOfferingFilters(vpcOffering *cloudstack.VPCOffering, filters *schem
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		vpcOfferingField, ok := vpcOfferingJSON[updatedName].(string)
-		if !ok {
-			continue
-		}
+		vpcOfferingField := fmt.Sprintf("%v", vpcOfferingJSON[updatedName])
 		if !r.MatchString(vpcOfferingField) {
 			return false, nil
 		}

@@ -56,7 +56,7 @@ func resourceCloudStackVPCOffering() *schema.Resource {
 				Type:        schema.TypeList,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Optional:    true,
-				Description: "the ID of the containing zone(s), null for public offerings",
+				Description: "the ID of the containing zone(s), null for offerings available in all zones",
 				ForceNew:    true,
 			},
 			"enable": {
