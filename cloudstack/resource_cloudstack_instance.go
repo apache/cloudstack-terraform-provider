@@ -258,14 +258,14 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Retrieve the service_offering ID
-	serviceofferingid, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+	// Retrieve the zone ID first (needed for service_offering lookup)
+	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
 	if e != nil {
 		return e.Error()
 	}
 
-	// Retrieve the zone ID
-	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
+	// Retrieve the service_offering ID (filtered by zone)
+	serviceofferingid, e := retrieveServiceOfferingID(cs, zoneid, d.Get("service_offering").(string))
 	if e != nil {
 		return e.Error()
 	}
@@ -685,8 +685,8 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if d.HasChange("service_offering") {
 			log.Printf("[DEBUG] Service offering changed for %s, starting update", name)
 
-			// Retrieve the service_offering ID
-			serviceofferingid, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+			// Retrieve the service_offering ID (filtered by zone)
+			serviceofferingid, e := retrieveServiceOfferingID(cs, d.Get("zone").(string), d.Get("service_offering").(string))
 			if e != nil {
 				return e.Error()
 			}
