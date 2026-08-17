@@ -105,6 +105,29 @@ resource "cloudstack_instance" "from_template" {
 }
 ```
 
+### Instance with Automatic Project Inheritance
+
+```hcl
+# Create a network in a project
+resource "cloudstack_network" "project_network" {
+  name             = "project-network"
+  cidr             = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project          = "my-project"
+  zone             = "zone-1"
+}
+
+# Instance automatically inherits project from network
+resource "cloudstack_instance" "app" {
+  name             = "app-server"
+  service_offering = "small"
+  network_id       = cloudstack_network.project_network.id
+  template         = "CentOS 7"
+  zone             = cloudstack_network.project_network.zone
+  # project is automatically inherited from the network
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -164,7 +187,9 @@ The following arguments are supported:
     this instance. Changing this forces a new resource to be created.
 
 * `project` - (Optional) The name or ID of the project to deploy this
-    instance to. Changing this forces a new resource to be created.
+    instance to. Changing this forces a new resource to be created. If not
+    specified and `network_id` is provided, the project will be automatically
+    inherited from the network.
 
 * `zone` - (Required) The name or ID of the zone where this instance will be
     created. Changing this forces a new resource to be created.
@@ -175,9 +200,11 @@ The following arguments are supported:
 * `user_data` - (Optional) The user data to provide when launching the
     instance. This can be either plain text or base64 encoded text.
 
-* `userdata_id` - (Optional) The ID of a registered CloudStack user data to use for this instance. Cannot be used together with `user_data`.
+* `userdata_id` - (Optional) The ID of a registered CloudStack user data to use for this instance.
+    Cannot be used together with `user_data`.
 
-* `userdata_details` - (Optional) A map of key-value pairs to pass as parameters to the user data script. Only valid when `userdata_id` is specified. Keys must match the parameter names defined in the user data.
+* `userdata_details` - (Optional) A map of key-value pairs to pass as parameters to the user data script.
+    Only valid when `userdata_id` is specified. Keys must match the parameter names defined in the user data.
 
 * `keypair` - (Optional) The name of the SSH key pair that will be used to
     access this instance. (Mutual exclusive with keypairs)
@@ -191,6 +218,9 @@ The following arguments are supported:
 * `uefi` - (Optional) When set, will boot the instance in UEFI/Legacy mode (defaults false)
 
 * `boot_mode` - (Optional) The boot mode of the instance. Can only be specified when uefi is true. Valid options are 'Legacy' and 'Secure'.
+
+* `delete_protection` - (Optional) Set delete protection for the virtual machine. If true, the instance will be protected from deletion.
+    Note: If the instance is managed by another service like autoscaling groups or CKS, delete protection will be ignored.
 
 ## Attributes Reference
 
