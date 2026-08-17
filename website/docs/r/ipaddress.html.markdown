@@ -91,6 +91,11 @@ The following arguments are supported:
     inherited from the VPC. If not specified and `network_id` is provided,
     the project will be automatically inherited from the network.
 
+* `ip_address` - (Optional) A specific IP address to acquire from the available
+    pool (e.g. from a `cloudstack_vlan_ip_range` dedicated to an account). If
+    not set, CloudStack auto-selects the next free address. Changing this
+    forces a new resource to be created.
+
 *NOTE: `network_id` and/or `zone` should have a value when `is_portable` is `false`!*
 *NOTE: Either `network_id` or `vpc_id` should have a value when `is_portable` is `true`!*
 
