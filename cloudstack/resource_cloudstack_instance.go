@@ -681,9 +681,9 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 		}
 
-		// Check if the service offering is changed and if so, update the offering
+		// Check if the service offering is changed and if so, scale the VM
 		if d.HasChange("service_offering") {
-			log.Printf("[DEBUG] Service offering changed for %s, starting update", name)
+			log.Printf("[DEBUG] Service offering changed for %s, starting scale", name)
 
 			// Retrieve the service_offering ID
 			serviceofferingid, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
@@ -691,14 +691,14 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return e.Error()
 			}
 
-			// Create a new parameter struct
-			p := cs.VirtualMachine.NewChangeServiceForVirtualMachineParams(d.Id(), serviceofferingid)
+			// Create a new parameter struct for scaling
+			p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), serviceofferingid)
 
-			// Change the service offering
-			_, err = cs.VirtualMachine.ChangeServiceForVirtualMachine(p)
+			// Scale the VM to the new service offering
+			_, err = cs.VirtualMachine.ScaleVirtualMachine(p)
 			if err != nil {
 				return fmt.Errorf(
-					"Error changing the service offering for instance %s: %s", name, err)
+					"Error scaling the service offering for instance %s: %s", name, err)
 			}
 		}
 
