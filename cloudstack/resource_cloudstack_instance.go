@@ -683,7 +683,8 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 		// Check if the service offering is changed and if so, scale the VM
 		if d.HasChange("service_offering") {
-			log.Printf("[DEBUG] Service offering changed for %s, starting scale", name)
+			oldOffering, newOffering := d.GetChange("service_offering")
+			log.Printf("[DEBUG] Service offering changed for %s from %s to %s, starting scale", name, oldOffering, newOffering)
 
 			// Retrieve the service_offering ID
 			serviceofferingid, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
@@ -698,7 +699,42 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			_, err = cs.VirtualMachine.ScaleVirtualMachine(p)
 			if err != nil {
 				return fmt.Errorf(
-					"Error scaling the service offering for instance %s: %s", name, err)
+					"Error scaling instance %s to service offering %s: %s", name, newOffering, err)
+			}
+		}
+
+		// Check if compute-related details have changed and scale the VM
+		if d.HasChange("details") {
+			oldDetails, newDetails := d.GetChange("details")
+			oldDetailsMap := oldDetails.(map[string]interface{})
+			newDetailsMap := newDetails.(map[string]interface{})
+
+			// Check if any compute-related details changed (cpuNumber, cpuSpeed, memory)
+			computeDetailsChanged := false
+			for _, key := range []string{"cpuNumber", "cpuSpeed", "memory"} {
+				if oldDetailsMap[key] != newDetailsMap[key] {
+					computeDetailsChanged = true
+					break
+				}
+			}
+
+			if computeDetailsChanged {
+				log.Printf("[DEBUG] Compute details changed for %s, scaling VM", name)
+
+				// Convert details map for API call
+				detailsForAPI := make(map[string]string)
+				for k, v := range newDetailsMap {
+					detailsForAPI[k] = v.(string)
+				}
+
+				p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), "")
+				p.SetDetails(detailsForAPI)
+
+				_, err := cs.VirtualMachine.ScaleVirtualMachine(p)
+				if err != nil {
+					return fmt.Errorf(
+						"Error scaling compute resources for instance %s: %s", name, err)
+				}
 			}
 		}
 
