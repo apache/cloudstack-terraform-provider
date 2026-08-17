@@ -169,10 +169,27 @@ func resourceCloudStackLoadBalancerRuleCreate(d *schema.ResourceData, meta inter
 	}
 
 	// Set the ipaddress id, when given -- omitted entirely for an internal
-	// LB (network_id-only, no public IP), matching real CloudStack's own
-	// optional publicipid semantics.
+	// LB (network_id-only, no public IP), a real, supported case.
+	//
+	// CloudStack's createLoadBalancerRule requires either publicipid or an
+	// explicit account/domainid to resolve the rule's owner (see
+	// CreateLoadBalancerRuleCmd#getAccountId): with no public IP, the API
+	// can't derive ownership from an owning IP address, so look it up from
+	// the network instead and pass it explicitly.
 	if ipAddressID, ok := d.GetOk("ip_address_id"); ok {
 		p.SetPublicipid(ipAddressID.(string))
+	} else if networkid, ok := d.GetOk("network_id"); ok {
+		network, _, err := cs.Network.GetNetworkByID(
+			networkid.(string),
+			cloudstack.WithProject(d.Get("project").(string)),
+		)
+		if err != nil {
+			return err
+		}
+		if network.Account != "" {
+			p.SetAccount(network.Account)
+			p.SetDomainid(network.Domainid)
+		}
 	}
 
 	// Create the load balancer rule
