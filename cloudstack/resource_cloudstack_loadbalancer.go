@@ -158,7 +158,7 @@ func resourceCloudStackLoadBalancerRead(d *schema.ResourceData, meta interface{}
 
 	d.Set("algorithm", r.Algorithm)
 	d.Set("name", r.Name)
-	d.Set("network_id", r.Networkid)
+	d.Set("networkid", r.Networkid)
 	d.Set("sourceipaddressnetworkid", r.Sourceipaddressnetworkid)
 
 	var vmIds []string

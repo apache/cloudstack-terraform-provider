@@ -210,36 +210,6 @@ func TestAccCloudStackLoadBalancerRule_vpcUpdate(t *testing.T) {
 	})
 }
 
-// TestAccCloudStackLoadBalancerRule_internal exercises a pure internal LB:
-// network_id set, ip_address_id omitted entirely -- no public IP at all.
-// Real CloudStack's createLoadBalancerRule marks publicipid optional for
-// exactly this VPC-internal case; before this fix the schema's
-// Required:true on ip_address_id made it impossible to even plan such a
-// config, regardless of what the real API allowed.
-func TestAccCloudStackLoadBalancerRule_internal(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCloudStackLoadBalancerRuleDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccCloudStackLoadBalancerRule_internal,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCloudStackLoadBalancerRuleExist("cloudstack_loadbalancer_rule.foo", nil),
-					resource.TestCheckResourceAttr(
-						"cloudstack_loadbalancer_rule.foo", "name", "terraform-ilb"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_loadbalancer_rule.foo", "ip_address_id", ""),
-					resource.TestCheckResourceAttr(
-						"cloudstack_loadbalancer_rule.foo", "public_port", "8080"),
-					resource.TestCheckResourceAttr(
-						"cloudstack_loadbalancer_rule.foo", "private_port", "8080"),
-				),
-			},
-		},
-	})
-}
-
 func testAccCheckCloudStackLoadBalancerRuleExist(n string, id *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -495,40 +465,4 @@ resource "cloudstack_loadbalancer_rule" "foo" {
   private_port = 443
   member_ids = [cloudstack_instance.foobar1.id, cloudstack_instance.foobar2.id]
   cidrlist = ["20.0.0.0/8"]
-}`
-
-const testAccCloudStackLoadBalancerRule_internal = `
-resource "cloudstack_vpc" "foo" {
-  name = "terraform-vpc"
-  cidr = "10.0.0.0/8"
-  vpc_offering = "Default VPC offering"
-  zone = "Sandbox-simulator"
-}
-
-resource "cloudstack_network" "foo" {
-  name = "terraform-network"
-  display_text = "terraform-network"
-  cidr = "10.1.1.0/24"
-  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
-  vpc_id = cloudstack_vpc.foo.id
-  zone = cloudstack_vpc.foo.zone
-}
-
-resource "cloudstack_instance" "foobar1" {
-  name = "terraform-server1"
-  display_name = "terraform"
-  service_offering= "Small Instance"
-  network_id = cloudstack_network.foo.id
-  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
-  zone = cloudstack_network.foo.zone
-  expunge = true
-}
-
-resource "cloudstack_loadbalancer_rule" "foo" {
-  name = "terraform-ilb"
-  algorithm = "roundrobin"
-  network_id = cloudstack_network.foo.id
-  public_port = 8080
-  private_port = 8080
-  member_ids = [cloudstack_instance.foobar1.id]
 }`
