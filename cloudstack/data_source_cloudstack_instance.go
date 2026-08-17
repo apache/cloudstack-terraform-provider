@@ -48,6 +48,12 @@ func dataSourceCloudstackInstance() *schema.Resource {
 				Computed: true,
 			},
 
+			"project": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
+
 			"display_name": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -98,6 +104,12 @@ func dataSourceCloudstackInstanceRead(d *schema.ResourceData, meta interface{}) 
 
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.VirtualMachine.NewListVirtualMachinesParams()
+
+	// If there is a project supplied, we retrieve and set the project id
+	if err := setProjectid(p, cs, d); err != nil {
+		return err
+	}
+
 	csInstances, err := cs.VirtualMachine.ListVirtualMachines(p)
 
 	if err != nil {
@@ -148,6 +160,7 @@ func instanceDescriptionAttributes(d *schema.ResourceData, instance *cloudstack.
 	d.SetId(instance.Id)
 	d.Set("instance_id", instance.Id)
 	d.Set("account", instance.Account)
+	d.Set("project", instance.Project)
 	d.Set("created", instance.Created)
 	d.Set("display_name", instance.Displayname)
 	d.Set("state", instance.State)
