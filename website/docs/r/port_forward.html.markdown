@@ -132,5 +132,6 @@ $ terraform import cloudstack_port_forward.default my-project/6226ea4d-9cbe-4cc9
 ```
 
 *NOTE: All existing port forwarding rules for the IP address are imported into
-a single `forward` set, and `managed` is set to `true` so unrelated rules
-created outside of this resource aren't dropped on the next apply.*
+a single `forward` set. Review and copy the imported rules into your config
+before running `terraform apply`, otherwise missing rules may be deleted if
+`managed` is `true`.*

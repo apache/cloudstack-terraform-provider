@@ -82,3 +82,6 @@ Autoscale VM profiles can be imported using the `id`, e.g.
 ```shell
 $ terraform import cloudstack_autoscale_vm_profile.default eb22f91-7454-4107-89f4-36afcdf33021
 ```
+
+*NOTE: Import acceptance test coverage is currently skipped due to an upstream
+cloudstack-go issue.*

@@ -71,8 +71,9 @@ func TestAccCloudStackPortForward_import(t *testing.T) {
 				ResourceName:      "cloudstack_port_forward.foo",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// The importer sets managed=true so unrelated forwards on the same IP
-				// aren't silently dropped; the applied config leaves it at its default.
+				// The importer sets managed=true to bring all existing forwards for the
+				// IP address under this resource's control; the applied config leaves
+				// it at its default (false), so we ignore it for verification.
 				ImportStateVerifyIgnore: []string{"managed"},
 			},
 		},

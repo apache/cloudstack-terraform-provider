@@ -37,6 +37,12 @@ func resourceCloudStackHost() *schema.Resource {
 		Update: resourceCloudStackHostUpdate,
 		Create: resourceCloudStackHostCreate,
 		Delete: resourceCloudStackHostDelete,
+		// NOTE: CloudStack's listHosts API never returns url, username, or
+		// password, so Read cannot repopulate them after import. url is also
+		// ForceNew, so leaving it unset in an imported config will plan a
+		// destroy/recreate of the host. After importing, set these fields
+		// explicitly in config (or use lifecycle.ignore_changes) to avoid
+		// unexpected replacement on the next apply.
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
