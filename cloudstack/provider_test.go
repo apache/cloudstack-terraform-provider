@@ -23,6 +23,8 @@ import (
 	"context"
 	"os"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
@@ -145,6 +147,63 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("CLOUDSTACK_SECRET_KEY"); v == "" {
 		t.Fatal("CLOUDSTACK_SECRET_KEY must be set for acceptance tests")
 	}
+}
+
+// parseCloudStackVersion parses a CloudStack version string (e.g., "4.22.0.0")
+// and returns a numeric value for comparison (e.g., 4.22 -> 4022).
+// The numeric value is calculated as: major * 1000 + minor.
+// Returns 0 if the version string cannot be parsed.
+func parseCloudStackVersion(version string) int {
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return 0
+	}
+
+	major := 0
+	minor := 0
+
+	// Parse major version - extract first numeric part
+	majorStr := regexp.MustCompile(`^\d+`).FindString(parts[0])
+	if majorStr != "" {
+		major, _ = strconv.Atoi(majorStr)
+	}
+
+	// Parse minor version - extract first numeric part
+	minorStr := regexp.MustCompile(`^\d+`).FindString(parts[1])
+	if minorStr != "" {
+		minor, _ = strconv.Atoi(minorStr)
+	}
+
+	return major*1000 + minor
+}
+
+// requireMinimumCloudStackVersion checks if the CloudStack version meets the minimum requirement.
+// If the version is below the minimum, it skips the test with an appropriate message.
+// The minVersion parameter should be in the format returned by parseCloudStackVersion (e.g., 4022 for 4.22.0).
+func requireMinimumCloudStackVersion(t *testing.T, minVersion int, featureName string) {
+	t.Helper()
+	version := getCloudStackVersion(t)
+	if version == "" {
+		t.Skipf("Unable to determine CloudStack version, skipping %s test", featureName)
+		return
+	}
+
+	versionNum := parseCloudStackVersion(version)
+	if versionNum < minVersion {
+		// Convert minVersion back to readable format (e.g., 4022 -> "4.22")
+		major := minVersion / 1000
+		minor := minVersion % 1000
+		t.Skipf("%s not supported in CloudStack version %s (requires %d.%d+)", featureName, version, major, minor)
+	}
+}
+
+// testAccPreCheckStaticRouteNexthop checks if the CloudStack version supports
+// the nexthop parameter for static routes (requires 4.22.0+)
+func testAccPreCheckStaticRouteNexthop(t *testing.T) {
+	testAccPreCheck(t)
+
+	const minVersionNum = 4022 // 4.22.0
+	requireMinimumCloudStackVersion(t, minVersionNum, "Static route nexthop parameter")
 }
 
 // newTestClient creates a CloudStack client from environment variables for use in test PreCheck functions.
