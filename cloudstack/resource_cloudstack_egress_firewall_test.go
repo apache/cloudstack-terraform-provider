@@ -202,3 +202,197 @@ resource "cloudstack_egress_firewall" "foo" {
     ports = ["80", "1000-2000"]
   }
 }`
+
+func TestAccCloudStackEgressFirewall_allPortsTCP(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackEgressFirewallDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackEgressFirewall_allPorts,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.foo"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_egress_firewall.foo", "rule.#", "1"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_egress_firewall.foo", "rule.0.cidr_list.0", "10.1.1.10/32"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_egress_firewall.foo", "rule.0.protocol", "tcp"),
+					// No ports should be set when omitting the ports parameter
+					resource.TestCheckResourceAttr(
+						"cloudstack_egress_firewall.foo", "rule.0.ports.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackEgressFirewall_allPorts = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network-tcp"
+  display_text = "terraform-network-tcp"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_egress_firewall" "foo" {
+  network_id = cloudstack_network.foo.id
+
+  rule {
+    cidr_list = ["10.1.1.10/32"]
+    protocol  = "tcp"
+    # No ports specified - should create a rule for all ports
+  }
+}`
+
+func TestAccCloudStackEgressFirewall_allPortsUDP(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackEgressFirewallDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackEgressFirewall_allPortsUDP,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.foo"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.#", "1"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.protocol", "udp"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackEgressFirewall_allPortsUDP = `
+resource "cloudstack_network" "foo" {
+  name             = "tf-egress-udp-all"
+  display_text     = "tf-egress-udp-all"
+  cidr             = "10.8.0.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}
+
+resource "cloudstack_egress_firewall" "foo" {
+  network_id = cloudstack_network.foo.id
+
+  rule {
+    cidr_list = ["10.8.0.10/32"]
+    protocol  = "udp"
+    # no ports => all ports
+  }
+}`
+
+func TestAccCloudStackEgressFirewall_allPortsCombined(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackEgressFirewallDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackEgressFirewall_allPortsCombined,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.mixed"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.#", "2"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.0.protocol", "tcp"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.0.ports.#", "2"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.protocol", "udp"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.mixed", "rule.1.ports.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackEgressFirewall_allPortsCombined = `
+resource "cloudstack_network" "foo" {
+  name             = "terraform-network-mixed"
+  display_text     = "terraform-network-mixed"
+  cidr             = "10.1.3.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}
+
+resource "cloudstack_egress_firewall" "mixed" {
+  network_id = cloudstack_network.foo.id
+
+  rule {
+    cidr_list = [cloudstack_network.foo.cidr]
+    protocol  = "tcp"
+    ports     = ["80", "443"]
+  }
+
+  rule {
+    cidr_list = ["${cidrhost(cloudstack_network.foo.cidr, 10)}"]
+    protocol  = "udp"
+    # no ports => all ports
+  }
+}`
+
+func TestAccCloudStackEgressFirewall_portsToAllPorts(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackEgressFirewallDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackEgressFirewall_specificPorts,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.foo"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.#", "1"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports.#", "2"),
+				),
+			},
+			{
+				Config: testAccCloudStackEgressFirewall_allPortsTransition,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackEgressFirewallRulesExist("cloudstack_egress_firewall.foo"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.#", "1"),
+					resource.TestCheckResourceAttr("cloudstack_egress_firewall.foo", "rule.0.ports.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackEgressFirewall_specificPorts = `
+resource "cloudstack_network" "foo" {
+  name             = "terraform-network-transition"
+  display_text     = "terraform-network-transition"
+  cidr             = "10.1.4.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}
+
+resource "cloudstack_egress_firewall" "foo" {
+  network_id = cloudstack_network.foo.id
+
+  rule {
+    cidr_list = ["${cidrhost(cloudstack_network.foo.cidr, 10)}"]
+    protocol  = "tcp"
+    ports     = ["80", "1000-2000"]
+  }
+}
+`
+
+const testAccCloudStackEgressFirewall_allPortsTransition = `
+resource "cloudstack_network" "foo" {
+  name             = "terraform-network-transition"
+  display_text     = "terraform-network-transition"
+  cidr             = "10.1.4.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}
+
+resource "cloudstack_egress_firewall" "foo" {
+  network_id = cloudstack_network.foo.id
+
+  rule {
+    cidr_list = ["${cidrhost(cloudstack_network.foo.cidr, 10)}"]
+    protocol  = "tcp"
+    # no ports => all ports
+  }
+}
+`
