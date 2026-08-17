@@ -143,7 +143,7 @@ func TestAccCloudStackDisk_deleteProtection(t *testing.T) {
 				// attempt to destroy disk. expected to fail due to delete protection is enabled
 				Config:      fmt.Sprintf(testAccCloudStackDisk_deleteProtection, true),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(".*has delete protection enabled and cannot be deleted."),
+				ExpectError: regexp.MustCompile(".*has delete protection enabled and cannot be deleted\\."),
 			},
 			{
 				// disable delete protection
@@ -154,7 +154,7 @@ func TestAccCloudStackDisk_deleteProtection(t *testing.T) {
 				),
 			},
 			{
-				// destroy disk. expected to pass due to disk protection is disabledd
+				// destroy disk. expected to pass due to delete protection is disabled
 				Config:  fmt.Sprintf(testAccCloudStackDisk_deleteProtection, false),
 				Destroy: true,
 			},

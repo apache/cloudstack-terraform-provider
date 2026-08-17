@@ -301,7 +301,7 @@ func TestAccCloudStackInstance_deleteProtection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCloudStackDiskDestroy,
+		CheckDestroy: testAccCheckCloudStackInstanceDestroy,
 		Steps: []resource.TestStep{
 			{
 				// create vm with delete protection enabled
@@ -315,7 +315,7 @@ func TestAccCloudStackInstance_deleteProtection(t *testing.T) {
 				// attempt to destroy vm. expected to fail due to delete protection is enabled
 				Config:      fmt.Sprintf(testAccCloudStackInstance_deleteProtection, true),
 				Destroy:     true,
-				ExpectError: regexp.MustCompile(".*has delete protection enabled and cannot be deleted."),
+				ExpectError: regexp.MustCompile(".*has delete protection enabled and cannot be deleted\\."),
 			},
 			{
 				// disable delete protection
@@ -326,7 +326,7 @@ func TestAccCloudStackInstance_deleteProtection(t *testing.T) {
 				),
 			},
 			{
-				// destroy vm. expected to pass due to disk protection is disabledd
+				// destroy vm. expected to pass due to delete protection is disabled
 				Config:  fmt.Sprintf(testAccCloudStackInstance_deleteProtection, false),
 				Destroy: true,
 			},

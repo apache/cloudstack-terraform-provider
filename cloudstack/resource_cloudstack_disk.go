@@ -203,6 +203,7 @@ func resourceCloudStackDiskRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("name", v.Name)
 	d.Set("attach", v.Virtualmachineid != "")   // If attached this contains a virtual machine ID
 	d.Set("size", int(v.Size/(1024*1024*1024))) // Needed to get GB's again
+	d.Set("delete_protection", v.Deleteprotection)
 
 	tags := make(map[string]interface{})
 	for _, tag := range v.Tags {

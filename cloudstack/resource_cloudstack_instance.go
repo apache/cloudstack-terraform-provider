@@ -533,6 +533,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("name", vm.Name)
 	d.Set("display_name", vm.Displayname)
 	d.Set("group", vm.Group)
+	d.Set("delete_protection", vm.Deleteprotection)
 
 	// In some rare cases (when destroying a machine fails) it can happen that
 	// an instance does not have any attached NIC anymore.
@@ -899,7 +900,7 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
 		if err != nil {
 			return fmt.Errorf(
-				"Error updating the delete_protection for instance %s: %s", name, err)
+				"Error updating the delete protection for instance %s: %s", name, err)
 		}
 	}
 
