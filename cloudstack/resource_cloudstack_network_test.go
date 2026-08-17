@@ -174,7 +174,7 @@ func TestAccCloudStackNetwork_import(t *testing.T) {
 				ResourceName:            "cloudstack_network.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"bypass_vlan_check"},
+				ImportStateVerifyIgnore: []string{"bypass_vlan_overlap_check"},
 			},
 		},
 	})
@@ -195,7 +195,7 @@ func TestAccCloudStackNetwork_importProject(t *testing.T) {
 				ImportState:             true,
 				ImportStateIdPrefix:     "terraform/",
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"bypass_vlan_check"},
+				ImportStateVerifyIgnore: []string{"bypass_vlan_overlap_check"},
 			},
 		},
 	})
