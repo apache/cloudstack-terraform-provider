@@ -247,6 +247,16 @@ func createSecurityGroupRule(d *schema.ResourceData, meta interface{}, rule map[
 	// Set the protocol
 	p.SetProtocol(rule["protocol"].(string))
 
+	if rule["protocol"].(string) == "all" {
+		ruleID, err := createIngressOrEgressRule(cs, p)
+		if err != nil {
+			return err
+		}
+
+		uuids[uuid+"all"] = ruleID
+		rule["uuids"] = uuids
+	}
+
 	// If the protocol is ICMP set the needed ICMP parameters
 	if rule["protocol"].(string) == "icmp" {
 		p.SetIcmptype(rule["icmp_type"].(int))
@@ -392,6 +402,33 @@ func resourceCloudStackSecurityGroupRuleRead(d *schema.ResourceData, meta interf
 func readSecurityGroupRule(sg *cloudstack.SecurityGroup, ruleIndex map[string]int, rule map[string]interface{}, uuid string) {
 	uuids := rule["uuids"].(map[string]interface{})
 	sgRules := append(sg.Ingressrule, sg.Egressrule...)
+
+	if rule["protocol"].(string) == "all" {
+		id, ok := uuids[uuid+"all"]
+		if !ok {
+			return
+		}
+
+		// Get the rule
+		idx, ok := ruleIndex[id.(string)]
+		if !ok {
+			delete(uuids, uuid+"all")
+			return
+		}
+
+		r := sgRules[idx]
+
+		// Update the values
+		if r.Cidr != "" {
+			rule["cidr_list"].(*schema.Set).Add(r.Cidr)
+		}
+
+		if r.Securitygroupname != "" {
+			rule["user_security_group_list"].(*schema.Set).Add(r.Securitygroupname)
+		}
+
+		rule["protocol"] = r.Protocol
+	}
 
 	if rule["protocol"].(string) == "icmp" {
 		id, ok := uuids[uuid+"icmp"]
@@ -610,6 +647,8 @@ func verifySecurityGroupRuleParams(d *schema.ResourceData, rule map[string]inter
 
 	protocol := rule["protocol"].(string)
 	switch protocol {
+	case "all":
+		break
 	case "icmp":
 		if _, ok := rule["icmp_type"]; !ok {
 			return fmt.Errorf(
@@ -636,7 +675,7 @@ func verifySecurityGroupRuleParams(d *schema.ResourceData, rule map[string]inter
 		_, err := strconv.ParseInt(protocol, 0, 0)
 		if err != nil {
 			return fmt.Errorf(
-				"%q is not a valid protocol. Valid options are 'tcp', 'udp' and 'icmp'", protocol)
+				"%q is not a valid protocol. Valid options are 'tcp', 'udp', 'icmp', 'all' or a protocol number", protocol)
 		}
 	}
 
