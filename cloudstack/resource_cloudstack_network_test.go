@@ -90,6 +90,30 @@ func TestAccCloudStackNetwork_vpc(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNetwork_vpcProjectInheritance(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_vpcProjectInheritance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.foo", &network),
+					testAccCheckCloudStackNetworkVPCAttributes(&network),
+					// Verify the project was inherited from the VPC
+					resource.TestCheckResourceAttr(
+						"cloudstack_network.foo", "project", "terraform"),
+					testAccCheckCloudStackNetworkProjectInherited(&network),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackNetwork_updateACL(t *testing.T) {
 	var network cloudstack.Network
 
@@ -244,6 +268,18 @@ func testAccCheckCloudStackNetworkVPCAttributes(
 	}
 }
 
+func testAccCheckCloudStackNetworkProjectInherited(
+	network *cloudstack.Network) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if network.Project != "terraform" {
+			return fmt.Errorf("Expected project to be 'terraform' (inherited from VPC), got: %s", network.Project)
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckCloudStackNetworkDestroy(s *terraform.State) error {
 	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
 
@@ -376,4 +412,79 @@ resource "cloudstack_network" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   acl_id = cloudstack_network_acl.bar.id
   zone = cloudstack_vpc.foo.zone
+}`
+
+func TestAccCloudStackNetwork_l2NoCidr(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_l2NoCidr,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.l2", &network),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackNetwork_l2NoCidr = `
+resource "cloudstack_network" "l2" {
+  name             = "terraform-l2-network"
+  display_text     = "terraform-l2-network"
+  network_offering = "DefaultL2NetworkOffering"
+  zone             = "Sandbox-simulator"
+}`
+
+func TestAccCloudStackNetwork_isolatedNoCidr(t *testing.T) {
+	var network cloudstack.Network
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetwork_isolatedNoCidr,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkExists(
+						"cloudstack_network.isolated_no_cidr", &network),
+					resource.TestCheckResourceAttrSet(
+						"cloudstack_network.isolated_no_cidr", "cidr"),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackNetwork_isolatedNoCidr = `
+resource "cloudstack_network" "isolated_no_cidr" {
+  name             = "terraform-isolated-no-cidr"
+  display_text     = "terraform-isolated-no-cidr"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  zone             = "Sandbox-simulator"
+}`
+
+const testAccCloudStackNetwork_vpcProjectInheritance = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
+  # Note: project is NOT specified here - it should be inherited from the VPC
 }`
