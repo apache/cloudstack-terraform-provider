@@ -364,7 +364,19 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	if zone.Networktype == "Advanced" {
 		// Set the default network ID
-		p.SetNetworkids([]string{d.Get("network_id").(string)})
+		networkID := d.Get("network_id").(string)
+		p.SetNetworkids([]string{networkID})
+
+		// If no project is explicitly set, try to inherit it from the network
+		if _, ok := d.GetOk("project"); !ok && networkID != "" {
+			// Get the network to retrieve its project
+			// Use projectid=-1 to search across all projects
+			network, count, err := cs.Network.GetNetworkByID(networkID, cloudstack.WithProject("-1"))
+			if err == nil && count > 0 && network.Projectid != "" {
+				log.Printf("[DEBUG] Inheriting project %s from network %s", network.Projectid, networkID)
+				p.SetProjectid(network.Projectid)
+			}
+		}
 	}
 
 	// If there is a ipaddres supplied, add it to the parameter struct
@@ -414,6 +426,7 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
+	// This will override the inherited project from network if explicitly set
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
 	}
@@ -497,10 +510,22 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the virtual machine details
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from network
+	if count == 0 && project == "" {
+		vm, count, err = cs.VirtualMachine.GetVirtualMachineByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
+
 	if err != nil {
 		if count == 0 {
 			log.Printf("[DEBUG] Instance %s does no longer exist", d.Get("name").(string))

@@ -84,6 +84,52 @@ func TestAccCloudStackIPAddress_vpcid_with_network_id(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackIPAddress_vpcProjectInheritance(t *testing.T) {
+	var ipaddr cloudstack.PublicIpAddress
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackIPAddressDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackIPAddress_vpcProjectInheritance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackIPAddressExists(
+						"cloudstack_ipaddress.foo", &ipaddr),
+					// Verify the project was inherited from the VPC
+					resource.TestCheckResourceAttr(
+						"cloudstack_ipaddress.foo", "project", "terraform"),
+					testAccCheckCloudStackIPAddressProjectInherited(&ipaddr),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackIPAddress_networkProjectInheritance(t *testing.T) {
+	var ipaddr cloudstack.PublicIpAddress
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackIPAddressDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackIPAddress_networkProjectInheritance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackIPAddressExists(
+						"cloudstack_ipaddress.foo", &ipaddr),
+					// Verify the project was inherited from the network
+					resource.TestCheckResourceAttr(
+						"cloudstack_ipaddress.foo", "project", "terraform"),
+					testAccCheckCloudStackIPAddressProjectInherited(&ipaddr),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackIPAddressExists(
 	n string, ipaddr *cloudstack.PublicIpAddress) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -108,6 +154,18 @@ func testAccCheckCloudStackIPAddressExists(
 		}
 
 		*ipaddr = *pip
+
+		return nil
+	}
+}
+
+func testAccCheckCloudStackIPAddressProjectInherited(
+	ipaddr *cloudstack.PublicIpAddress) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		if ipaddr.Project != "terraform" {
+			return fmt.Errorf("Expected project to be 'terraform' (inherited from VPC or network), got: %s", ipaddr.Project)
+		}
 
 		return nil
 	}
@@ -185,4 +243,35 @@ resource "cloudstack_ipaddress" "foo" {
   vpc_id = cloudstack_vpc.foo.id
   network_id = cloudstack_network.foo.id
   zone = cloudstack_vpc.foo.zone
+}`
+
+const testAccCloudStackIPAddress_vpcProjectInheritance = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  vpc_id = cloudstack_vpc.foo.id
+  zone = cloudstack_vpc.foo.zone
+  # Note: project is NOT specified here - it should be inherited from the VPC
+}`
+
+const testAccCloudStackIPAddress_networkProjectInheritance = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project = "terraform"
+  source_nat_ip = true
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  network_id = cloudstack_network.foo.id
+  # Note: project is NOT specified here - it should be inherited from the network
 }`
