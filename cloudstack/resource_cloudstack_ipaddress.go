@@ -211,12 +211,14 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 	// Updated the IP address
 	d.Set("ip_address", ip.Ipaddress)
 
-	if _, ok := d.GetOk("network_id"); ok {
-		d.Set("network_id", ip.Associatednetworkid)
-	}
-
-	if _, ok := d.GetOk("vpc_id"); ok {
+	// network_id and vpc_id are mutually exclusive (enforced at create time),
+	// so use the API response itself -- rather than what's already in state
+	// -- to tell which one applies. Relying on state would leave network_id
+	// unset forever on import, since import starts with an empty state.
+	if ip.Vpcid != "" {
 		d.Set("vpc_id", ip.Vpcid)
+	} else {
+		d.Set("network_id", ip.Associatednetworkid)
 	}
 
 	if _, ok := d.GetOk("zone"); ok {

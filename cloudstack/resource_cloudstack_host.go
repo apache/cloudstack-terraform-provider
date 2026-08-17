@@ -233,12 +233,13 @@ func resourceCloudStackHostRead(d *schema.ResourceData, meta interface{}) error 
 	d.SetId(h.Id)
 
 	fields := map[string]interface{}{
-		"hypervisor":     h.Hypervisor,
-		"pod_id":         h.Podid,
-		"zone_id":        h.Zoneid,
-		"state":          h.State,
-		"resource_state": h.Resourcestate,
-		"name":           h.Name,
+		"hypervisor":       h.Hypervisor,
+		"pod_id":           h.Podid,
+		"zone_id":          h.Zoneid,
+		"state":            h.State,
+		"resource_state":   h.Resourcestate,
+		"allocation_state": h.Resourcestate,
+		"name":             h.Name,
 	}
 
 	for k, v := range fields {

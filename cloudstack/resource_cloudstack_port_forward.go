@@ -298,12 +298,16 @@ func resourceCloudStackPortForwardImport(d *schema.ResourceData, meta interface{
 			return nil, err
 		}
 
+		// Leave vm_guest_ip unset here, mirroring Read: it's only meant to
+		// reflect a value the user explicitly configured, not whatever
+		// CloudStack auto-selected. Populating it from the API on import
+		// would bake the auto-selected IP into the set element's hash,
+		// permanently diverging from a config that leaves it unset.
 		forward := map[string]interface{}{
 			"protocol":           f.Protocol,
 			"private_port":       privPort,
 			"public_port":        pubPort,
 			"virtual_machine_id": f.Virtualmachineid,
-			"vm_guest_ip":        f.Vmguestip,
 			"uuid":               f.Id,
 		}
 
