@@ -181,6 +181,7 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 func getProjectByID(cs *cloudstack.CloudStackClient, id string, domain ...string) (*cloudstack.Project, error) {
 	p := cs.Project.NewListProjectsParams()
 	p.SetId(id)
+	p.SetListall(true)
 
 	// If domain is provided, use it to narrow the search
 	if len(domain) > 0 && domain[0] != "" {
