@@ -162,6 +162,19 @@ func setProjectid(p cloudstack.ProjectIDSetter, cs *cloudstack.CloudStackClient,
 	return nil
 }
 
+// If there is a domain supplied, we retrieve and set the domain id
+func setDomainid(p cloudstack.DomainIDSetter, cs *cloudstack.CloudStackClient, d *schema.ResourceData) error {
+	if domain, ok := d.GetOk("domain"); ok {
+		domainid, e := retrieveID(cs, "domain", domain.(string))
+		if e != nil {
+			return e.Error()
+		}
+		p.SetDomainid(domainid)
+	}
+
+	return nil
+}
+
 // importStatePassthrough is a generic importer with project support.
 func importStatePassthrough(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	// Try to split the ID to extract the optional project name.
