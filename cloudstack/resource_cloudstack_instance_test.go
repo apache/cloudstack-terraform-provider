@@ -368,15 +368,14 @@ func testAccCheckCloudStackInstanceRenamedAndResized(
 		}
 
 		// Verify that ScaleVirtualMachine was actually invoked by checking that
-		// the VM's CPU and memory match the Medium Instance service offering.
-		// This ensures the scaling operation completed successfully, not just
-		// the metadata update.
-		if instance.Cpunumber == "" {
-			return fmt.Errorf("CPU number is empty - VM scaling may not have completed")
+		// the VM's CPU and memory are set. This ensures the scaling operation
+		// completed successfully, not just the metadata update.
+		if instance.Cpunumber <= 0 {
+			return fmt.Errorf("CPU number not set - VM scaling may not have completed, got: %d", instance.Cpunumber)
 		}
 
-		if instance.Memory == "" {
-			return fmt.Errorf("Memory is empty - VM scaling may not have completed")
+		if instance.Memory <= 0 {
+			return fmt.Errorf("Memory not set - VM scaling may not have completed, got: %d", instance.Memory)
 		}
 
 		return nil
