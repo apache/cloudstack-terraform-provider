@@ -33,6 +33,16 @@ import (
 // with scheme=Internal). Unlike cloudstack_loadbalancer_rule (a public,
 // IP-bound LB rule), this is CloudStack's real no-public-IP internal LB
 // mechanism, routed through the InternalLbVm provider.
+//
+// This deliberately does NOT manage the InternalLbVm network_service_provider_state
+// itself: that provider is zone-wide, shared state, and every other VPC test
+// in this suite already relies on it (and on VPCVirtualRouter) being enabled --
+// CloudStack's own "Default VPC offering" maps its Lb service to both
+// VPCVirtualRouter and InternalLbVm, so any VPC creation validates InternalLbVm
+// is enabled regardless of which offering the *network* underneath uses. A
+// per-test resource here would disable it again on teardown (see
+// resourceCloudStackNetworkServiceProviderStateDelete) and break every VPC
+// test that runs afterwards in the same zone.
 func TestAccCloudStackLoadBalancer_basic(t *testing.T) {
 	var lb cloudstack.LoadBalancer
 
@@ -114,19 +124,6 @@ func testAccCheckCloudStackLoadBalancerDestroy(s *terraform.State) error {
 }
 
 const testAccCloudStackLoadBalancer_basic = `
-data "cloudstack_physical_network" "pn" {
-  filter {
-    name  = "zone_name"
-    value = "Sandbox-simulator"
-  }
-}
-
-resource "cloudstack_network_service_provider_state" "internallbvm" {
-  name                = "InternalLbVm"
-  physical_network_id = data.cloudstack_physical_network.pn.id
-  enabled             = true
-}
-
 resource "cloudstack_vpc" "foo" {
   name         = "terraform-vpc"
   cidr         = "10.0.0.0/8"
@@ -141,8 +138,6 @@ resource "cloudstack_network" "foo" {
   network_offering  = "DefaultIsolatedNetworkOfferingForVpcNetworksWithInternalLB"
   vpc_id            = cloudstack_vpc.foo.id
   zone              = cloudstack_vpc.foo.zone
-
-  depends_on = [cloudstack_network_service_provider_state.internallbvm]
 }
 
 resource "cloudstack_instance" "foobar1" {
