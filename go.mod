@@ -18,7 +18,7 @@
 module github.com/terraform-providers/terraform-provider-cloudstack
 
 require (
-	github.com/apache/cloudstack-go/v2 v2.18.1
+	github.com/apache/cloudstack-go/v2 v2.19.1
 	github.com/go-ini/ini v1.67.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/terraform-plugin-framework v1.12.0
@@ -27,6 +27,7 @@ require (
 	github.com/hashicorp/terraform-plugin-mux v0.16.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.33.0
 	github.com/hashicorp/terraform-plugin-testing v1.7.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -28,6 +28,7 @@ data "cloudstack_instance" "my_instance" {
 ### Argument Reference
 
 * `filter` - (Required) One or more name/value pairs to filter off of. You can apply filters on any exported attributes.
+* `project` - (Optional) The name or ID of the project the instance is deployed in. Required to find instances that belong to a project.
 
 ## Attributes Reference
 
@@ -35,6 +36,7 @@ The following attributes are exported:
 
 * `instance_id` - The ID of the virtual machine.
 * `account` - The account associated with the virtual machine.
+* `project` - The project the virtual machine is associated with.
 * `display_name` - The user generated name. The name of the virtual machine is returned if no displayname exists.
 * `state` - The state of the virtual machine.
 * `host_id` - The ID of the host for the virtual machine.

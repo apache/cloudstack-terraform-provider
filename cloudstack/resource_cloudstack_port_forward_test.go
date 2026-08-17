@@ -119,6 +119,27 @@ func TestAccCloudStackPortForward_portRange(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackPortForward_projectInheritance(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackPortForwardDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackPortForward_projectInheritance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_port_forward.foo", "forward.#", "1"),
+					// Verify the project was inherited from the IP address
+					resource.TestCheckResourceAttr(
+						"cloudstack_port_forward.foo", "project", "terraform"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackPortForwardsExist(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -366,6 +387,52 @@ resource "cloudstack_port_forward" "foo" {
     protocol = "udp"
     private_port = 9000
     public_port = 9000
+    virtual_machine_id = cloudstack_instance.foobar.id
+  }
+}`
+
+const testAccCloudStackPortForward_projectInheritance = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "foo" {
+  name = "terraform-network"
+  display_text = "terraform-network"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingForVpcNetworks"
+  vpc_id = cloudstack_vpc.foo.id
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_ipaddress" "foo" {
+  vpc_id = cloudstack_vpc.foo.id
+  zone = "Sandbox-simulator"
+  # project is automatically inherited from VPC
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-test"
+  display_name = "terraform"
+  service_offering = "Medium Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+  expunge = true
+}
+
+resource "cloudstack_port_forward" "foo" {
+  ip_address_id = cloudstack_ipaddress.foo.id
+  # Note: project is NOT specified here - it should be inherited from the IP address
+
+  forward {
+    protocol = "tcp"
+    private_port = 443
+    public_port = 8443
     virtual_machine_id = cloudstack_instance.foobar.id
   }
 }`
