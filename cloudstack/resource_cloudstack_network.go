@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -59,6 +60,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: importStatePassthrough,
 		},
+		CustomizeDiff: resourceCloudStackNetworkCustomizeDiff,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -70,6 +72,20 @@ func resourceCloudStackNetwork() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+
+			"type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					if v != "L2" && v != "L3" {
+						errs = append(errs, fmt.Errorf("%q must be either 'L2' or 'L3', got: %s", key, v))
+					}
+					return
+				},
 			},
 
 			"cidr": {
@@ -215,6 +231,22 @@ func resourceCloudStackNetwork() *schema.Resource {
 	}
 }
 
+// resourceCloudStackNetworkCustomizeDiff validates the type and cidr
+// combination. When type is not set, it is filled in from the API response.
+func resourceCloudStackNetworkCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	networkType := d.Get("type").(string)
+	cidr := d.Get("cidr").(string)
+
+	if networkType == "L2" && cidr != "" {
+		return fmt.Errorf("cidr must not be set when type is L2")
+	}
+	if networkType == "L3" && cidr == "" {
+		return fmt.Errorf("cidr is required when type is L3")
+	}
+
+	return nil
+}
+
 func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
@@ -247,6 +279,7 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
+	// L2 networks have no cidr, so no IP config is sent for them
 	if _, ok := d.GetOk("cidr"); ok {
 		m, err := parseCIDR(d, no.Specifyipranges)
 		if err != nil {
@@ -422,6 +455,13 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("network_domain", n.Networkdomain)
 	d.Set("vpc_id", n.Vpcid)
 
+	// CloudStack returns "L2" for L2 networks and "Isolated"/"Shared" for L3 networks
+	if n.Type == "L2" {
+		d.Set("type", "L2")
+	} else {
+		d.Set("type", "L3")
+	}
+
 	// Always set IPv6 fields to detect drift when IPv6 is removed server-side
 	d.Set("ip6cidr", n.Ip6cidr)
 	d.Set("ip6gateway", n.Ip6gateway)
@@ -562,7 +602,17 @@ func resourceCloudStackNetworkDelete(d *schema.ResourceData, meta interface{}) e
 func parseCIDR(d *schema.ResourceData, specifyiprange bool) (map[string]string, error) {
 	m := make(map[string]string, 4)
 
+	// L2 networks have no IP config to parse
+	networkType := d.Get("type").(string)
+	if networkType == "L2" {
+		return m, nil
+	}
+
 	cidr := d.Get("cidr").(string)
+	if cidr == "" {
+		return nil, fmt.Errorf("cidr is required for L3 networks")
+	}
+
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to parse cidr %s: %s", cidr, err)

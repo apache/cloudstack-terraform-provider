@@ -12,13 +12,25 @@ Creates a network.
 
 ## Example Usage
 
-Basic usage:
+Basic L3 network usage:
 
 ```hcl
 resource "cloudstack_network" "default" {
   name             = "test-network"
+  type             = "L3"
   cidr             = "10.0.0.0/16"
   network_offering = "Default Network"
+  zone             = "zone-1"
+}
+```
+
+L2 VLAN-only network usage (no `cidr` required):
+
+```hcl
+resource "cloudstack_network" "l2_network" {
+  name             = "l2-network"
+  type             = "L2"
+  network_offering = "L2 Network Offering"
   zone             = "zone-1"
 }
 ```
@@ -64,8 +76,14 @@ The following arguments are supported:
 
 * `display_text` - (Optional) The display text of the network.
 
-* `cidr` - (Required) The CIDR block for the network. Changing this forces a new
-    resource to be created.
+* `type` - (Optional) The type of network. Valid values are "L2" for VLAN-only
+    networks and "L3" for IP-based (isolated/shared) networks. When not set, the
+    type is computed from the network created by CloudStack. Changing this
+    forces a new resource to be created.
+
+* `cidr` - (Optional) The CIDR block for the network. Required when `type` is
+    explicitly set to "L3" and not allowed when `type` is "L2". Changing this
+    forces a new resource to be created.
 
 * `gateway` - (Optional) Gateway that will be provided to the instances in this
     network. Defaults to the first usable IP in the range.
