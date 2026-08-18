@@ -156,24 +156,8 @@ func (r *serviceOfferingConstrainedResource) Create(ctx context.Context, req res
 
 func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state serviceOfferingConstrainedResourceModel
-	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
-	var stateDiskOffering ServiceOfferingDiskOffering
-	var stateDiskQosStorage ServiceOfferingDiskQosStorage
-	var stateGpu ServiceOfferingGpu
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingDiskOffering.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskOffering.As(ctx, &stateDiskOffering, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingDiskQosStorage.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskQosStorage.As(ctx, &stateDiskQosStorage, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingGpu.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingGpu.As(ctx, &stateGpu, basetypes.ObjectAsOptions{})...)
-	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -236,11 +220,7 @@ func (r *serviceOfferingConstrainedResource) Read(ctx context.Context, req resou
 		state.MinMemory = types.Int32Value(int32(i))
 	}
 
-	state.commonRead(ctx, cs)
-	stateDiskQosHypervisor.commonRead(ctx, cs)
-	stateDiskOffering.commonRead(ctx, cs)
-	stateDiskQosStorage.commonRead(ctx, cs)
-	stateGpu.commonRead(ctx, cs)
+	resp.Diagnostics.Append(state.commonRead(ctx, cs)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

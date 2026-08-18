@@ -22,7 +22,9 @@ import (
 	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // ------------------------------------------------------------------------------------------------------------------------------
@@ -72,7 +74,9 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 // ------------------------------------------------------------------------------------------------------------------------------
 // common Read methods
 // -
-func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context, cs *cloudstack.ServiceOffering) {
+func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context, cs *cloudstack.ServiceOffering) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	state.Id = types.StringValue(cs.Id)
 
 	if cs.Deploymentplanner != "" {
@@ -108,6 +112,41 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 	state.LimitCpuUse = types.BoolValue(cs.Limitcpuuse)
 	state.OfferHa = types.BoolValue(cs.Offerha)
 
+	// Refresh the nested blocks and encode them back into state so drift is detected
+	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
+		var v ServiceOfferingDiskQosHypervisor
+		diags.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &v, basetypes.ObjectAsOptions{})...)
+		v.commonRead(ctx, cs)
+		obj, d := types.ObjectValueFrom(ctx, state.ServiceOfferingDiskQosHypervisor.AttributeTypes(ctx), v)
+		diags.Append(d...)
+		state.ServiceOfferingDiskQosHypervisor = obj
+	}
+	if !state.ServiceOfferingDiskOffering.IsNull() {
+		var v ServiceOfferingDiskOffering
+		diags.Append(state.ServiceOfferingDiskOffering.As(ctx, &v, basetypes.ObjectAsOptions{})...)
+		v.commonRead(ctx, cs)
+		obj, d := types.ObjectValueFrom(ctx, state.ServiceOfferingDiskOffering.AttributeTypes(ctx), v)
+		diags.Append(d...)
+		state.ServiceOfferingDiskOffering = obj
+	}
+	if !state.ServiceOfferingDiskQosStorage.IsNull() {
+		var v ServiceOfferingDiskQosStorage
+		diags.Append(state.ServiceOfferingDiskQosStorage.As(ctx, &v, basetypes.ObjectAsOptions{})...)
+		v.commonRead(ctx, cs)
+		obj, d := types.ObjectValueFrom(ctx, state.ServiceOfferingDiskQosStorage.AttributeTypes(ctx), v)
+		diags.Append(d...)
+		state.ServiceOfferingDiskQosStorage = obj
+	}
+	if !state.ServiceOfferingGpu.IsNull() {
+		var v ServiceOfferingGpu
+		diags.Append(state.ServiceOfferingGpu.As(ctx, &v, basetypes.ObjectAsOptions{})...)
+		v.commonRead(ctx, cs)
+		obj, d := types.ObjectValueFrom(ctx, state.ServiceOfferingGpu.AttributeTypes(ctx), v)
+		diags.Append(d...)
+		state.ServiceOfferingGpu = obj
+	}
+
+	return diags
 }
 
 func (state *ServiceOfferingDiskQosHypervisor) commonRead(ctx context.Context, cs *cloudstack.ServiceOffering) {
