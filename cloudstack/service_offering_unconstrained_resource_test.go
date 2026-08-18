@@ -79,7 +79,7 @@ func TestAccServiceOfferingUnconstrained_GPU(t *testing.T) {
 				Config: testAccServiceOfferingUnconstrained_gpu,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "name", "gpu"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.vgpu_profile_id", "a6000-8a-profile"),
+					resource.TestCheckResourceAttrPair("cloudstack_service_offering_unconstrained.gpu", "gpu.vgpu_profile_id", "data.cloudstack_vgpu_profile.test", "id"),
 					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.count", "1"),
 					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.display", "true"),
 				),
@@ -225,6 +225,13 @@ resource "cloudstack_service_offering_unconstrained" "disk_storage" {
 `
 
 const testAccServiceOfferingUnconstrained_gpu = `
+data "cloudstack_vgpu_profile" "test" {
+	filter {
+		name  = "name"
+		value = "passthrough"
+	}
+}
+
 resource "cloudstack_service_offering_unconstrained" "gpu" {
 	display_text = "gpu"
 	name         = "gpu"
@@ -239,7 +246,7 @@ resource "cloudstack_service_offering_unconstrained" "gpu" {
 	offer_ha                = true
 
 	gpu = {
-		vgpu_profile_id = "a6000-8a-profile"
+		vgpu_profile_id = data.cloudstack_vgpu_profile.test.id
 		count           = 1
 		display         = true
 	}

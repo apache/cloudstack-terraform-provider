@@ -79,7 +79,7 @@ func TestAccServiceOfferingFixed_GPU(t *testing.T) {
 				Config: testAccServiceOfferingFixed_gpu,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "name", "gpu"),
-					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.vgpu_profile_id", "a6000-8a-profile"),
+					resource.TestCheckResourceAttrPair("cloudstack_service_offering_fixed.gpu", "gpu.vgpu_profile_id", "data.cloudstack_vgpu_profile.test", "id"),
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.count", "1"),
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.display", "true"),
 				),
@@ -257,6 +257,13 @@ resource "cloudstack_service_offering_fixed" "disk_storage" {
 `
 
 const testAccServiceOfferingFixed_gpu = `
+data "cloudstack_vgpu_profile" "test" {
+	filter {
+		name  = "name"
+		value = "passthrough"
+	}
+}
+
 resource "cloudstack_service_offering_fixed" "gpu" {
 	display_text = "gpu"
 	name         = "gpu"
@@ -277,7 +284,7 @@ resource "cloudstack_service_offering_fixed" "gpu" {
 	offer_ha                = false
 
 	gpu = {
-		vgpu_profile_id = "a6000-8a-profile"
+		vgpu_profile_id = data.cloudstack_vgpu_profile.test.id
 		count           = 1
 		display         = true
 	}
