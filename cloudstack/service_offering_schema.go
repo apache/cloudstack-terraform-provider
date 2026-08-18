@@ -250,6 +250,7 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 				"count": schema.Int32Attribute{
 					Description: "the number of GPUs to assign to the guest VM",
 					Optional:    true,
+					Computed:    true,
 					PlanModifiers: []planmodifier.Int32{
 						int32planmodifier.RequiresReplace(),
 					},
@@ -257,9 +258,11 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 				"display": schema.BoolAttribute{
 					Description: "whether the GPU is presented as a display device to the guest VM",
 					Optional:    true,
+					Computed:    true,
 					PlanModifiers: []planmodifier.Bool{
 						boolplanmodifier.RequiresReplace(),
 					},
+					Default: booldefault.StaticBool(false),
 				},
 			},
 		},
