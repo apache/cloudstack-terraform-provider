@@ -34,6 +34,9 @@ func resourceCloudStackAutoScalePolicy() *schema.Resource {
 		Read:   resourceCloudStackAutoScalePolicyRead,
 		Update: resourceCloudStackAutoScalePolicyUpdate,
 		Delete: resourceCloudStackAutoScalePolicyDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {

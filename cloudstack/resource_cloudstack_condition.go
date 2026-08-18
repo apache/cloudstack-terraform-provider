@@ -33,6 +33,9 @@ func resourceCloudStackCondition() *schema.Resource {
 		Read:   resourceCloudStackConditionRead,
 		Update: resourceCloudStackConditionUpdate,
 		Delete: resourceCloudStackConditionDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"counter_id": {

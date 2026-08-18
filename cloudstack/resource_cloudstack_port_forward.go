@@ -38,6 +38,9 @@ func resourceCloudStackPortForward() *schema.Resource {
 		Read:   resourceCloudStackPortForwardRead,
 		Update: resourceCloudStackPortForwardUpdate,
 		Delete: resourceCloudStackPortForwardDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceCloudStackPortForwardImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"ip_address_id": {
@@ -245,6 +248,94 @@ func createPortForward(d *schema.ResourceData, meta interface{}, forward map[str
 	return nil
 }
 
+func resourceCloudStackPortForwardImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Try to split the ID to extract the optional project name.
+	s := strings.SplitN(d.Id(), "/", 2)
+	if len(s) == 2 {
+		d.Set("project", s[0])
+	}
+
+	ipAddressID := s[len(s)-1]
+	d.SetId(ipAddressID)
+	d.Set("ip_address_id", ipAddressID)
+
+	// Make sure the IP address exists
+	if _, count, err := cs.Address.GetPublicIpAddressByID(
+		ipAddressID,
+		cloudstack.WithProject(d.Get("project").(string)),
+	); err != nil {
+		if count == 0 {
+			return nil, fmt.Errorf("IP address with ID %s does not exist", ipAddressID)
+		}
+		return nil, err
+	}
+
+	// Get all the forwards configured for this IP address
+	p := cs.Firewall.NewListPortForwardingRulesParams()
+	p.SetIpaddressid(ipAddressID)
+	p.SetListall(true)
+
+	if err := setProjectid(p, cs, d); err != nil {
+		return nil, err
+	}
+
+	l, err := cs.Firewall.ListPortForwardingRules(p)
+	if err != nil {
+		return nil, err
+	}
+
+	forwards := resourceCloudStackPortForward().Schema["forward"].ZeroValue().(*schema.Set)
+	for _, f := range l.PortForwardingRules {
+		privPort, err := strconv.Atoi(f.Privateport)
+		if err != nil {
+			return nil, err
+		}
+
+		pubPort, err := strconv.Atoi(f.Publicport)
+		if err != nil {
+			return nil, err
+		}
+
+		// Leave vm_guest_ip unset here, mirroring Read: it's only meant to
+		// reflect a value the user explicitly configured, not whatever
+		// CloudStack auto-selected. Populating it from the API on import
+		// would bake the auto-selected IP into the set element's hash,
+		// permanently diverging from a config that leaves it unset.
+		forward := map[string]interface{}{
+			"protocol":           f.Protocol,
+			"private_port":       privPort,
+			"public_port":        pubPort,
+			"virtual_machine_id": f.Virtualmachineid,
+			"uuid":               f.Id,
+		}
+
+		if f.Privateendport != "" && f.Privateendport != f.Privateport {
+			privEndPort, err := strconv.Atoi(f.Privateendport)
+			if err != nil {
+				return nil, err
+			}
+			forward["private_end_port"] = privEndPort
+		}
+
+		if f.Publicendport != "" && f.Publicendport != f.Publicport {
+			pubEndPort, err := strconv.Atoi(f.Publicendport)
+			if err != nil {
+				return nil, err
+			}
+			forward["public_end_port"] = pubEndPort
+		}
+
+		forwards.Add(forward)
+	}
+
+	d.Set("forward", forwards)
+	d.Set("managed", true)
+
+	return []*schema.ResourceData{d}, nil
+}
+
 func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
@@ -275,6 +366,8 @@ func resourceCloudStackPortForwardRead(d *schema.ResourceData, meta interface{})
 
 		return err
 	}
+
+	d.Set("ip_address_id", d.Id())
 
 	// Set the project if the IP address belongs to one
 	setValueOrID(d, "project", ip.Project, ip.Projectid)

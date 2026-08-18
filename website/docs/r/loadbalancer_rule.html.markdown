@@ -70,3 +70,21 @@ The following attributes are exported:
 
 * `id` - The load balancer rule ID.
 * `description` - The description of the load balancer rule.
+
+## Import
+
+Load balancer rules can be imported; use `<LOADBALANCERRULEID>` as the import ID. For
+example:
+
+```shell
+$ terraform import cloudstack_loadbalancer_rule.default 6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+
+When importing into a project you need to prefix the import ID with the project name:
+
+```shell
+$ terraform import cloudstack_loadbalancer_rule.default my-project/6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+
+*NOTE: `certificate_id` cannot be read back from the CloudStack API, so it will
+always be empty after an import.*

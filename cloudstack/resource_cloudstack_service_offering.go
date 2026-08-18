@@ -34,6 +34,9 @@ func resourceCloudStackServiceOffering() *schema.Resource {
 		Read:   resourceCloudStackServiceOfferingRead,
 		Update: resourceCloudStackServiceOfferingUpdate,
 		Delete: resourceCloudStackServiceOfferingDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceCloudStackServiceOfferingImport,
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -246,6 +249,23 @@ func resourceCloudStackServiceOfferingCreate(d *schema.ResourceData, meta interf
 	d.SetId(s.Id)
 
 	return resourceCloudStackServiceOfferingRead(d, meta)
+}
+
+func resourceCloudStackServiceOfferingImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Read looks the offering up by name, so resolve the name from the ID first
+	s, count, err := cs.ServiceOffering.GetServiceOfferingByID(d.Id())
+	if err != nil {
+		if count == 0 {
+			return nil, fmt.Errorf("service offering with ID %s does not exist", d.Id())
+		}
+		return nil, err
+	}
+
+	d.Set("name", s.Name)
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceCloudStackServiceOfferingRead(d *schema.ResourceData, meta interface{}) error {

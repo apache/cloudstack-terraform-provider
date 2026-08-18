@@ -33,6 +33,9 @@ func resourceCloudStackNetworkOffering() *schema.Resource {
 		Read:   resourceCloudStackNetworkOfferingRead,
 		Update: resourceCloudStackNetworkOfferingUpdate,
 		Delete: resourceCloudStackNetworkOfferingDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceCloudStackNetworkOfferingImport,
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -340,6 +343,23 @@ func resourceCloudStackNetworkOfferingDelete(d *schema.ResourceData, meta interf
 	}
 
 	return nil
+}
+
+func resourceCloudStackNetworkOfferingImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Read looks the offering up by name, so resolve the name from the ID first
+	n, count, err := cs.NetworkOffering.GetNetworkOfferingByID(d.Id())
+	if err != nil {
+		if count == 0 {
+			return nil, fmt.Errorf("network offering with ID %s does not exist", d.Id())
+		}
+		return nil, err
+	}
+
+	d.Set("name", n.Name)
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceCloudStackNetworkOfferingRead(d *schema.ResourceData, meta interface{}) error {
