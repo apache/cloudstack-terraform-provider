@@ -231,8 +231,7 @@ func resourceCloudStackNetwork() *schema.Resource {
 	}
 }
 
-// resourceCloudStackNetworkCustomizeDiff validates the type and cidr
-// combination. When type is not set, it is filled in from the API response.
+// resourceCloudStackNetworkCustomizeDiff validates the type and cidr combination.
 func resourceCloudStackNetworkCustomizeDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	networkType := d.Get("type").(string)
 	cidr := d.Get("cidr").(string)
@@ -279,7 +278,7 @@ func resourceCloudStackNetworkCreate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
-	// L2 networks have no cidr, so no IP config is sent for them
+	// Send IPv4 gateway/netmask only when cidr is set
 	if _, ok := d.GetOk("cidr"); ok {
 		m, err := parseCIDR(d, no.Specifyipranges)
 		if err != nil {
@@ -602,9 +601,11 @@ func resourceCloudStackNetworkDelete(d *schema.ResourceData, meta interface{}) e
 func parseCIDR(d *schema.ResourceData, specifyiprange bool) (map[string]string, error) {
 	m := make(map[string]string, 4)
 
-	// L2 networks have no IP config to parse
 	networkType := d.Get("type").(string)
 	if networkType == "L2" {
+		if d.Get("cidr").(string) != "" {
+			return nil, fmt.Errorf("cidr must not be set when type is L2")
+		}
 		return m, nil
 	}
 

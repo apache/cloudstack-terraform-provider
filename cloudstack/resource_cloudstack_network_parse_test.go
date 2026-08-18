@@ -70,6 +70,20 @@ func TestParseCIDR(t *testing.T) {
 		}
 	})
 
+	t.Run("L2 network with CIDR should return error", func(t *testing.T) {
+		config := map[string]interface{}{
+			"type": "L2",
+			"cidr": "10.0.0.0/16",
+		}
+
+		resourceData := schema.TestResourceDataRaw(t, networkResource.Schema, config)
+
+		_, err := parseCIDR(resourceData, false)
+		if err == nil {
+			t.Error("Expected error for L2 network with CIDR, but got none")
+		}
+	})
+
 	t.Run("L3 network without CIDR should return error", func(t *testing.T) {
 		config := map[string]interface{}{
 			"type": "L3",
