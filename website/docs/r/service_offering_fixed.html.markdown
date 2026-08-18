@@ -32,6 +32,11 @@ resource "cloudstack_service_offering_fixed" "fixed1" {
   # disk_offering { ... }
   # disk_hypervisor { ... }
   # disk_storage { ... }
+  # gpu {
+  #   vgpu_profile_id = "..."
+  #   count           = 1
+  #   display         = false
+  # }
 }
 ```
 
@@ -85,6 +90,12 @@ The following arguments are supported:
 - `hypervisor_snapshot_reserve` (Optional) - Hypervisor snapshot reserve space as a percent of a volume.
 - `max_iops` (Optional) - Max IOPS of the compute offering.
 - `min_iops` (Optional) - Min IOPS of the compute offering.
+
+#### `gpu` (Optional)
+
+- `vgpu_profile_id` (Required) - The ID of the vGPU profile to associate with the service offering.
+- `count` (Optional, Computed) - The number of GPUs to assign to the guest VM.
+- `display` (Optional, Computed) - Whether the GPU is presented as a display device to the guest VM. Defaults to `false`.
 
 ## Attributes Reference
 

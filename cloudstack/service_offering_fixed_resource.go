@@ -78,6 +78,7 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var planDiskOffering ServiceOfferingDiskOffering
 	var planDiskQosStorage ServiceOfferingDiskQosStorage
+	var planGpu ServiceOfferingGpu
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
@@ -89,6 +90,9 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	if !plan.ServiceOfferingDiskQosStorage.IsNull() {
 		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosStorage.As(ctx, &planDiskQosStorage, basetypes.ObjectAsOptions{})...)
 	}
+	if !plan.ServiceOfferingGpu.IsNull() {
+		resp.Diagnostics.Append(plan.ServiceOfferingGpu.As(ctx, &planGpu, basetypes.ObjectAsOptions{})...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -99,6 +103,7 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 	planDiskQosHypervisor.commonCreateParams(ctx, params)
 	planDiskOffering.commonCreateParams(ctx, params)
 	planDiskQosStorage.commonCreateParams(ctx, params)
+	planGpu.commonCreateParams(ctx, params)
 
 	// resource specific params
 	if !plan.CpuNumber.IsNull() {
@@ -128,20 +133,8 @@ func (r *serviceOfferingFixedResource) Create(ctx context.Context, req resource.
 func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 
 	var state serviceOfferingFixedResourceModel
-	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
-	var stateDiskOffering ServiceOfferingDiskOffering
-	var stateDiskQosStorage ServiceOfferingDiskQosStorage
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingDiskOffering.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskOffering.As(ctx, &stateDiskOffering, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingDiskQosStorage.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskQosStorage.As(ctx, &stateDiskQosStorage, basetypes.ObjectAsOptions{})...)
-	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -166,10 +159,7 @@ func (r *serviceOfferingFixedResource) Read(ctx context.Context, req resource.Re
 		state.Memory = types.Int32Value(int32(cs.Memory))
 	}
 
-	state.commonRead(ctx, cs)
-	stateDiskQosHypervisor.commonRead(ctx, cs)
-	stateDiskOffering.commonRead(ctx, cs)
-	stateDiskQosStorage.commonRead(ctx, cs)
+	resp.Diagnostics.Append(state.commonRead(ctx, cs)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

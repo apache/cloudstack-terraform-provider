@@ -55,6 +55,7 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 	var planDiskQosHypervisor ServiceOfferingDiskQosHypervisor
 	var planDiskOffering ServiceOfferingDiskOffering
 	var planDiskQosStorage ServiceOfferingDiskQosStorage
+	var planGpu ServiceOfferingGpu
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if !plan.ServiceOfferingDiskQosHypervisor.IsNull() {
@@ -66,6 +67,9 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 	if !plan.ServiceOfferingDiskQosStorage.IsNull() {
 		resp.Diagnostics.Append(plan.ServiceOfferingDiskQosStorage.As(ctx, &planDiskQosStorage, basetypes.ObjectAsOptions{})...)
 	}
+	if !plan.ServiceOfferingGpu.IsNull() {
+		resp.Diagnostics.Append(plan.ServiceOfferingGpu.As(ctx, &planGpu, basetypes.ObjectAsOptions{})...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -76,6 +80,7 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 	planDiskQosHypervisor.commonCreateParams(ctx, params)
 	planDiskOffering.commonCreateParams(ctx, params)
 	planDiskQosStorage.commonCreateParams(ctx, params)
+	planGpu.commonCreateParams(ctx, params)
 
 	// create offering
 	cs, err := r.client.ServiceOffering.CreateServiceOffering(params)
@@ -94,20 +99,8 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 
 func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state serviceOfferingUnconstrainedResourceModel
-	var stateDiskQosHypervisor ServiceOfferingDiskQosHypervisor
-	var stateDiskOffering ServiceOfferingDiskOffering
-	var stateDiskQosStorage ServiceOfferingDiskQosStorage
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if !state.ServiceOfferingDiskQosHypervisor.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskQosHypervisor.As(ctx, &stateDiskQosHypervisor, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingDiskOffering.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskOffering.As(ctx, &stateDiskOffering, basetypes.ObjectAsOptions{})...)
-	}
-	if !state.ServiceOfferingDiskQosStorage.IsNull() {
-		resp.Diagnostics.Append(state.ServiceOfferingDiskQosStorage.As(ctx, &stateDiskQosStorage, basetypes.ObjectAsOptions{})...)
-	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -121,10 +114,7 @@ func (r *serviceOfferingUnconstrainedResource) Read(ctx context.Context, req res
 		return
 	}
 
-	state.commonRead(ctx, cs)
-	stateDiskQosHypervisor.commonRead(ctx, cs)
-	stateDiskOffering.commonRead(ctx, cs)
-	stateDiskQosStorage.commonRead(ctx, cs)
+	resp.Diagnostics.Append(state.commonRead(ctx, cs)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

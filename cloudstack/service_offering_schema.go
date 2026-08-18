@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -234,6 +235,36 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
+				},
+			},
+		},
+		"gpu": schema.SingleNestedAttribute{
+			Optional: true,
+			Attributes: map[string]schema.Attribute{
+				"vgpu_profile_id": schema.StringAttribute{
+					Description: "the ID of the vGPU profile to associate with the service offering",
+					Required:    true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.RequiresReplace(),
+					},
+				},
+				"count": schema.Int32Attribute{
+					Description: "the number of GPUs to assign to the guest VM",
+					Optional:    true,
+					Computed:    true,
+					PlanModifiers: []planmodifier.Int32{
+						int32planmodifier.RequiresReplace(),
+					},
+					Default: int32default.StaticInt32(0),
+				},
+				"display": schema.BoolAttribute{
+					Description: "whether the GPU is presented as a display device to the guest VM",
+					Optional:    true,
+					Computed:    true,
+					PlanModifiers: []planmodifier.Bool{
+						boolplanmodifier.RequiresReplace(),
+					},
+					Default: booldefault.StaticBool(false),
 				},
 			},
 		},

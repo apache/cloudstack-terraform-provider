@@ -76,6 +76,24 @@ func TestAccServiceOfferingConstrained(t *testing.T) {
 	})
 }
 
+func TestAccServiceOfferingConstrained_GPU(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckGPU(t) },
+		ProtoV6ProviderFactories: testAccMuxProvider,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccServiceOfferingCustomConstrained_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "name", "gpu"),
+					resource.TestCheckResourceAttrPair("cloudstack_service_offering_constrained.gpu", "gpu.vgpu_profile_id", "data.cloudstack_vgpu_profile.test", "id"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "gpu.count", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.gpu", "gpu.display", "true"),
+				),
+			},
+		},
+	})
+}
+
 const testAccServiceOfferingCustomConstrained1 = `
 resource "cloudstack_zone" "test" {
 	name          = "acctest"
@@ -270,6 +288,46 @@ resource "cloudstack_service_offering_constrained" "disk_hypervisor" {
 		bytes_write_rate            = 1024
 		bytes_write_rate_max        = 1024
 		bytes_write_rate_max_length = 1024
+	}
+}
+`
+
+const testAccServiceOfferingCustomConstrained_gpu = `
+data "cloudstack_vgpu_profile" "test" {
+	filter {
+		name  = "name"
+		value = "passthrough"
+	}
+}
+
+resource "cloudstack_service_offering_constrained" "gpu" {
+	display_text = "gpu"
+	name         = "gpu"
+
+	// compute
+	cpu_speed  = 2500
+	max_cpu_number = 10
+	min_cpu_number = 2
+
+	// memory
+	max_memory     = 4096
+	min_memory     = 1024
+
+	// other
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	// Feature flags
+	dynamic_scaling_enabled = false
+	is_volatile             = false
+	limit_cpu_use           = false
+	offer_ha                = false
+
+	gpu = {
+		vgpu_profile_id = data.cloudstack_vgpu_profile.test.id
+		count           = 1
+		display         = true
 	}
 }
 `

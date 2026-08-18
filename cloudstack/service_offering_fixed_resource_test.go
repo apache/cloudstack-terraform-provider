@@ -70,6 +70,24 @@ func TestAccServiceOfferingFixed(t *testing.T) {
 	})
 }
 
+func TestAccServiceOfferingFixed_GPU(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckGPU(t) },
+		ProtoV6ProviderFactories: testAccMuxProvider,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccServiceOfferingFixed_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "name", "gpu"),
+					resource.TestCheckResourceAttrPair("cloudstack_service_offering_fixed.gpu", "gpu.vgpu_profile_id", "data.cloudstack_vgpu_profile.test", "id"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.count", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.gpu", "gpu.display", "true"),
+				),
+			},
+		},
+	})
+}
+
 const testAccServiceOfferingFixed1 = `
 resource "cloudstack_service_offering_fixed" "fixed1" {
 	display_text = "fixed1"
@@ -234,6 +252,41 @@ resource "cloudstack_service_offering_fixed" "disk_storage" {
 	disk_storage = {
 		min_iops = 100
 		max_iops = 100
+	}
+}
+`
+
+const testAccServiceOfferingFixed_gpu = `
+data "cloudstack_vgpu_profile" "test" {
+	filter {
+		name  = "name"
+		value = "passthrough"
+	}
+}
+
+resource "cloudstack_service_offering_fixed" "gpu" {
+	display_text = "gpu"
+	name         = "gpu"
+
+	// compute
+	cpu_number     = 2
+	cpu_speed      = 2500
+	memory         = 2048
+
+	// other
+	host_tags          = "test0101, test0202"
+	network_rate       = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = false
+	is_volatile             = false
+	limit_cpu_use           = false
+	offer_ha                = false
+
+	gpu = {
+		vgpu_profile_id = data.cloudstack_vgpu_profile.test.id
+		count           = 1
+		display         = true
 	}
 }
 `

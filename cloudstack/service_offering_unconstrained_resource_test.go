@@ -70,6 +70,24 @@ func TestAccServiceOfferingUnconstrained(t *testing.T) {
 	})
 }
 
+func TestAccServiceOfferingUnconstrained_GPU(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckGPU(t) },
+		ProtoV6ProviderFactories: testAccMuxProvider,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccServiceOfferingUnconstrained_gpu,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "name", "gpu"),
+					resource.TestCheckResourceAttrPair("cloudstack_service_offering_unconstrained.gpu", "gpu.vgpu_profile_id", "data.cloudstack_vgpu_profile.test", "id"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.count", "1"),
+					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.gpu", "gpu.display", "true"),
+				),
+			},
+		},
+	})
+}
+
 const testAccServiceOfferingUnconstrained1 = `
 resource "cloudstack_service_offering_unconstrained" "unconstrained1" {
 	display_text = "unconstrained1"
@@ -202,6 +220,35 @@ resource "cloudstack_service_offering_unconstrained" "disk_storage" {
 	disk_storage = {
 		min_iops = 100
 		max_iops = 100
+	}
+}
+`
+
+const testAccServiceOfferingUnconstrained_gpu = `
+data "cloudstack_vgpu_profile" "test" {
+	filter {
+		name  = "name"
+		value = "passthrough"
+	}
+}
+
+resource "cloudstack_service_offering_unconstrained" "gpu" {
+	display_text = "gpu"
+	name         = "gpu"
+
+	host_tags = "test0101,test0202"
+	network_rate = 1024
+	deployment_planner = "UserDispersingPlanner"
+
+	dynamic_scaling_enabled = true
+	is_volatile             = true
+	limit_cpu_use           = true
+	offer_ha                = true
+
+	gpu = {
+		vgpu_profile_id = data.cloudstack_vgpu_profile.test.id
+		count           = 1
+		display         = true
 	}
 }
 `
