@@ -37,6 +37,15 @@ func resourceCloudStackHost() *schema.Resource {
 		Update: resourceCloudStackHostUpdate,
 		Create: resourceCloudStackHostCreate,
 		Delete: resourceCloudStackHostDelete,
+		// NOTE: CloudStack's listHosts API never returns url, username, or
+		// password, so Read cannot repopulate them after import. url is also
+		// ForceNew, so leaving it unset in an imported config will plan a
+		// destroy/recreate of the host. After importing, set these fields
+		// explicitly in config (or use lifecycle.ignore_changes) to avoid
+		// unexpected replacement on the next apply.
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"hypervisor": {
 				Type:     schema.TypeString,
@@ -224,12 +233,13 @@ func resourceCloudStackHostRead(d *schema.ResourceData, meta interface{}) error 
 	d.SetId(h.Id)
 
 	fields := map[string]interface{}{
-		"hypervisor":     h.Hypervisor,
-		"pod_id":         h.Podid,
-		"zone_id":        h.Zoneid,
-		"state":          h.State,
-		"resource_state": h.Resourcestate,
-		"name":           h.Name,
+		"hypervisor":       h.Hypervisor,
+		"pod_id":           h.Podid,
+		"zone_id":          h.Zoneid,
+		"state":            h.State,
+		"resource_state":   h.Resourcestate,
+		"allocation_state": h.Resourcestate,
+		"name":             h.Name,
 	}
 
 	for k, v := range fields {

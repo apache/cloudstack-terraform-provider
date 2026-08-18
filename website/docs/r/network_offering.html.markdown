@@ -78,3 +78,7 @@ Network offerings can be imported; use `<NETWORKOFFERINGID>` as the import ID. F
 ```shell
 $ terraform import cloudstack_network_offering.example <NETWORKOFFERINGID>
 ```
+
+*NOTE: The importer looks up the network offering by ID and resolves the
+required `name` attribute from it, so it does not need to be set in the
+configuration beforehand.*

@@ -115,3 +115,23 @@ The following attributes are exported:
 * `id` - The ID of the IP address for which the port forwards are created.
 * `vm_guest_ip` - The IP address of the virtual machine that is used
     for the port forwarding rule.
+
+## Import
+
+Port forwards can be imported; use the `<IPADDRESSID>` for which the rules
+are configured as the import ID. For example:
+
+```shell
+$ terraform import cloudstack_port_forward.default 6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+
+When importing into a project you need to prefix the import ID with the project name:
+
+```shell
+$ terraform import cloudstack_port_forward.default my-project/6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+
+*NOTE: All existing port forwarding rules for the IP address are imported into
+a single `forward` set. Review and copy the imported rules into your config
+before running `terraform apply`, otherwise missing rules may be deleted if
+`managed` is `true`.*

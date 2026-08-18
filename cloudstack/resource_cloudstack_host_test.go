@@ -49,6 +49,32 @@ func TestAccCloudStackHost_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackHost_import(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackHost_basic,
+			},
+
+			{
+				ResourceName:      "cloudstack_host.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// CloudStack's listHosts API never returns the connection URL or
+				// credentials, and these timeouts/flags are provider-local knobs that
+				// aren't part of the host object, so Read can't populate any of them.
+				ImportStateVerifyIgnore: []string{
+					"url", "username", "password",
+					"create_timeout", "destroy_timeout",
+					"prevent_destroy", "force_destroy",
+				},
+			},
+		},
+	})
+}
+
 const testAccCloudStackHost_basic = `
 data "cloudstack_zone" "zone" {
 	filter {

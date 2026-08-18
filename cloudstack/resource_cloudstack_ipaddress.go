@@ -33,6 +33,9 @@ func resourceCloudStackIPAddress() *schema.Resource {
 		Create: resourceCloudStackIPAddressCreate,
 		Read:   resourceCloudStackIPAddressRead,
 		Delete: resourceCloudStackIPAddressDelete,
+		Importer: &schema.ResourceImporter{
+			State: resourceCloudStackIPAddressImport,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"is_portable": {
@@ -171,6 +174,41 @@ func resourceCloudStackIPAddressCreate(d *schema.ResourceData, meta interface{})
 	return resourceCloudStackIPAddressRead(d, meta)
 }
 
+func resourceCloudStackIPAddressImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	// Try to split the ID to extract the optional project name.
+	s := strings.SplitN(d.Id(), "/", 2)
+	if len(s) == 2 {
+		d.Set("project", s[0])
+	}
+
+	ipAddressID := s[len(s)-1]
+	d.SetId(ipAddressID)
+
+	ip, count, err := cs.Address.GetPublicIpAddressByID(
+		ipAddressID,
+		cloudstack.WithProject(d.Get("project").(string)),
+	)
+	if err != nil {
+		if count == 0 {
+			return nil, fmt.Errorf("IP address with ID %s does not exist", ipAddressID)
+		}
+		return nil, err
+	}
+
+	// Seed whichever of network_id/vpc_id actually applies before Read runs:
+	// Read only refreshes these when already present in state, so import
+	// needs to set the right one here first.
+	if ip.Vpcid != "" {
+		d.Set("vpc_id", ip.Vpcid)
+	} else if ip.Associatednetworkid != "" {
+		d.Set("network_id", ip.Associatednetworkid)
+	}
+
+	return []*schema.ResourceData{d}, nil
+}
+
 func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
@@ -208,6 +246,12 @@ func resourceCloudStackIPAddressRead(d *schema.ResourceData, meta interface{}) e
 	// Updated the IP address
 	d.Set("ip_address", ip.Ipaddress)
 
+	// Only refresh network_id/vpc_id if already present in state: a plain
+	// zone-scoped IP (neither set) can still come back from the API with an
+	// associated network under the hood, and syncing that into an Optional,
+	// non-Computed, ForceNew field would create a permanent diff. The
+	// importer is responsible for seeding whichever one applies before this
+	// Read runs.
 	if _, ok := d.GetOk("network_id"); ok {
 		d.Set("network_id", ip.Associatednetworkid)
 	}

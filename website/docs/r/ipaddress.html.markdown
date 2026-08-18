@@ -105,3 +105,18 @@ The following attributes are exported:
 
 * `id` - The ID of the acquired and associated IP address.
 * `ip_address` - The IP address that was acquired and associated.
+
+## Import
+
+IP addresses can be imported; use `<IPADDRESSID>` as the import ID. For
+example:
+
+```shell
+$ terraform import cloudstack_ipaddress.default 6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```
+
+When importing into a project you need to prefix the import ID with the project name:
+
+```shell
+$ terraform import cloudstack_ipaddress.default my-project/6226ea4d-9cbe-4cc9-b30c-b9532146da5b
+```

@@ -105,3 +105,7 @@ Service offerings can be imported; use `<SERVICEOFFERINGID>` as the import ID. F
 ```shell
 $ terraform import cloudstack_service_offering.example <SERVICEOFFERINGID>
 ```
+
+*NOTE: The importer looks up the service offering by ID and resolves the
+required `name` attribute from it, so it does not need to be set in the
+configuration beforehand.*
