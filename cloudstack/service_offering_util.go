@@ -215,11 +215,7 @@ func (state *ServiceOfferingGpu) commonRead(ctx context.Context, cs *cloudstack.
 	} else {
 		state.VgpuProfileId = types.StringNull()
 	}
-	if cs.Gpucount > 0 {
-		state.Count = types.Int32Value(int32(cs.Gpucount))
-	} else {
-		state.Count = types.Int32Null()
-	}
+	state.Count = types.Int32Value(int32(cs.Gpucount))
 	state.Display = types.BoolValue(cs.Gpudisplay)
 }
 
