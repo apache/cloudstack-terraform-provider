@@ -128,6 +128,31 @@ func retrieveTemplateID(cs *cloudstack.CloudStackClient, zoneid, value string) (
 	return id, nil
 }
 
+func retrieveServiceOfferingID(cs *cloudstack.CloudStackClient, zoneid, value string) (id string, e *retrieveError) {
+	// If the supplied value isn't a ID, try to retrieve the ID ourselves
+	if cloudstack.IsID(value) {
+		return value, nil
+	}
+
+	log.Printf("[DEBUG] Retrieving ID of service offering: %s in zone: %s", value, zoneid)
+
+	// List service offerings filtered by zone and name to handle zone-specific offerings
+	p := cs.ServiceOffering.NewListServiceOfferingsParams()
+	p.SetName(value)
+	p.SetZoneid(zoneid)
+	l, err := cs.ServiceOffering.ListServiceOfferings(p)
+	if err != nil {
+		return "", &retrieveError{name: "service_offering", value: value, err: err}
+	}
+
+	if l.Count != 1 {
+		err := fmt.Errorf("Found %d service offering(s) with name %s in zone %s", l.Count, value, zoneid)
+		return "", &retrieveError{name: "service_offering", value: value, err: err}
+	}
+
+	return l.ServiceOfferings[0].Id, nil
+}
+
 // RetryFunc is the function retried n times
 type RetryFunc func() (interface{}, error)
 

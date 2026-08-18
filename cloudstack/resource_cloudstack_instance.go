@@ -249,6 +249,12 @@ func resourceCloudStackInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"delete_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -258,14 +264,14 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Retrieve the service_offering ID
-	serviceofferingid, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+	// Retrieve the zone ID first (needed for service_offering lookup)
+	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
 	if e != nil {
 		return e.Error()
 	}
 
-	// Retrieve the zone ID
-	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
+	// Retrieve the service_offering ID (filtered by zone)
+	serviceofferingid, e := retrieveServiceOfferingID(cs, zoneid, d.Get("service_offering").(string))
 	if e != nil {
 		return e.Error()
 	}
@@ -364,7 +370,19 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 
 	if zone.Networktype == "Advanced" {
 		// Set the default network ID
-		p.SetNetworkids([]string{d.Get("network_id").(string)})
+		networkID := d.Get("network_id").(string)
+		p.SetNetworkids([]string{networkID})
+
+		// If no project is explicitly set, try to inherit it from the network
+		if _, ok := d.GetOk("project"); !ok && networkID != "" {
+			// Get the network to retrieve its project
+			// Use projectid=-1 to search across all projects
+			network, count, err := cs.Network.GetNetworkByID(networkID, cloudstack.WithProject("-1"))
+			if err == nil && count > 0 && network.Projectid != "" {
+				log.Printf("[DEBUG] Inheriting project %s from network %s", network.Projectid, networkID)
+				p.SetProjectid(network.Projectid)
+			}
+		}
 	}
 
 	// If there is a ipaddres supplied, add it to the parameter struct
@@ -414,6 +432,7 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// If there is a project supplied, we retrieve and set the project id
+	// This will override the inherited project from network if explicitly set
 	if err := setProjectid(p, cs, d); err != nil {
 		return err
 	}
@@ -462,13 +481,11 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if userdataDetails, ok := d.GetOk("userdata_details"); ok {
-		udDetails := make(map[string]string)
-		index := 0
+		ud := make(map[string]string)
 		for k, v := range userdataDetails.(map[string]interface{}) {
-			udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
-			index++
+			ud[k] = v.(string)
 		}
-		p.SetUserdatadetails(udDetails)
+		p.SetUserdatadetails(ud)
 	}
 
 	// Create the new instance
@@ -478,6 +495,18 @@ func resourceCloudStackInstanceCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.SetId(r.Id)
+
+	// Set delete protection using UpdateVirtualMachine
+	if v, ok := d.GetOk("delete_protection"); ok {
+		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+		p.SetDeleteprotection(v.(bool))
+
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the delete protection for instance %s: %s", name, err)
+		}
+	}
 
 	// Set tags if necessary
 	if err = setTags(cs, d, "userVm"); err != nil {
@@ -497,10 +526,22 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the virtual machine details
+	// First try with the project from state (if any)
+	project := d.Get("project").(string)
 	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(
 		d.Id(),
-		cloudstack.WithProject(d.Get("project").(string)),
+		cloudstack.WithProject(project),
 	)
+
+	// If not found and no explicit project was set, try with projectid=-1
+	// This handles the case where the project was inherited from network
+	if count == 0 && project == "" {
+		vm, count, err = cs.VirtualMachine.GetVirtualMachineByID(
+			d.Id(),
+			cloudstack.WithProject("-1"),
+		)
+	}
+
 	if err != nil {
 		if count == 0 {
 			log.Printf("[DEBUG] Instance %s does no longer exist", d.Get("name").(string))
@@ -515,6 +556,7 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("name", vm.Name)
 	d.Set("display_name", vm.Displayname)
 	d.Set("group", vm.Group)
+	d.Set("delete_protection", vm.Deleteprotection)
 
 	// In some rare cases (when destroying a machine fails) it can happen that
 	// an instance does not have any attached NIC anymore.
@@ -686,8 +728,14 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			oldOffering, newOffering := d.GetChange("service_offering")
 			log.Printf("[DEBUG] Service offering changed for %s from %s to %s, starting scale", name, oldOffering, newOffering)
 
-			// Retrieve the service_offering ID
-			serviceofferingid, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+			// Retrieve the zone ID first (needed for service_offering lookup)
+			zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
+			if e != nil {
+				return e.Error()
+			}
+
+			// Retrieve the service_offering ID (filtered by zone)
+			serviceofferingid, e := retrieveServiceOfferingID(cs, zoneid, d.Get("service_offering").(string))
 			if e != nil {
 				return e.Error()
 			}
@@ -878,13 +926,11 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
 			if userdataDetails, ok := d.GetOk("userdata_details"); ok {
-				udDetails := make(map[string]string)
-				index := 0
+				ud := make(map[string]string)
 				for k, v := range userdataDetails.(map[string]interface{}) {
-					udDetails[fmt.Sprintf("userdatadetails[%d].%s", index, k)] = v.(string)
-					index++
+					ud[k] = v.(string)
 				}
-				p.SetUserdatadetails(udDetails)
+				p.SetUserdatadetails(ud)
 			}
 			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
 			if err != nil {
@@ -923,6 +969,18 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return fmt.Errorf(
 				"Error updating the details for instance %s: %s", vmDetails, err)
+		}
+	}
+
+	// Check if the delete protection has changed and if so, update the deleteprotection
+	if d.HasChange("delete_protection") {
+		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+		p.SetDeleteprotection(d.Get("delete_protection").(bool))
+
+		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
+		if err != nil {
+			return fmt.Errorf(
+				"Error updating the delete protection for instance %s: %s", name, err)
 		}
 	}
 

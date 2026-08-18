@@ -66,6 +66,28 @@ func TestAccCloudStackNetworkACL_import(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNetworkACL_vpcProjectInheritance(t *testing.T) {
+	var acl cloudstack.NetworkACLList
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNetworkACLDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNetworkACL_vpcProjectInheritance,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNetworkACLExists(
+						"cloudstack_network_acl.foo", &acl),
+					// Verify the project was inherited from the VPC
+					resource.TestCheckResourceAttr(
+						"cloudstack_network_acl.foo", "project", "terraform"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackNetworkACLExists(
 	n string, acl *cloudstack.NetworkACLList) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -143,4 +165,20 @@ resource "cloudstack_network_acl" "foo" {
   name = "terraform-acl"
   description = "terraform-acl-text"
   vpc_id = cloudstack_vpc.foo.id
+}`
+
+const testAccCloudStackNetworkACL_vpcProjectInheritance = `
+resource "cloudstack_vpc" "foo" {
+  name = "terraform-vpc"
+  cidr = "10.0.0.0/8"
+  vpc_offering = "Default VPC offering"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network_acl" "foo" {
+  name = "terraform-acl"
+  description = "terraform-acl-text"
+  vpc_id = cloudstack_vpc.foo.id
+  # Note: project is NOT specified here - it should be inherited from the VPC
 }`
