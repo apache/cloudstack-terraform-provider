@@ -692,8 +692,9 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// Attributes that require reboot to update
-	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") ||
+	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("details") ||
+		d.HasChange("affinity_group_ids") || d.HasChange("affinity_group_names") ||
+		d.HasChange("keypair") || d.HasChange("keypairs") ||
 		d.HasChange("user_data") || d.HasChange("userdata_id") || d.HasChange("userdata_details") {
 
 		// Before we can actually make these changes, the virtual machine must be stopped
@@ -952,23 +953,6 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("tags") {
 		if err := updateTags(cs, d, "UserVm"); err != nil {
 			return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
-		}
-	}
-
-	// Check if the details have changed and if so, update the details
-	if d.HasChange("details") {
-		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-		vmDetails := make(map[string]string)
-		if details := d.Get("details"); details != nil {
-			for k, v := range details.(map[string]interface{}) {
-				vmDetails[k] = v.(string)
-			}
-		}
-		p.SetDetails(vmDetails)
-		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
-		if err != nil {
-			return fmt.Errorf(
-				"Error updating the details for instance %s: %s", vmDetails, err)
 		}
 	}
 
