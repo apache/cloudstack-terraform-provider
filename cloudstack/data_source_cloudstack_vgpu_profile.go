@@ -119,10 +119,10 @@ func datasourceCloudStackVgpuProfileRead(d *schema.ResourceData, meta interface{
 		return fmt.Errorf("failed to list vGPU profiles: %s", err)
 	}
 
-	filters := d.Get("filter")
+	filters := d.Get("filter").(*schema.Set)
 
 	for _, profile := range csVgpuProfiles.VgpuProfiles {
-		match, err := applyVgpuProfileFilters(profile, filters.(*schema.Set))
+		match, err := applyVgpuProfileFilters(profile, filters)
 		if err != nil {
 			return err
 		}
@@ -172,16 +172,30 @@ func applyVgpuProfileFilters(profile *cloudstack.VgpuProfile, filters *schema.Se
 		if err != nil {
 			return false, fmt.Errorf("invalid regex: %s", err)
 		}
-		updatedName := strings.ReplaceAll(filter["name"].(string), "_", "")
-		profileField := val.FieldByNameFunc(func(fieldName string) bool {
+
+		filterName := filter["name"].(string)
+		updatedName := strings.ReplaceAll(filterName, "_", "")
+
+		// Find the field with case-insensitive matching
+		var profileField reflect.Value
+		val.FieldByNameFunc(func(fieldName string) bool {
 			if strings.EqualFold(fieldName, updatedName) {
 				updatedName = fieldName
+				profileField = val.FieldByName(fieldName)
 				return true
 			}
 			return false
-		}).String()
+		})
 
-		if !r.MatchString(profileField) {
+		// Validate field was found
+		if !profileField.IsValid() {
+			return false, fmt.Errorf("unknown filter field '%s'", filterName)
+		}
+
+		// Safely convert field value to string
+		fieldStr := fmt.Sprintf("%v", profileField.Interface())
+
+		if !r.MatchString(fieldStr) {
 			return false, nil
 		}
 	}

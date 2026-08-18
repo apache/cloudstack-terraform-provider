@@ -79,10 +79,11 @@ func datasourceCloudStackGpuCardRead(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("failed to list GPU cards: %s", err)
 	}
 
-	filters := d.Get("filter")
+	filters := d.Get("filter").(*schema.Set)
 
+	// Client-side filtering for fields not supported server-side
 	for _, card := range csGpuCards.GpuCards {
-		match, err := applyGpuCardFilters(card, filters.(*schema.Set))
+		match, err := applyGpuCardFilters(card, filters)
 		if err != nil {
 			return err
 		}
@@ -124,16 +125,30 @@ func applyGpuCardFilters(card *cloudstack.GpuCard, filters *schema.Set) (bool, e
 		if err != nil {
 			return false, fmt.Errorf("invalid regex: %s", err)
 		}
-		updatedName := strings.ReplaceAll(filter["name"].(string), "_", "")
-		cardField := val.FieldByNameFunc(func(fieldName string) bool {
+
+		filterName := filter["name"].(string)
+		updatedName := strings.ReplaceAll(filterName, "_", "")
+
+		// Find the field with case-insensitive matching
+		var cardField reflect.Value
+		val.FieldByNameFunc(func(fieldName string) bool {
 			if strings.EqualFold(fieldName, updatedName) {
 				updatedName = fieldName
+				cardField = val.FieldByName(fieldName)
 				return true
 			}
 			return false
-		}).String()
+		})
 
-		if !r.MatchString(cardField) {
+		// Validate field was found
+		if !cardField.IsValid() {
+			return false, fmt.Errorf("unknown filter field '%s'", filterName)
+		}
+
+		// Safely convert field value to string
+		fieldStr := fmt.Sprintf("%v", cardField.Interface())
+
+		if !r.MatchString(fieldStr) {
 			return false, nil
 		}
 	}
