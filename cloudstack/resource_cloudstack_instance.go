@@ -855,6 +855,12 @@ func updateComputeDetails(cs *cloudstack.CloudStackClient, d *schema.ResourceDat
 		newDetailsMap = make(map[string]interface{})
 	}
 
+	// Convert details map for API call, safely stringifying values
+	detailsForAPI := make(map[string]string)
+	for k, v := range newDetailsMap {
+		detailsForAPI[k] = fmt.Sprintf("%v", v)
+	}
+
 	// Check if any compute-related details changed (cpuNumber, cpuSpeed, memory)
 	computeDetailsChanged := false
 	for _, key := range []string{"cpuNumber", "cpuSpeed", "memory"} {
@@ -864,30 +870,34 @@ func updateComputeDetails(cs *cloudstack.CloudStackClient, d *schema.ResourceDat
 		}
 	}
 
-	if !computeDetailsChanged {
-		return nil
+	// Compute-related detail changes must go through ScaleVirtualMachine so
+	// CPU/memory are actually resized on the (stopped) VM.
+	if computeDetailsChanged {
+		log.Printf("[DEBUG] Compute details changed for %s, scaling VM", name)
+
+		// Get current service offering ID for details-only scaling
+		currentServiceOfferingID, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+		if e != nil {
+			return e.Error()
+		}
+
+		p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), currentServiceOfferingID)
+		p.SetDetails(detailsForAPI)
+
+		if _, err := cs.VirtualMachine.ScaleVirtualMachine(p); err != nil {
+			return fmt.Errorf(
+				"Error scaling compute resources for instance %s: %s", name, err)
+		}
 	}
 
-	log.Printf("[DEBUG] Compute details changed for %s, scaling VM", name)
-
-	// Convert details map for API call, safely stringifying values
-	detailsForAPI := make(map[string]string)
-	for k, v := range newDetailsMap {
-		detailsForAPI[k] = fmt.Sprintf("%v", v)
-	}
-
-	// Get current service offering ID for details-only scaling
-	currentServiceOfferingID, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
-	if e != nil {
-		return e.Error()
-	}
-
-	p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), currentServiceOfferingID)
+	// Persist the full details map via UpdateVirtualMachine so non-compute
+	// detail changes (custom keys) are applied even when no compute key changed.
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
 	p.SetDetails(detailsForAPI)
 
-	if _, err := cs.VirtualMachine.ScaleVirtualMachine(p); err != nil {
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
 		return fmt.Errorf(
-			"Error scaling compute resources for instance %s: %s", name, err)
+			"Error updating the details for instance %s: %s", name, err)
 	}
 
 	return nil
