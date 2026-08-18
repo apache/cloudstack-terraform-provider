@@ -66,6 +66,15 @@ func TestAccServiceOfferingFixed(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.disk_storage", "name", "disk_storage"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccServiceOfferingFixed_GPU(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckGPU(t) },
+		ProtoV6ProviderFactories: testAccMuxProvider,
+		Steps: []resource.TestStep{
 			{
 				Config: testAccServiceOfferingFixed_gpu,
 				Check: resource.ComposeTestCheckFunc(

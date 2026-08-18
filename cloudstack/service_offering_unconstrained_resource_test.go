@@ -66,6 +66,15 @@ func TestAccServiceOfferingUnconstrained(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.disk_storage", "name", "disk_storage"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccServiceOfferingUnconstrained_GPU(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckGPU(t) },
+		ProtoV6ProviderFactories: testAccMuxProvider,
+		Steps: []resource.TestStep{
 			{
 				Config: testAccServiceOfferingUnconstrained_gpu,
 				Check: resource.ComposeTestCheckFunc(

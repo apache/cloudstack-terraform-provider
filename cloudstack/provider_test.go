@@ -206,6 +206,14 @@ func testAccPreCheckStaticRouteNexthop(t *testing.T) {
 	requireMinimumCloudStackVersion(t, minVersionNum, "Static route nexthop parameter")
 }
 
+// testAccPreCheckGPU checks if the CloudStack version supports GPU features (requires 4.22.0+)
+func testAccPreCheckGPU(t *testing.T) {
+	testAccPreCheck(t)
+
+	const minVersionNum = 4022 // 4.22.0
+	requireMinimumCloudStackVersion(t, minVersionNum, "GPU card and vGPU profile support")
+}
+
 // newTestClient creates a CloudStack client from environment variables for use in test PreCheck functions.
 // This is needed because PreCheck functions run before the test framework configures the provider,
 // so testAccProvider.Meta() is nil at that point.

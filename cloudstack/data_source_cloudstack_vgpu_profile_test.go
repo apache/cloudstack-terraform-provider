@@ -27,7 +27,7 @@ import (
 
 func TestAccVgpuProfileDataSource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheckGPU(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
