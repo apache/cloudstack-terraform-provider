@@ -32,8 +32,11 @@ The following arguments are supported:
 
 ### Filter Arguments
 
-* `name` - (Required) The name of the field to filter on. This can be any of the fields returned by the CloudStack API.
-* `value` - (Required) The value to filter on. This should be a regular expression.
+* `name` - (Required) The name of the field to filter on. Filtering is performed server-side by the
+  CloudStack API. Supported values are `id`, `name`, `gpu_card_id`, `keyword`, and `active_only`.
+* `value` - (Required) The value to filter on. This is passed directly to the CloudStack API and
+  matched exactly (not as a regular expression). The filters must narrow the result to a single
+  vGPU profile; if more than one profile matches, an error is returned.
 
 ## Attributes Reference
 

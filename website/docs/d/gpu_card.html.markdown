@@ -14,8 +14,8 @@ Use this data source to get information about a GPU card for use in other resour
 ```hcl
 data "cloudstack_gpu_card" "card" {
   filter {
-    name = "name"
-    value = "NVIDIA.*"
+    name  = "keyword"
+    value = "NVIDIA"
   }
 }
 
@@ -32,8 +32,12 @@ The following arguments are supported:
 
 ### Filter Arguments
 
-* `name` - (Required) The name of the field to filter on. This can be any of the fields returned by the CloudStack API.
-* `value` - (Required) The value to filter on. This should be a regular expression.
+* `name` - (Required) The name of the field to filter on. Filtering is performed server-side by the
+  CloudStack API. Supported values are `id`, `device_id`, `device_name`, `vendor_id`, `vendor_name`,
+  `keyword`, and `active_only`.
+* `value` - (Required) The value to filter on. This is passed directly to the CloudStack API and
+  matched exactly (not as a regular expression). The filters must narrow the result to a single GPU
+  card; if more than one card matches, an error is returned.
 
 ## Attributes Reference
 

@@ -22,9 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
-	"reflect"
-	"regexp"
-	"strings"
+	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -74,25 +72,24 @@ func datasourceCloudStackGpuCardRead(d *schema.ResourceData, meta interface{}) e
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.GPU.NewListGpuCardsParams()
 
+	if err := applyGpuCardFilters(p, d.Get("filter").(*schema.Set)); err != nil {
+		return err
+	}
+
 	csGpuCards, err := cs.GPU.ListGpuCards(p)
 	if err != nil {
 		return fmt.Errorf("failed to list GPU cards: %s", err)
 	}
 
-	filters := d.Get("filter").(*schema.Set)
-
-	// Client-side filtering for fields not supported server-side
-	for _, card := range csGpuCards.GpuCards {
-		match, err := applyGpuCardFilters(card, filters)
-		if err != nil {
-			return err
-		}
-		if match {
-			return gpuCardDescriptionAttributes(d, card)
-		}
+	switch len(csGpuCards.GpuCards) {
+	case 0:
+		return fmt.Errorf("no GPU cards found")
+	case 1:
+		return gpuCardDescriptionAttributes(d, csGpuCards.GpuCards[0])
+	default:
+		return fmt.Errorf("%d GPU cards matched the given filters; "+
+			"refine the filters (e.g. add device_id or vendor_id) to match exactly one card", len(csGpuCards.GpuCards))
 	}
-
-	return fmt.Errorf("no GPU cards found")
 }
 
 func gpuCardDescriptionAttributes(d *schema.ResourceData, card *cloudstack.GpuCard) error {
@@ -116,42 +113,41 @@ func gpuCardDescriptionAttributes(d *schema.ResourceData, card *cloudstack.GpuCa
 	return nil
 }
 
-func applyGpuCardFilters(card *cloudstack.GpuCard, filters *schema.Set) (bool, error) {
-	val := reflect.ValueOf(card).Elem()
-
+func applyGpuCardFilters(p *cloudstack.ListGpuCardsParams, filters *schema.Set) error {
+	seen := make(map[string]bool)
 	for _, f := range filters.List() {
 		filter := f.(map[string]interface{})
-		r, err := regexp.Compile(filter["value"].(string))
-		if err != nil {
-			return false, fmt.Errorf("invalid regex: %s", err)
+		name := filter["name"].(string)
+		value := filter["value"].(string)
+
+		if seen[name] {
+			return fmt.Errorf("duplicate filter %q; each filter name may only be specified once", name)
 		}
+		seen[name] = true
 
-		filterName := filter["name"].(string)
-		updatedName := strings.ReplaceAll(filterName, "_", "")
-
-		// Find the field with case-insensitive matching
-		var cardField reflect.Value
-		val.FieldByNameFunc(func(fieldName string) bool {
-			if strings.EqualFold(fieldName, updatedName) {
-				updatedName = fieldName
-				cardField = val.FieldByName(fieldName)
-				return true
+		switch name {
+		case "id":
+			p.SetId(value)
+		case "device_id":
+			p.SetDeviceid(value)
+		case "device_name":
+			p.SetDevicename(value)
+		case "vendor_id":
+			p.SetVendorid(value)
+		case "vendor_name":
+			p.SetVendorname(value)
+		case "keyword":
+			p.SetKeyword(value)
+		case "active_only":
+			b, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("invalid boolean value %q for filter %q: %s", value, name, err)
 			}
-			return false
-		})
-
-		// Validate field was found
-		if !cardField.IsValid() {
-			return false, fmt.Errorf("unknown filter field '%s'", filterName)
-		}
-
-		// Safely convert field value to string
-		fieldStr := fmt.Sprintf("%v", cardField.Interface())
-
-		if !r.MatchString(fieldStr) {
-			return false, nil
+			p.SetActiveonly(b)
+		default:
+			return fmt.Errorf("unsupported filter %q; supported filters: id, device_id, device_name, vendor_id, vendor_name, keyword, active_only", name)
 		}
 	}
 
-	return true, nil
+	return nil
 }

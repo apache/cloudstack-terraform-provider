@@ -43,8 +43,8 @@ func TestAccGpuCardDataSource_basic(t *testing.T) {
 const testGpuCardDataSourceConfig_basic = `
 data "cloudstack_gpu_card" "test" {
   filter {
-    name = "name"
-    value = "NVIDIA.*"
+    name  = "keyword"
+    value = "NVIDIA"
   }
 }
 `

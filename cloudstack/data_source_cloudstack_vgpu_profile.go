@@ -22,9 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
-	"reflect"
-	"regexp"
-	"strings"
+	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -114,24 +112,24 @@ func datasourceCloudStackVgpuProfileRead(d *schema.ResourceData, meta interface{
 	cs := meta.(*cloudstack.CloudStackClient)
 	p := cs.GPU.NewListVgpuProfilesParams()
 
+	if err := applyVgpuProfileFilters(p, d.Get("filter").(*schema.Set)); err != nil {
+		return err
+	}
+
 	csVgpuProfiles, err := cs.GPU.ListVgpuProfiles(p)
 	if err != nil {
 		return fmt.Errorf("failed to list vGPU profiles: %s", err)
 	}
 
-	filters := d.Get("filter").(*schema.Set)
-
-	for _, profile := range csVgpuProfiles.VgpuProfiles {
-		match, err := applyVgpuProfileFilters(profile, filters)
-		if err != nil {
-			return err
-		}
-		if match {
-			return vgpuProfileDescriptionAttributes(d, profile)
-		}
+	switch len(csVgpuProfiles.VgpuProfiles) {
+	case 0:
+		return fmt.Errorf("no vGPU profiles found")
+	case 1:
+		return vgpuProfileDescriptionAttributes(d, csVgpuProfiles.VgpuProfiles[0])
+	default:
+		return fmt.Errorf("%d vGPU profiles matched the given filters; "+
+			"refine the filters (e.g. add gpu_card_id) to match exactly one profile", len(csVgpuProfiles.VgpuProfiles))
 	}
-
-	return fmt.Errorf("no vGPU profiles found")
 }
 
 func vgpuProfileDescriptionAttributes(d *schema.ResourceData, profile *cloudstack.VgpuProfile) error {
@@ -163,42 +161,37 @@ func vgpuProfileDescriptionAttributes(d *schema.ResourceData, profile *cloudstac
 	return nil
 }
 
-func applyVgpuProfileFilters(profile *cloudstack.VgpuProfile, filters *schema.Set) (bool, error) {
-	val := reflect.ValueOf(profile).Elem()
-
+func applyVgpuProfileFilters(p *cloudstack.ListVgpuProfilesParams, filters *schema.Set) error {
+	seen := make(map[string]bool)
 	for _, f := range filters.List() {
 		filter := f.(map[string]interface{})
-		r, err := regexp.Compile(filter["value"].(string))
-		if err != nil {
-			return false, fmt.Errorf("invalid regex: %s", err)
+		name := filter["name"].(string)
+		value := filter["value"].(string)
+
+		if seen[name] {
+			return fmt.Errorf("duplicate filter %q; each filter name may only be specified once", name)
 		}
+		seen[name] = true
 
-		filterName := filter["name"].(string)
-		updatedName := strings.ReplaceAll(filterName, "_", "")
-
-		// Find the field with case-insensitive matching
-		var profileField reflect.Value
-		val.FieldByNameFunc(func(fieldName string) bool {
-			if strings.EqualFold(fieldName, updatedName) {
-				updatedName = fieldName
-				profileField = val.FieldByName(fieldName)
-				return true
+		switch name {
+		case "id":
+			p.SetId(value)
+		case "name":
+			p.SetName(value)
+		case "gpu_card_id":
+			p.SetGpucardid(value)
+		case "keyword":
+			p.SetKeyword(value)
+		case "active_only":
+			b, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("invalid boolean value %q for filter %q: %s", value, name, err)
 			}
-			return false
-		})
-
-		// Validate field was found
-		if !profileField.IsValid() {
-			return false, fmt.Errorf("unknown filter field '%s'", filterName)
-		}
-
-		// Safely convert field value to string
-		fieldStr := fmt.Sprintf("%v", profileField.Interface())
-
-		if !r.MatchString(fieldStr) {
-			return false, nil
+			p.SetActiveonly(b)
+		default:
+			return fmt.Errorf("unsupported filter %q; supported filters: id, name, gpu_card_id, keyword, active_only", name)
 		}
 	}
 
-	return true, nil
+	return nil
 }
