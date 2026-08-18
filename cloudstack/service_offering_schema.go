@@ -108,6 +108,10 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 			},
 			Default: booldefault.StaticBool(false),
 		},
+		"tags": schema.StringAttribute{
+			Description: "The tags for the service offering",
+			Optional:    true,
+		},
 		"zone_ids": schema.SetAttribute{
 			Description: "The ID of the zone(s)",
 			Optional:    true,

@@ -41,9 +41,11 @@ func (state *serviceOfferingCommonResourceModel) commonUpdate(ctx context.Contex
 	if cs.Name != "" {
 		state.Name = types.StringValue(cs.Name)
 	}
-	if cs.Zoneid != "" {
-		state.ZoneIds, _ = types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+	if cs.Zoneid != "" && cs.Zoneid != "all" {
+		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+		state.ZoneIds = z
 	}
+	// else: preserve prior state value (null or []) — both mean "all zones"
 }
 
 func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.Context, p *cloudstack.UpdateServiceOfferingParams) *cloudstack.UpdateServiceOfferingParams {
@@ -51,7 +53,9 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 		p.SetDisplaytext(plan.DisplayText.ValueString())
 	}
 	if !plan.DomainIds.IsNull() {
-		p.SetDomainid(plan.DomainIds.String())
+		domainIDs := make([]string, len(plan.DomainIds.Elements()))
+		plan.DomainIds.ElementsAs(ctx, &domainIDs, false)
+		p.SetDomainid(strings.Join(domainIDs, ","))
 	}
 	if !plan.HostTags.IsNull() {
 		p.SetHosttags(plan.HostTags.ValueString())
@@ -59,8 +63,11 @@ func (plan *serviceOfferingCommonResourceModel) commonUpdateParams(ctx context.C
 	if !plan.Name.IsNull() {
 		p.SetName(plan.Name.ValueString())
 	}
-	if !plan.ZoneIds.IsNull() && len(plan.ZoneIds.Elements()) > 0 {
-		p.SetZoneid(plan.ZoneIds.String())
+	zoneIDs := plan.ZoneIds
+	if !zoneIDs.IsNull() && len(zoneIDs.Elements()) > 0 {
+		zoneIDSlice := make([]string, len(zoneIDs.Elements()))
+		zoneIDs.ElementsAs(ctx, &zoneIDSlice, false)
+		p.SetZoneid(strings.Join(zoneIDSlice, ","))
 	} else {
 		p.SetZoneid("all")
 	}
@@ -99,9 +106,11 @@ func (state *serviceOfferingCommonResourceModel) commonRead(ctx context.Context,
 	if cs.Networkrate > 0 {
 		state.NetworkRate = types.Int32Value(int32(cs.Networkrate))
 	}
-	if cs.Zoneid != "" {
-		state.ZoneIds, _ = types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+	if cs.Zoneid != "" && cs.Zoneid != "all" {
+		z, _ := types.SetValueFrom(ctx, types.StringType, strings.Split(cs.Zoneid, ","))
+		state.ZoneIds = z
 	}
+	// else: preserve prior state value (null or []) — both mean "all zones"
 
 	state.DynamicScalingEnabled = types.BoolValue(cs.Dynamicscalingenabled)
 	state.IsVolatile = types.BoolValue(cs.Isvolatile)
@@ -205,9 +214,10 @@ func (plan *serviceOfferingCommonResourceModel) commonCreateParams(ctx context.C
 	if !plan.OfferHa.IsNull() {
 		p.SetOfferha(plan.OfferHa.ValueBool())
 	}
-	if !plan.ZoneIds.IsNull() {
-		zoneIds := make([]string, len(plan.ZoneIds.Elements()))
-		plan.ZoneIds.ElementsAs(ctx, &zoneIds, false)
+	zoneIDs := plan.ZoneIds
+	if !zoneIDs.IsNull() {
+		zoneIds := make([]string, len(zoneIDs.Elements()))
+		zoneIDs.ElementsAs(ctx, &zoneIds, false)
 		p.SetZoneid(zoneIds)
 	}
 
@@ -260,6 +270,12 @@ func (plan *ServiceOfferingDiskOffering) commonCreateParams(ctx context.Context,
 
 	return p
 
+}
+
+func (plan *serviceOfferingCommonResourceModel) applyTags(p *cloudstack.CreateServiceOfferingParams) {
+	if !plan.Tags.IsNull() {
+		p.SetTags(plan.Tags.ValueString())
+	}
 }
 
 func (plan *ServiceOfferingDiskQosStorage) commonCreateParams(ctx context.Context, p *cloudstack.CreateServiceOfferingParams) *cloudstack.CreateServiceOfferingParams {
