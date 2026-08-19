@@ -25,9 +25,73 @@ import (
 	"testing"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestVerifyEgressFirewallRuleParams_disallowAnyIP(t *testing.T) {
+	cidrSet := schema.NewSet(schema.HashString, []interface{}{"0.0.0.0/0"})
+	rule := map[string]interface{}{
+		"cidr_list": cidrSet,
+		"protocol":  "tcp",
+		"ports":     schema.NewSet(schema.HashString, []interface{}{"80"}),
+		"uuids":     map[string]interface{}{},
+	}
+
+	err := verifyEgressFirewallRuleParams(nil, rule)
+	if err == nil {
+		t.Fatal("expected error for cidr 0.0.0.0/0, got nil")
+	}
+	if !strings.Contains(err.Error(), "0.0.0.0/0") {
+		t.Fatalf("expected error message to mention 0.0.0.0/0, got: %s", err.Error())
+	}
+}
+
+func TestVerifyEgressFirewallRuleParams_disallowEmptyCIDR(t *testing.T) {
+	rule := map[string]interface{}{
+		"cidr_list": schema.NewSet(schema.HashString, []interface{}{}),
+		"protocol":  "tcp",
+		"ports":     schema.NewSet(schema.HashString, []interface{}{"80"}),
+		"uuids":     map[string]interface{}{},
+	}
+
+	err := verifyEgressFirewallRuleParams(nil, rule)
+	if err == nil {
+		t.Fatal("expected error for empty cidr_list, got nil")
+	}
+	if !strings.Contains(err.Error(), "empty") {
+		t.Fatalf("expected error message to mention empty, got: %s", err.Error())
+	}
+}
+
+func TestVerifyEgressFirewallRuleParams_allowValidCIDR(t *testing.T) {
+	cidrSet := schema.NewSet(schema.HashString, []interface{}{"10.1.1.0/24"})
+	rule := map[string]interface{}{
+		"cidr_list": cidrSet,
+		"protocol":  "tcp",
+		"ports":     schema.NewSet(schema.HashString, []interface{}{"80"}),
+		"uuids":     map[string]interface{}{},
+	}
+
+	err := verifyEgressFirewallRuleParams(nil, rule)
+	if err != nil {
+		t.Fatalf("expected no error for valid cidr, got: %s", err.Error())
+	}
+}
+
+func TestEgressFirewallRuleSchema_cidrListIsRequired(t *testing.T) {
+	res := resourceCloudStackEgressFirewall()
+	ruleElem := res.Schema["rule"].Elem.(*schema.Resource)
+	cidrSchema := ruleElem.Schema["cidr_list"]
+
+	if !cidrSchema.Required {
+		t.Error("expected cidr_list to be Required")
+	}
+	if cidrSchema.Optional {
+		t.Error("expected cidr_list not to be Optional")
+	}
+}
 
 func TestAccCloudStackEgressFirewall_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
