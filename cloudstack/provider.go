@@ -78,9 +78,6 @@ func Provider() *schema.Provider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
-			"cloudstack_autoscale_policy":          dataSourceCloudstackAutoscalePolicy(),
-			"cloudstack_autoscale_vm_group":        dataSourceCloudstackAutoscaleVMGroup(),
-			"cloudstack_autoscale_vm_profile":      dataSourceCloudstackAutoscaleVMProfile(),
 			"cloudstack_condition":                 dataSourceCloudstackCondition(),
 			"cloudstack_counter":                   dataSourceCloudstackCounter(),
 			"cloudstack_template":                  dataSourceCloudstackTemplate(),
@@ -89,6 +86,7 @@ func Provider() *schema.Provider {
 			"cloudstack_network_offering":          dataSourceCloudstackNetworkOffering(),
 			"cloudstack_zone":                      dataSourceCloudStackZone(),
 			"cloudstack_service_offering":          dataSourceCloudstackServiceOffering(),
+			"cloudstack_disk_offering":             dataSourceCloudstackDiskOffering(),
 			"cloudstack_volume":                    dataSourceCloudstackVolume(),
 			"cloudstack_vpc":                       dataSourceCloudstackVPC(),
 			"cloudstack_vpc_offering":              dataSourceCloudstackVPCOffering(),
