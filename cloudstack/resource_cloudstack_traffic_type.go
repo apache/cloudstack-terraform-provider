@@ -167,14 +167,33 @@ func resourceCloudStackTrafficTypeRead(d *schema.ResourceData, meta interface{})
 		return nil
 	}
 
-	// The TrafficType struct has a Name field which contains the traffic type
-	// But in some cases it might be empty, so we'll keep the original value from the state
-	if trafficType.Name != "" {
-		d.Set("traffic_type", trafficType.Name)
+	if trafficType.Traffictype != "" {
+		d.Set("traffic_type", trafficType.Traffictype)
 	}
 
-	// Note: The TrafficType struct doesn't have fields for network labels or VLAN
-	// We'll need to rely on what we store in the state
+	if trafficType.Kvmnetworklabel != "" {
+		d.Set("kvm_network_label", trafficType.Kvmnetworklabel)
+	}
+
+	if trafficType.Vlan != "" {
+		d.Set("vlan", trafficType.Vlan)
+	}
+
+	if trafficType.Xennetworklabel != "" {
+		d.Set("xen_network_label", trafficType.Xennetworklabel)
+	}
+
+	if trafficType.Vmwarenetworklabel != "" {
+		d.Set("vmware_network_label", trafficType.Vmwarenetworklabel)
+	}
+
+	if trafficType.Hypervnetworklabel != "" {
+		d.Set("hyperv_network_label", trafficType.Hypervnetworklabel)
+	}
+
+	if trafficType.Ovm3networklabel != "" {
+		d.Set("ovm3_network_label", trafficType.Ovm3networklabel)
+	}
 
 	return nil
 }
@@ -266,9 +285,9 @@ func resourceCloudStackTrafficTypeImport(d *schema.ResourceData, meta interface{
 				d.Set("physical_network_id", pn.Id)
 
 				// Set the type attribute - use the original value from the API call
-				// If the Name field is empty, use a default value based on the traffic type ID
-				if tt.Name != "" {
-					d.Set("traffic_type", tt.Name)
+				// If the Traffictype field is empty, use a default value based on the traffic type ID
+				if tt.Traffictype != "" {
+					d.Set("traffic_type", tt.Traffictype)
 				} else {
 					// Use a default value based on common traffic types
 					// This is a fallback and might not be accurate
