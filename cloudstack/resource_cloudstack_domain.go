@@ -41,6 +41,8 @@ func resourceCloudStackDomain() *schema.Resource {
 			"domain_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"network_domain": {
 				Type:     schema.TypeString,
@@ -49,6 +51,8 @@ func resourceCloudStackDomain() *schema.Resource {
 			"parent_domain_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -89,9 +93,62 @@ func resourceCloudStackDomainCreate(d *schema.ResourceData, meta interface{}) er
 	return resourceCloudStackDomainRead(d, meta)
 }
 
-func resourceCloudStackDomainRead(d *schema.ResourceData, meta interface{}) error { return nil }
+func resourceCloudStackDomainRead(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
 
-func resourceCloudStackDomainUpdate(d *schema.ResourceData, meta interface{}) error { return nil }
+	log.Printf("[DEBUG] Reading Domain %s", d.Id())
+
+	p := cs.Domain.NewListDomainsParams()
+	p.SetId(d.Id())
+
+	domains, err := cs.Domain.ListDomains(p)
+	if err != nil {
+		return fmt.Errorf("Error reading Domain %s: %s", d.Id(), err)
+	}
+
+	if domains.Count == 0 {
+		log.Printf("[DEBUG] Domain %s does no longer exist", d.Id())
+		d.SetId("")
+		return nil
+	}
+
+	domain := domains.Domains[0]
+	log.Printf("[DEBUG] Domain %s found: %s", d.Id(), domain.Name)
+
+	d.Set("name", domain.Name)
+	d.Set("domain_id", domain.Id)
+	d.Set("network_domain", domain.Networkdomain)
+	d.Set("parent_domain_id", domain.Parentdomainid)
+
+	return nil
+}
+
+func resourceCloudStackDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+	cs := meta.(*cloudstack.CloudStackClient)
+
+	name := d.Get("name").(string)
+
+	if d.HasChange("name") || d.HasChange("network_domain") {
+		p := cs.Domain.NewUpdateDomainParams(d.Id())
+
+		if d.HasChange("name") {
+			p.SetName(name)
+		}
+
+		if d.HasChange("network_domain") {
+			p.SetNetworkdomain(d.Get("network_domain").(string))
+		}
+
+		log.Printf("[DEBUG] Updating Domain %s", name)
+		_, err := cs.Domain.UpdateDomain(p)
+		if err != nil {
+			return fmt.Errorf("Error updating Domain %s: %s", name, err)
+		}
+		log.Printf("[DEBUG] Domain %s successfully updated", name)
+	}
+
+	return resourceCloudStackDomainRead(d, meta)
+}
 
 func resourceCloudStackDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
