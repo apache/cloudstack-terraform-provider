@@ -22,6 +22,7 @@ package cloudstack
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -82,6 +83,9 @@ func resourceCloudStackVPCOffering() *schema.Resource {
 				Computed:    true,
 				Description: "The internet protocol of the VPC offering. Options are ipv4 and dualstack. Default is ipv4. dualstack will create a VPC offering that supports both IPv4 and IPv6",
 				ForceNew:    true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.EqualFold(old, new)
+				},
 			},
 			"network_mode": {
 				Type:        schema.TypeString,
@@ -96,6 +100,9 @@ func resourceCloudStackVPCOffering() *schema.Resource {
 				Computed:    true,
 				Description: "the routing mode for the VPC offering. Supported types are: Static or Dynamic.",
 				ForceNew:    true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.EqualFold(old, new)
+				},
 			},
 			"specify_as_number": {
 				Type:        schema.TypeBool,
