@@ -47,6 +47,12 @@ func resourceCloudStackProject() *schema.Resource {
 			},
 
 			"displaytext": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "use display_text instead",
+			},
+
+			"display_text": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -76,12 +82,22 @@ func resourceCloudStackProject() *schema.Resource {
 	}
 }
 
+// projectDisplayText resolves the effective display text from the new
+// display_text field and the deprecated displaytext field. display_text
+// wins when both are set, since it's the field new configs should use.
+func projectDisplayText(d *schema.ResourceData) string {
+	if v, ok := d.GetOk("display_text"); ok {
+		return v.(string)
+	}
+	return d.Get("displaytext").(string)
+}
+
 func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Get the name and displaytext
 	name := d.Get("name").(string)
-	displaytext := d.Get("displaytext").(string)
+	displaytext := projectDisplayText(d)
 
 	// Get domain if provided
 	var domain string
@@ -101,7 +117,6 @@ func resourceCloudStackProjectCreate(d *schema.ResourceData, meta any) error {
 
 			// Set the basic attributes to match the existing project
 			d.Set("name", existingProject.Name)
-			d.Set("displaytext", existingProject.Displaytext)
 			d.Set("domain", existingProject.Domain)
 
 			return resourceCloudStackProjectRead(d, meta)
@@ -327,8 +342,18 @@ func resourceCloudStackProjectRead(d *schema.ResourceData, meta any) error {
 
 	// Set the basic attributes
 	d.Set("name", project.Name)
-	d.Set("displaytext", project.Displaytext)
 	d.Set("domain", project.Domain)
+
+	// Only refresh whichever of displaytext (deprecated) / display_text the
+	// config is actually using, so a config that only sets one of them
+	// doesn't see a perpetual diff on the other.
+	_, displaytextOk := d.GetOk("displaytext")
+	_, displayTextOk := d.GetOk("display_text")
+	if displaytextOk && !displayTextOk {
+		d.Set("displaytext", project.Displaytext)
+	} else {
+		d.Set("display_text", project.Displaytext)
+	}
 
 	// Handle owner information more safely
 	// Only set the account, accountid, and userid if they were explicitly set in the configuration
@@ -397,7 +422,7 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
 	// Check if the name or displaytext is changed
-	if d.HasChange("name") || d.HasChange("displaytext") {
+	if d.HasChange("name") || d.HasChange("displaytext") || d.HasChange("display_text") {
 		// Create a new parameter struct
 		p := cs.Project.NewUpdateProjectParams(d.Id())
 
@@ -409,8 +434,8 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 			p.SetName(d.Get("name").(string))
 		}
 
-		if d.HasChange("displaytext") {
-			p.SetDisplaytext(d.Get("displaytext").(string))
+		if d.HasChange("displaytext") || d.HasChange("display_text") {
+			p.SetDisplaytext(projectDisplayText(d))
 		}
 
 		log.Printf("[DEBUG] Updating project %s", d.Id())
@@ -490,7 +515,7 @@ func resourceCloudStackProjectUpdate(d *schema.ResourceData, meta any) error {
 			return retry.RetryableError(fmt.Errorf("project name not updated yet"))
 		}
 
-		if d.HasChange("displaytext") && project.Displaytext != d.Get("displaytext").(string) {
+		if (d.HasChange("displaytext") || d.HasChange("display_text")) && project.Displaytext != projectDisplayText(d) {
 			log.Printf("[DEBUG] Project %s displaytext not updated yet, retrying...", d.Id())
 			return retry.RetryableError(fmt.Errorf("project displaytext not updated yet"))
 		}

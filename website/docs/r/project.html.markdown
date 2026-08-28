@@ -37,6 +37,9 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the project.
 * `display_text` - (Required) The display text of the project. Required for API version 4.18 and lower compatibility. This requirement will be removed when support for API versions older than 4.18 is dropped.
+* `displaytext` - (Optional, **Deprecated**) Use `display_text` instead. Retained for
+  backwards compatibility with existing state files; if both `displaytext` and
+  `display_text` are set, `display_text` takes precedence.
 * `domain` - (Optional) The domain where the project will be created. This cannot be changed after the project is created.
 * `account` - (Optional) The account who will be Admin for the project. Requires `domain` to be set. This can be updated after the project is created.
 * `accountid` - (Optional) The ID of the account owning the project. This can be updated after the project is created.
