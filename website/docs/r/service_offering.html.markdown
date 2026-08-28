@@ -109,3 +109,14 @@ $ terraform import cloudstack_service_offering.example <SERVICEOFFERINGID>
 *NOTE: The importer looks up the service offering by ID and resolves the
 required `name` attribute from it, so it does not need to be set in the
 configuration beforehand.*
+
+*WARNING: After import, the resource's state is refreshed with the imported
+offering's actual `cpu_number`, `cpu_speed`, `memory`, and other `ForceNew`
+attribute values. If your `.tf` configuration for the imported resource
+leaves any of those `ForceNew` attributes unset, `terraform plan` will show
+a destroy-and-recreate of the offering, since an unset attribute is treated
+as its zero value and compared against the real imported value. After
+importing, write out the full set of `ForceNew` attributes in your
+configuration (matching the values shown by `terraform state show`) before
+running `terraform plan`, or the plan may propose replacing a live, possibly
+in-use offering.*
