@@ -33,10 +33,19 @@ The following arguments are supported:
   this forces a new resource to be created.
 - `gateway` - (Required) The gateway for the storage network IP range. Changing
   this forces a new resource to be created.
-- `netmask` - (Required) The netmask for the storage network IP range.
+- `netmask` - (Required) The netmask for the storage network IP range. Changing
+  this forces a new resource to be created.
 - `start_ip` - (Required) The beginning IP address in the storage network IP range.
+  Changing this forces a new resource to be created.
 - `end_ip` - (Optional) The ending IP address in the storage network IP range.
+  Changing this forces a new resource to be created.
 - `vlan` - (Optional) The optional VLAN of the storage network IP range.
+
+`netmask`, `start_ip`, and `end_ip` force replacement rather than an in-place
+update: CloudStack's `updateStorageNetworkIpRange` API validates a new range
+against the record's own current IPs without excluding the record being
+updated, so any in-place edit of these fields fails with an IP overlap error
+against itself.
 
 ## Attributes Reference
 

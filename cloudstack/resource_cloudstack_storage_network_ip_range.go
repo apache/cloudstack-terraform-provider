@@ -47,6 +47,7 @@ func resourceCloudStackStorageNetworkIpRange() *schema.Resource {
 				Description: "the netmask for the storage network IP range",
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 			},
 			"pod_id": {
 				Description: "the Pod ID for the storage network IP range",
@@ -58,12 +59,14 @@ func resourceCloudStackStorageNetworkIpRange() *schema.Resource {
 				Description: "the beginning IP address in the storage network IP range",
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 			},
 			"end_ip": {
 				Description: "the ending IP address in the storage network IP range",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
+				ForceNew:    true,
 			},
 			"vlan": {
 				Description: "the optional VLAN of the storage network IP range",
@@ -136,17 +139,17 @@ func resourceCloudStackStorageNetworkIpRangeUpdate(d *schema.ResourceData, meta 
 
 	p := cs.Network.NewUpdateStorageNetworkIpRangeParams(d.Id())
 
-	if v, ok := d.GetOk("netmask"); ok {
-		p.SetNetmask(v.(string))
+	if d.HasChange("netmask") {
+		p.SetNetmask(d.Get("netmask").(string))
 	}
-	if v, ok := d.GetOk("start_ip"); ok {
-		p.SetStartip(v.(string))
+	if d.HasChange("start_ip") {
+		p.SetStartip(d.Get("start_ip").(string))
 	}
-	if v, ok := d.GetOk("end_ip"); ok {
-		p.SetEndip(v.(string))
+	if d.HasChange("end_ip") {
+		p.SetEndip(d.Get("end_ip").(string))
 	}
-	if v, ok := d.GetOk("vlan"); ok {
-		p.SetVlan(v.(int))
+	if d.HasChange("vlan") {
+		p.SetVlan(d.Get("vlan").(int))
 	}
 
 	_, err := cs.Network.UpdateStorageNetworkIpRange(p)
