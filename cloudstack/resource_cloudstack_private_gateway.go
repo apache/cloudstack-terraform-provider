@@ -172,7 +172,7 @@ func resourceCloudStackPrivateGatewayUpdate(d *schema.ResourceData, meta interfa
 	// Replace the ACL if the ID has changed
 	if d.HasChange("acl_id") {
 		p := cs.NetworkACL.NewReplaceNetworkACLListParams(d.Get("acl_id").(string))
-		p.SetNetworkid(d.Id())
+		p.SetGatewayid(d.Id())
 
 		_, err := cs.NetworkACL.ReplaceNetworkACLList(p)
 		if err != nil {
