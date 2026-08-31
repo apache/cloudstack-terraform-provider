@@ -49,12 +49,14 @@ func resourceCloudStackProject() *schema.Resource {
 			"displaytext": {
 				Type:       schema.TypeString,
 				Optional:   true,
+				Computed:   true,
 				Deprecated: "use display_text instead",
 			},
 
 			"display_text": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 
 			"domain": {
@@ -83,9 +85,19 @@ func resourceCloudStackProject() *schema.Resource {
 }
 
 // projectDisplayText resolves the effective display text from the new
-// display_text field and the deprecated displaytext field. display_text
-// wins when both are set, since it's the field new configs should use.
+// display_text field and the deprecated displaytext field. Both fields are
+// Computed, so on an update only the one actually edited in config should
+// win; GetOk alone can't tell a real edit from a stale Computed value left
+// over from the last refresh, so HasChange is checked first. display_text
+// wins when both are freshly set (e.g. on create), since it's the field new
+// configs should use.
 func projectDisplayText(d *schema.ResourceData) string {
+	if d.HasChange("display_text") {
+		return d.Get("display_text").(string)
+	}
+	if d.HasChange("displaytext") {
+		return d.Get("displaytext").(string)
+	}
 	if v, ok := d.GetOk("display_text"); ok {
 		return v.(string)
 	}
@@ -344,16 +356,10 @@ func resourceCloudStackProjectRead(d *schema.ResourceData, meta any) error {
 	d.Set("name", project.Name)
 	d.Set("domain", project.Domain)
 
-	// Only refresh whichever of displaytext (deprecated) / display_text the
-	// config is actually using, so a config that only sets one of them
-	// doesn't see a perpetual diff on the other.
-	_, displaytextOk := d.GetOk("displaytext")
-	_, displayTextOk := d.GetOk("display_text")
-	if displaytextOk && !displayTextOk {
-		d.Set("displaytext", project.Displaytext)
-	} else {
-		d.Set("display_text", project.Displaytext)
-	}
+	// Both fields are Computed, so setting both unconditionally reflects the
+	// API value without creating a diff for a config that only sets one.
+	d.Set("displaytext", project.Displaytext)
+	d.Set("display_text", project.Displaytext)
 
 	// Handle owner information more safely
 	// Only set the account, accountid, and userid if they were explicitly set in the configuration
