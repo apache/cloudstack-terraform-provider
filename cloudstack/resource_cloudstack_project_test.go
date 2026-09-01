@@ -51,6 +51,63 @@ func TestAccCloudStackProject_basic(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackProject_displayText(t *testing.T) {
+	var project cloudstack.Project
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackProject_displayText,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.foo", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.foo", "name", "terraform-test-project-display-text"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.foo", "display_text", "Terraform Test Project Display Text"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackProject_displayTextMigration(t *testing.T) {
+	var project cloudstack.Project
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackProject_displayTextLegacy,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.foo", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.foo", "name", "terraform-test-project-display-text-migration"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.foo", "displaytext", "Old Display Text"),
+				),
+			},
+			{
+				Config: testAccCloudStackProject_displayTextMigration,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackProjectExists(
+						"cloudstack_project.foo", &project),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.foo", "name", "terraform-test-project-display-text-migration"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_project.foo", "display_text", "New Display Text"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccCloudStackProject_update(t *testing.T) {
 	var project cloudstack.Project
 
@@ -95,9 +152,10 @@ func TestAccCloudStackProject_import(t *testing.T) {
 				Config: testAccCloudStackProject_basic,
 			},
 			{
-				ResourceName:      "cloudstack_project.foo",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "cloudstack_project.foo",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"displaytext", "display_text"},
 			},
 		},
 	})
@@ -404,6 +462,24 @@ const testAccCloudStackProject_basic = `
 resource "cloudstack_project" "foo" {
   name = "terraform-test-project"
   displaytext = "Terraform Test Project"
+}`
+
+const testAccCloudStackProject_displayText = `
+resource "cloudstack_project" "foo" {
+  name = "terraform-test-project-display-text"
+  display_text = "Terraform Test Project Display Text"
+}`
+
+const testAccCloudStackProject_displayTextLegacy = `
+resource "cloudstack_project" "foo" {
+  name = "terraform-test-project-display-text-migration"
+  displaytext = "Old Display Text"
+}`
+
+const testAccCloudStackProject_displayTextMigration = `
+resource "cloudstack_project" "foo" {
+  name = "terraform-test-project-display-text-migration"
+  display_text = "New Display Text"
 }`
 
 const testAccCloudStackProject_update = `

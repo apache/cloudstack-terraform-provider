@@ -358,10 +358,18 @@ func resourceCloudStackProjectRead(d *schema.ResourceData, meta any) error {
 	d.Set("name", project.Name)
 	d.Set("domain", project.Domain)
 
-	// Both fields are Computed, so setting both unconditionally reflects the
-	// API value without creating a diff for a config that only sets one.
-	d.Set("displaytext", project.Displaytext)
-	d.Set("display_text", project.Displaytext)
+	// Only refresh whichever of displaytext (deprecated) / display_text the
+	// config is actually using, so a config that only sets one of them
+	// doesn't see a perpetual diff on the other.
+	_, legacyFieldConfigured := d.GetOk("displaytext")
+	_, newFieldConfigured := d.GetOk("display_text")
+
+	if legacyFieldConfigured {
+		d.Set("displaytext", project.Displaytext)
+	}
+	if newFieldConfigured {
+		d.Set("display_text", project.Displaytext)
+	}
 
 	// Handle owner information more safely
 	// Only set the account, accountid, and userid if they were explicitly set in the configuration
