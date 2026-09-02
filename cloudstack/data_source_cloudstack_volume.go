@@ -133,7 +133,7 @@ func applyVolumeFilters(volume *cloudstack.Volume, filters *schema.Set) (bool, e
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		volume := volumeJSON[updatedName].(string)
+		volume := fmt.Sprintf("%v", volumeJSON[updatedName])
 		if !r.MatchString(volume) {
 			return false, nil
 		}
