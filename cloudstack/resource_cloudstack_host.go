@@ -169,7 +169,12 @@ func resourceCloudStackHostCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if host_tags, ok := d.GetOk("host_tags"); ok {
-		p.SetHosttags(host_tags.([]string))
+		rawTags := host_tags.([]interface{})
+		tags := make([]string, 0, len(rawTags))
+		for _, tag := range rawTags {
+			tags = append(tags, tag.(string))
+		}
+		p.SetHosttags(tags)
 	}
 
 	if username, ok := d.GetOk("username"); ok {
@@ -259,14 +264,29 @@ func resourceCloudStackHostUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	p := cs.Host.NewUpdateHostParams(d.Id())
 
+	needsUpdate := false
+
 	if d.HasChange("allocation_state") {
 		log.Printf("[DEBUG] Updating Host allocation state: %s", d.Id())
 		p.SetAllocationstate(d.Get("allocation_state").(string))
+		needsUpdate = true
 	}
 
 	if d.HasChange("host_tags") {
 		log.Printf("[DEBUG] Updating Host tags: %s", d.Id())
-		p.SetHosttags(d.Get("host_tags").([]string))
+		rawTags := d.Get("host_tags").([]interface{})
+		tags := make([]string, 0, len(rawTags))
+		for _, tag := range rawTags {
+			tags = append(tags, tag.(string))
+		}
+		p.SetHosttags(tags)
+		needsUpdate = true
+	}
+
+	if needsUpdate {
+		if _, err := cs.Host.UpdateHost(p); err != nil {
+			return fmt.Errorf("Error updating host %s: %s", d.Id(), err)
+		}
 	}
 
 	return resourceCloudStackHostRead(d, meta)
