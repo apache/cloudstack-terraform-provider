@@ -36,7 +36,7 @@ resource "cloudstack_project" "myproject" {
 The following arguments are supported:
 
 * `name` - (Required) The name of the project.
-* `display_text` - (Required) The display text of the project. Required for API version 4.18 and lower compatibility. This requirement will be removed when support for API versions older than 4.18 is dropped.
+* `display_text` - (Optional) The display text of the project.
 * `displaytext` - (Optional, **Deprecated**) Use `display_text` instead. Retained for
   backwards compatibility with existing state files. Conflicts with
   `display_text` - set only one of the two in config.
