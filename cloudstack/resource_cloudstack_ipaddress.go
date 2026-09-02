@@ -290,6 +290,12 @@ func resourceCloudStackIPAddressDelete(d *schema.ResourceData, meta interface{})
 			return nil
 		}
 
+		// A source NAT IP can't be disassociated while its network/VPC still exists;
+		// deleting that network/VPC releases it instead, so treat this as a no-op.
+		if strings.Contains(err.Error(), "used for source nat purposes and can not be disassociated") {
+			return nil
+		}
+
 		return fmt.Errorf("Error disassociating IP address %s: %s", d.Id(), err)
 	}
 

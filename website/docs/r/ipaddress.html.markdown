@@ -120,3 +120,9 @@ When importing into a project you need to prefix the import ID with the project 
 ```shell
 $ terraform import cloudstack_ipaddress.default my-project/6226ea4d-9cbe-4cc9-b30c-b9532146da5b
 ```
+
+*NOTE: A source NAT IP cannot be released on its own while its network or VPC still
+exists; CloudStack ties its lifecycle to the owning network/VPC and releases it
+automatically when that network/VPC is deleted. Destroying a `cloudstack_ipaddress`
+resource that manages a source NAT IP is a no-op until the owning network/VPC is
+also destroyed.*
