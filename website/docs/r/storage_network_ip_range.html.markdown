@@ -44,8 +44,16 @@ The following arguments are supported:
 `netmask`, `start_ip`, and `end_ip` force replacement rather than an in-place
 update: CloudStack's `updateStorageNetworkIpRange` API validates a new range
 against the record's own current IPs without excluding the record being
-updated, so any in-place edit of these fields fails with an IP overlap error
-against itself.
+updated. An edit that keeps any overlap with the current range (for example
+shrinking or extending it) fails with an IP overlap error against itself;
+only moving to a range fully disjoint from the current one would succeed via
+the API. Since Terraform can't tell which case applies before attempting the
+update, these fields always force a replacement.
+
+Replacement is more destructive than the update it replaces: the existing
+range is deleted before the new one is created (the two would overlap, so
+`create_before_destroy` can't help), so the storage network briefly has no
+IP range configured for this pod during the apply.
 
 ## Attributes Reference
 
