@@ -112,8 +112,12 @@ func resourceCloudStackPodCreate(d *schema.ResourceData, meta interface{}) error
 func resourceCloudStackPodRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	r, _, err := cs.Pod.GetPodByID(d.Id())
+	r, count, err := cs.Pod.GetPodByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

@@ -176,8 +176,12 @@ func resourceCloudStackZoneCreate(d *schema.ResourceData, meta interface{}) erro
 func resourceCloudStackZoneRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	z, _, err := cs.Zone.GetZoneByID(d.Id())
+	z, count, err := cs.Zone.GetZoneByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

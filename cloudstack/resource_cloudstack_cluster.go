@@ -209,8 +209,12 @@ func resourceCloudStackClusterCreate(d *schema.ResourceData, meta interface{}) e
 func resourceCloudStackClusterRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	r, _, err := cs.Cluster.GetClusterByID(d.Id())
+	r, count, err := cs.Cluster.GetClusterByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 

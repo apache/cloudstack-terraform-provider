@@ -132,8 +132,12 @@ func resourceCloudStackPhysicalNetworkCreate(d *schema.ResourceData, meta interf
 func resourceCloudStackPhysicalNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	p, _, err := cs.Network.GetPhysicalNetworkByID(d.Id())
+	p, count, err := cs.Network.GetPhysicalNetworkByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
