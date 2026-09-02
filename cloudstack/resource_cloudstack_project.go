@@ -47,16 +47,18 @@ func resourceCloudStackProject() *schema.Resource {
 			},
 
 			"displaytext": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "use display_text instead",
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "use display_text instead",
+				ConflictsWith: []string{"display_text"},
 			},
 
 			"display_text": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"displaytext"},
 			},
 
 			"domain": {
@@ -85,12 +87,12 @@ func resourceCloudStackProject() *schema.Resource {
 }
 
 // projectDisplayText resolves the effective display text from the new
-// display_text field and the deprecated displaytext field. Both fields are
-// Computed, so on an update only the one actually edited in config should
-// win; GetOk alone can't tell a real edit from a stale Computed value left
-// over from the last refresh, so HasChange is checked first. display_text
-// wins when both are freshly set (e.g. on create), since it's the field new
-// configs should use.
+// display_text field and the deprecated displaytext field. ConflictsWith
+// keeps config from setting both at once, but both fields are Computed, so
+// GetOk alone can't tell a real edit from a stale Computed value left over
+// from the last refresh - HasChange is checked first to find the one
+// actually edited. The final GetOk/displaytext fallback only matters when
+// neither changed (e.g. a fresh create, or a no-op update).
 func projectDisplayText(d *schema.ResourceData) string {
 	if d.HasChange("display_text") {
 		return d.Get("display_text").(string)
