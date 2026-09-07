@@ -38,7 +38,7 @@ func dsPanicFilterSet(pairs ...[2]string) *schema.Set {
 
 // A data-source filter referencing an unknown field name, or a non-string field, must not panic.
 func TestApplyVolumeFiltersDoesNotPanicOnUnknownOrNonStringField(t *testing.T) {
-	vol := &cloudstack.Volume{Name: "vol-a", Size: 5368709120}
+	vol := &cloudstack.Volume{Name: "vol-a", Size: 5}
 
 	// Unknown filter field: the JSON lookup returns nil; must not panic and must not match.
 	if match, err := applyVolumeFilters(vol, dsPanicFilterSet([2]string{"no_such_field", "x"})); err != nil {
@@ -47,8 +47,24 @@ func TestApplyVolumeFiltersDoesNotPanicOnUnknownOrNonStringField(t *testing.T) {
 		t.Errorf("an unknown filter field should not match")
 	}
 
-	// Non-string (numeric) field: the JSON value is a float64; must not panic.
-	if _, err := applyVolumeFilters(vol, dsPanicFilterSet([2]string{"size", "anything"})); err != nil {
+	// A permissive regex must not match a field that does not exist.
+	if match, err := applyVolumeFilters(vol, dsPanicFilterSet([2]string{"no_such_field", ".*"})); err != nil {
 		t.Fatalf("unexpected error: %s", err)
+	} else if match {
+		t.Errorf("a nonexistent field should not match even a permissive regex")
+	}
+
+	// A numeric field is stringified and matched against the regex.
+	if match, err := applyVolumeFilters(vol, dsPanicFilterSet([2]string{"size", "^5$"})); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	} else if !match {
+		t.Errorf("a numeric field should match its string representation")
+	}
+
+	// An existing field must still match.
+	if match, err := applyVolumeFilters(vol, dsPanicFilterSet([2]string{"name", "vol-a"})); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	} else if !match {
+		t.Errorf("an existing field that matches the regex should match")
 	}
 }

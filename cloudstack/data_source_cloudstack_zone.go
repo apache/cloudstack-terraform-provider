@@ -111,7 +111,11 @@ func applyZoneFilters(zone *cloudstack.Zone, filters *schema.Set) (bool, error) 
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		zoneField := fmt.Sprintf("%v", zoneJSON[updatedName])
+		zoneFieldValue, zoneFieldFound := zoneJSON[updatedName]
+		if !zoneFieldFound || zoneFieldValue == nil {
+			return false, nil
+		}
+		zoneField := fmt.Sprintf("%v", zoneFieldValue)
 		if !r.MatchString(zoneField) {
 			return false, nil
 		}

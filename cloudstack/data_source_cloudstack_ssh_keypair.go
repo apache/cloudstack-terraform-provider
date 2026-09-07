@@ -103,7 +103,11 @@ func applySshKeyPairsFilters(sshKeyPair *cloudstack.SSHKeyPair, filters *schema.
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		sshKeyPairField := fmt.Sprintf("%v", sshKeyPairJSON[updatedName])
+		sshKeyPairFieldValue, sshKeyPairFieldFound := sshKeyPairJSON[updatedName]
+		if !sshKeyPairFieldFound || sshKeyPairFieldValue == nil {
+			return false, nil
+		}
+		sshKeyPairField := fmt.Sprintf("%v", sshKeyPairFieldValue)
 		if !r.MatchString(sshKeyPairField) {
 			return false, nil
 		}

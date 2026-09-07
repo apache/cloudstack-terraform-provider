@@ -145,7 +145,11 @@ func applyUserFilters(user *cloudstack.User, filters *schema.Set) (bool, error) 
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
 		log.Print(updatedName)
-		userField := fmt.Sprintf("%v", userJSON[updatedName])
+		userFieldValue, userFieldFound := userJSON[updatedName]
+		if !userFieldFound || userFieldValue == nil {
+			return false, nil
+		}
+		userField := fmt.Sprintf("%v", userFieldValue)
 		if !r.MatchString(userField) {
 			return false, nil
 		}

@@ -182,7 +182,11 @@ func applyFilters(template *cloudstack.Template, filters *schema.Set) (bool, err
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		templateField := fmt.Sprintf("%v", templateJSON[updatedName])
+		templateFieldValue, templateFieldFound := templateJSON[updatedName]
+		if !templateFieldFound || templateFieldValue == nil {
+			return false, nil
+		}
+		templateField := fmt.Sprintf("%v", templateFieldValue)
 		if !r.MatchString(templateField) {
 			return false, nil
 		}
