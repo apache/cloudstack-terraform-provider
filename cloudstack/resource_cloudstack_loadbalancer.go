@@ -151,8 +151,12 @@ func resourceCloudStackLoadBalancerCreate(d *schema.ResourceData, meta interface
 func resourceCloudStackLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	r, _, err := cs.LoadBalancer.GetLoadBalancerByID(d.Id())
+	r, count, err := cs.LoadBalancer.GetLoadBalancerByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
