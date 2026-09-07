@@ -131,7 +131,11 @@ func applyVPNConnectionFilters(vpnConnection *cloudstack.VpnConnection, filters 
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
 		log.Print(updatedName)
-		vpnConnectionField := vpnConnectionJSON[updatedName].(string)
+		vpnConnectionFieldValue, vpnConnectionFieldFound := vpnConnectionJSON[updatedName]
+		if !vpnConnectionFieldFound || vpnConnectionFieldValue == nil {
+			return false, nil
+		}
+		vpnConnectionField := fmt.Sprintf("%v", vpnConnectionFieldValue)
 		if !r.MatchString(vpnConnectionField) {
 			return false, nil
 		}

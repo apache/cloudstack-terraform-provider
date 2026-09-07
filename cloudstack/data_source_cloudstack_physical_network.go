@@ -131,7 +131,11 @@ func applyPhysicalNetworkFilters(physicalNetwork *cloudstack.PhysicalNetwork, fi
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		physicalNetworkField := physicalNetworkJSON[updatedName].(string)
+		physicalNetworkFieldValue, physicalNetworkFieldFound := physicalNetworkJSON[updatedName]
+		if !physicalNetworkFieldFound || physicalNetworkFieldValue == nil {
+			return false, nil
+		}
+		physicalNetworkField := fmt.Sprintf("%v", physicalNetworkFieldValue)
 		if !r.MatchString(physicalNetworkField) {
 			return false, nil
 		}

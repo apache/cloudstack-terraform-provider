@@ -207,7 +207,11 @@ func applyInstanceFilters(instance *cloudstack.VirtualMachine, filters *schema.S
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		instanceField := instanceJSON[updatedName].(string)
+		instanceFieldValue, instanceFieldFound := instanceJSON[updatedName]
+		if !instanceFieldFound || instanceFieldValue == nil {
+			return false, nil
+		}
+		instanceField := fmt.Sprintf("%v", instanceFieldValue)
 		if !r.MatchString(instanceField) {
 			return false, nil
 		}

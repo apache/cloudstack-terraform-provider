@@ -128,7 +128,11 @@ func applyServiceOfferingFilters(serviceOffering *cloudstack.ServiceOffering, fi
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		serviceOfferingField := serviceOfferingJSON[updatedName].(string)
+		serviceOfferingFieldValue, serviceOfferingFieldFound := serviceOfferingJSON[updatedName]
+		if !serviceOfferingFieldFound || serviceOfferingFieldValue == nil {
+			return false, nil
+		}
+		serviceOfferingField := fmt.Sprintf("%v", serviceOfferingFieldValue)
 		if !r.MatchString(serviceOfferingField) {
 			return false, nil
 		}
