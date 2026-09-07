@@ -153,11 +153,11 @@ func resourceCloudStackSystemServiceOfferingCustomizeDiff(_ context.Context, d *
 }
 
 func validateSystemServiceOfferingConfiguration(systemVMType string, hasNetworkRate bool, storageType string, offerHA bool) error {
-	if hasNetworkRate && systemVMType != "domainrouter" {
+	if hasNetworkRate && !strings.EqualFold(systemVMType, "domainrouter") {
 		return fmt.Errorf("network_rate can only be set when system_vm_type is domainrouter")
 	}
 
-	if offerHA && storageType == "local" {
+	if offerHA && strings.EqualFold(storageType, "local") {
 		return fmt.Errorf("offer_ha cannot be enabled when storage_type is local")
 	}
 
