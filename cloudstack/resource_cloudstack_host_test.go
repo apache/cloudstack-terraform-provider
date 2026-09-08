@@ -29,6 +29,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+func TestResourceCloudStackHostHypervisorValidation(t *testing.T) {
+	validate := resourceCloudStackHost().Schema["hypervisor"].ValidateFunc
+
+	// CloudStack's HypervisorType.getType() lowercases the input before lookup, so matching
+	// is case-insensitive server-side; the validator must accept any casing accordingly.
+	valid := []string{"XenServer", "KVM", "VMware", "Hyperv", "BareMetal", "Simulator", "Ovm3", "kvm", "simulator", "XENSERVER"}
+	for _, v := range valid {
+		if _, errs := validate(v, "hypervisor"); len(errs) != 0 {
+			t.Errorf("supported hypervisor %q should be accepted, got errors: %v", v, errs)
+		}
+	}
+
+	invalid := []string{"foo", "docker", "esxi", "kvm2", ""}
+	for _, v := range invalid {
+		if _, errs := validate(v, "hypervisor"); len(errs) == 0 {
+			t.Errorf("unsupported hypervisor %q should be rejected, but validation accepted it", v)
+		}
+	}
+}
+
 func TestAccCloudStackHost_basic(t *testing.T) {
 	var h cloudstack.Host
 	resource.Test(t, resource.TestCase{

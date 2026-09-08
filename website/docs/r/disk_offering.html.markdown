@@ -27,7 +27,23 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the disk offering.
 * `display_text` - (Required) The display text of the disk offering.
-* `disk_size` - (Required) The size of the disk offering in GB.
+* `disk_size` - (Optional) The size of the disk offering in GB. Conflicts with
+    `customized`. If neither `disk_size` nor `customized` is set, the offering is
+    created as customized. Changing this forces a new resource to be created.
+* `customized` - (Optional) Whether the disk offering allows a custom disk size
+    to be specified at deployment time. Conflicts with `disk_size`, and is
+    implied when `disk_size` is omitted. Defaults to `false` when `disk_size`
+    is specified and `true` otherwise. Changing this forces a new resource to
+    be created.
+* `storage_type` - (Optional) The storage type of the disk offering. Values are
+    `local` and `shared`. Defaults to `shared`. Changing this forces a new
+    resource to be created.
+* `provisioning_type` - (Optional) The provisioning type used to create volumes.
+    Values are `thin`, `sparse` and `fat`. Defaults to `thin`. Changing this
+    forces a new resource to be created.
+* `tags` - (Optional) The storage tags for the disk offering.
+* `display_offering` - (Optional) Whether the disk offering is displayed to the
+    end user. Defaults to `true`.
 
 ## Attributes Reference
 
@@ -37,6 +53,11 @@ The following attributes are exported:
 * `name` - The name of the disk offering.
 * `display_text` - The display text of the disk offering.
 * `disk_size` - The size of the disk offering in GB.
+* `customized` - Whether the disk offering allows a custom disk size.
+* `storage_type` - The storage type of the disk offering.
+* `provisioning_type` - The provisioning type of the disk offering.
+* `tags` - The storage tags for the disk offering.
+* `display_offering` - Whether the disk offering is displayed to the end user.
 
 ## Import
 

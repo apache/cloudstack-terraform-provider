@@ -23,12 +23,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCloudStackHost() *schema.Resource {
@@ -48,19 +48,10 @@ func resourceCloudStackHost() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"hypervisor": {
-				Type:     schema.TypeString,
-				Required: true,
-				ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-					validHypervisors := []string{"xenserver", "kvm", "vmware", "baremetal", "simulator"}
-
-					sort.Strings(validHypervisors)
-
-					if sort.SearchStrings(validHypervisors, v.(string)) >= len(validHypervisors) {
-						errors = append(errors, fmt.Errorf("%q must be one of %v", k, validHypervisors))
-					}
-					return
-				},
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringInSlice([]string{"XenServer", "KVM", "VMware", "Hyperv", "BareMetal", "Simulator", "Ovm3"}, true),
+				ForceNew:     true,
 			},
 			"pod_id": {
 				Type:     schema.TypeString,

@@ -79,6 +79,69 @@ func TestAccCloudStackNIC_update(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackNIC_projectRefresh(t *testing.T) {
+	const resourceName = "cloudstack_nic.foo"
+	var nicID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackNICDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackNIC_project,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCaptureCloudStackNICID(resourceName, &nicID),
+					resource.TestCheckResourceAttr("cloudstack_instance.foobar", "project", "terraform"),
+					resource.TestCheckResourceAttrSet(resourceName, "ip_address"),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", "10.1.2.123"),
+				),
+			},
+			{
+				RefreshState: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackNICID(resourceName, &nicID),
+					resource.TestCheckResourceAttrSet(resourceName, "ip_address"),
+					resource.TestCheckResourceAttr(resourceName, "ip_address", "10.1.2.123"),
+				),
+			},
+			{
+				Config:   testAccCloudStackNIC_project,
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func testAccCaptureCloudStackNICID(n string, nicID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No NIC ID is set")
+		}
+
+		*nicID = rs.Primary.ID
+		return nil
+	}
+}
+
+func testAccCheckCloudStackNICID(n string, nicID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+		if rs.Primary.ID != *nicID {
+			return fmt.Errorf("NIC ID changed from %s to %s during refresh", *nicID, rs.Primary.ID)
+		}
+
+		return nil
+	}
+}
+
 func TestAccCloudStackNIC_macaddress(t *testing.T) {
 	var nic cloudstack.Nic
 
@@ -261,6 +324,42 @@ resource "cloudstack_instance" "foobar" {
   service_offering= "Medium Instance"
   network_id = cloudstack_network.foo.id
   template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone = "Sandbox-simulator"
+  expunge = true
+}
+
+resource "cloudstack_nic" "foo" {
+  network_id = cloudstack_network.bar.id
+  virtual_machine_id = cloudstack_instance.foobar.id
+  ip_address = "10.1.2.123"
+}`
+
+const testAccCloudStackNIC_project = `
+resource "cloudstack_network" "foo" {
+  name = "terraform-project-network-primary"
+  display_text = "terraform-project-network-primary"
+  cidr = "10.1.1.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_network" "bar" {
+  name = "terraform-project-network-secondary"
+  display_text = "terraform-project-network-secondary"
+  cidr = "10.1.2.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project = "terraform"
+  zone = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name = "terraform-project-nic-test"
+  display_name = "terraform-project-nic-test"
+  service_offering = "Medium Instance"
+  network_id = cloudstack_network.foo.id
+  template = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  project = "terraform"
   zone = "Sandbox-simulator"
   expunge = true
 }

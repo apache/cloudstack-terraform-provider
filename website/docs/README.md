@@ -98,6 +98,7 @@ The following arguments are supported:
 - [security_group](./r/security_group.html.markdown)
 - [security_group_rule](./r/security_group_rule.html.markdown)
 - [service_offering](./r/service_offering.html.markdown)
+- [system_service_offering](./r/system_service_offering.html.markdown)
 - [ssh_keypair](./r/ssh_keypair.html.markdown)
 - [static_nat](./r/static_nat.html.markdown)
 - [static_route](./r/static_route.html.markdown)
