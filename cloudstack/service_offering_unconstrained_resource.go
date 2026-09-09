@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -73,6 +74,7 @@ func (r *serviceOfferingUnconstrainedResource) Create(ctx context.Context, req r
 	// cloudstack params
 	params := r.client.ServiceOffering.NewCreateServiceOfferingParams(plan.DisplayText.ValueString(), plan.Name.ValueString())
 	plan.commonCreateParams(ctx, params)
+	plan.applyTags(params)
 	planDiskQosHypervisor.commonCreateParams(ctx, params)
 	planDiskOffering.commonCreateParams(ctx, params)
 	planDiskQosStorage.commonCreateParams(ctx, params)
@@ -179,6 +181,10 @@ func (r *serviceOfferingUnconstrainedResource) Delete(ctx context.Context, req r
 		)
 		return
 	}
+}
+
+func (r *serviceOfferingUnconstrainedResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func (r *serviceOfferingUnconstrainedResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
