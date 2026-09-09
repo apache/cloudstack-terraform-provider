@@ -61,6 +61,8 @@ func TestAccCloudStackRolePermission_basic(t *testing.T) {
 }
 
 func TestAccCloudStackRolePermission_orderAfterRecreate(t *testing.T) {
+	var wildcardRuleID string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -71,6 +73,7 @@ func TestAccCloudStackRolePermission_orderAfterRecreate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
 					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listZones", "*"}),
+					testAccCaptureCloudStackRolePermissionID("cloudstack_role_permission.foo", "*", &wildcardRuleID),
 				),
 			},
 			{
@@ -78,6 +81,93 @@ func TestAccCloudStackRolePermission_orderAfterRecreate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
 					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"*"}),
+					testAccCheckCloudStackRolePermissionID("cloudstack_role_permission.foo", "*", &wildcardRuleID),
+				),
+			},
+			{
+				Config:   testAccCloudStackRolePermission_orderWithoutSpecificRule,
+				PlanOnly: true,
+			},
+			{
+				Config: testAccCloudStackRolePermission_orderWithSpecificRule,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listZones", "*"}),
+					testAccCheckCloudStackRolePermissionID("cloudstack_role_permission.foo", "*", &wildcardRuleID),
+				),
+			},
+			{
+				Config:   testAccCloudStackRolePermission_orderWithSpecificRule,
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func TestMatchCloudStackRolePermissions_shiftedIDsAfterRemoval(t *testing.T) {
+	rolePermissions := []*cloudstack.RolePermission{
+		{Id: "detach-id", Rule: "detachIso", Permission: "allow"},
+		{Id: "start-id", Rule: "startSystemVm", Permission: "allow"},
+		{Id: "wildcard-id", Rule: "*", Permission: "deny"},
+	}
+	desiredPermissions := []rolePermissionSpec{
+		{ID: "removed-attach-id", Rule: "detachIso", Permission: "allow"},
+		{ID: "detach-id", Rule: "startSystemVm", Permission: "allow"},
+		{ID: "start-id", Rule: "*", Permission: "deny"},
+	}
+
+	matchedPermissions := matchCloudStackRolePermissions(rolePermissions, desiredPermissions)
+	assertRolePermissionIDs(t, matchedPermissions, []string{"detach-id", "start-id", "wildcard-id"})
+}
+
+func TestMatchCloudStackRolePermissions_shiftedIDsAfterInsertion(t *testing.T) {
+	rolePermissions := []*cloudstack.RolePermission{
+		{Id: "detach-id", Rule: "detachIso", Permission: "allow"},
+		{Id: "start-id", Rule: "startSystemVm", Permission: "allow"},
+	}
+	desiredPermissions := []rolePermissionSpec{
+		{ID: "detach-id", Rule: "attachIso", Permission: "allow"},
+		{ID: "start-id", Rule: "detachIso", Permission: "allow"},
+		{Rule: "startSystemVm", Permission: "allow"},
+	}
+
+	matchedPermissions := matchCloudStackRolePermissions(rolePermissions, desiredPermissions)
+	assertRolePermissionIDs(t, matchedPermissions, []string{"", "detach-id", "start-id"})
+}
+
+func assertRolePermissionIDs(t *testing.T, rolePermissions []*cloudstack.RolePermission, expectedIDs []string) {
+	t.Helper()
+
+	if len(rolePermissions) != len(expectedIDs) {
+		t.Fatalf("Expected %d matched Role Permissions, got %d", len(expectedIDs), len(rolePermissions))
+	}
+
+	for i, expectedID := range expectedIDs {
+		var actualID string
+		if rolePermissions[i] != nil {
+			actualID = rolePermissions[i].Id
+		}
+		if actualID != expectedID {
+			t.Errorf("Expected matched Role Permission %d to have ID %q, got %q", i, expectedID, actualID)
+		}
+	}
+}
+
+func TestAccCloudStackRolePermission_orderChange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackRolePermissionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackRolePermission_orderWithSpecificRule,
+				// The check deliberately changes the API-side order to verify drift detection.
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listZones", "*"}),
+					testAccReorderCloudStackRolePermissions("cloudstack_role_permission.foo", []string{"*", "listZones"}),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"*", "listZones"}),
 				),
 			},
 			{
@@ -85,6 +175,37 @@ func TestAccCloudStackRolePermission_orderAfterRecreate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
 					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listZones", "*"}),
+				),
+			},
+			{
+				Config: testAccCloudStackRolePermission_orderReversed,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"*", "listZones"}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccCloudStackRolePermission_orderChangeThreeRules(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackRolePermissionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackRolePermission_orderThreeRules,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listZones", "listVirtualMachines", "*"}),
+				),
+			},
+			{
+				Config: testAccCloudStackRolePermission_orderThreeRulesReordered,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"*", "listZones", "listVirtualMachines"}),
 				),
 			},
 		},
@@ -165,6 +286,81 @@ func testAccCheckCloudStackRolePermissionOrder(n string, rules []string) resourc
 		}
 
 		return nil
+	}
+}
+
+func testAccReorderCloudStackRolePermissions(n string, rules []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rolePermissions, err := testAccListCloudStackRolePermissions(s, n)
+		if err != nil {
+			return err
+		}
+
+		ruleIDs := make([]string, 0, len(rules))
+		for _, rule := range rules {
+			var ruleID string
+			for _, rp := range rolePermissions {
+				if rp.Rule == rule {
+					ruleID = rp.Id
+					break
+				}
+			}
+			if ruleID == "" {
+				return fmt.Errorf("Role Permission rule %q not found", rule)
+			}
+			ruleIDs = append(ruleIDs, ruleID)
+		}
+
+		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+		p := cs.Role.NewUpdateRolePermissionParams(s.RootModule().Resources[n].Primary.Attributes["role_id"])
+		p.SetRuleorder(ruleIDs)
+		if _, err := cs.Role.UpdateRolePermission(p); err != nil {
+			return fmt.Errorf("Error ordering Role Permissions: %s", err)
+		}
+
+		return nil
+	}
+}
+
+func testAccCaptureCloudStackRolePermissionID(n, rule string, ruleID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rolePermissions, err := testAccListCloudStackRolePermissions(s, n)
+		if err != nil {
+			return err
+		}
+
+		for _, rp := range rolePermissions {
+			if rp.Rule == rule {
+				*ruleID = rp.Id
+				return nil
+			}
+		}
+
+		return fmt.Errorf("Role Permission rule %q not found", rule)
+	}
+}
+
+func testAccCheckCloudStackRolePermissionID(n, rule string, expectedRuleID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *expectedRuleID == "" {
+			return fmt.Errorf("No expected Role Permission ID is set for rule %q", rule)
+		}
+
+		rolePermissions, err := testAccListCloudStackRolePermissions(s, n)
+		if err != nil {
+			return err
+		}
+
+		for _, rp := range rolePermissions {
+			if rp.Rule == rule {
+				if rp.Id != *expectedRuleID {
+					return fmt.Errorf("Expected Role Permission rule %q to keep ID %s, got %s", rule, *expectedRuleID, rp.Id)
+				}
+				return nil
+			}
+		}
+
+		return fmt.Errorf("Role Permission rule %q not found", rule)
 	}
 }
 
@@ -340,6 +536,79 @@ resource "cloudstack_role_permission" "foo" {
   permission {
     rule       = "*"
     permission = "deny"
+  }
+}
+`
+
+const testAccCloudStackRolePermission_orderReversed = `
+resource "cloudstack_role" "foo" {
+  name = "terraform-role"
+  type = "User"
+}
+
+resource "cloudstack_role_permission" "foo" {
+  role_id = cloudstack_role.foo.id
+
+  permission {
+    rule       = "*"
+    permission = "deny"
+  }
+
+  permission {
+    rule       = "listZones"
+    permission = "allow"
+  }
+}
+`
+
+const testAccCloudStackRolePermission_orderThreeRules = `
+resource "cloudstack_role" "foo" {
+  name = "terraform-role"
+  type = "User"
+}
+
+resource "cloudstack_role_permission" "foo" {
+  role_id = cloudstack_role.foo.id
+
+  permission {
+    rule       = "listZones"
+    permission = "allow"
+  }
+
+  permission {
+    rule       = "listVirtualMachines"
+    permission = "allow"
+  }
+
+  permission {
+    rule       = "*"
+    permission = "deny"
+  }
+}
+`
+
+const testAccCloudStackRolePermission_orderThreeRulesReordered = `
+resource "cloudstack_role" "foo" {
+  name = "terraform-role"
+  type = "User"
+}
+
+resource "cloudstack_role_permission" "foo" {
+  role_id = cloudstack_role.foo.id
+
+  permission {
+    rule       = "*"
+    permission = "deny"
+  }
+
+  permission {
+    rule       = "listZones"
+    permission = "allow"
+  }
+
+  permission {
+    rule       = "listVirtualMachines"
+    permission = "allow"
   }
 }
 `
