@@ -37,6 +37,12 @@ resource "cloudstack_service_offering_constrained" "example" {
 		provisioning_type         = "thin"
 		storage_type              = "local"
 	}
+
+	gpu {
+		vgpu_profile_id = "gpu-profile-uuid"
+		count           = 1
+		display         = false
+	}
 }
 ```
 
@@ -88,6 +94,12 @@ The following arguments are supported:
 - `hypervisor_snapshot_reserve` (Int, Optional) - Hypervisor snapshot reserve space as a percent of a volume (for managed storage using Xen or VMware).
 - `max_iops` (Int, Optional) - Max IOPS of the compute offering.
 - `min_iops` (Int, Optional) - Min IOPS of the compute offering.
+
+#### `gpu` (Block, Optional)
+
+- `vgpu_profile_id` (String, Required) - The ID of the vGPU profile to associate with the service offering.
+- `count` (Int, Optional, Computed) - The number of GPUs to assign to the guest VM.
+- `display` (Bool, Optional, Computed, Default: false) - Whether the GPU is presented as a display device to the guest VM.
 
 ## Attributes Reference
 

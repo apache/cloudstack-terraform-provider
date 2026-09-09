@@ -27,8 +27,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -115,6 +117,9 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 		},
 		"disk_offering": schema.SingleNestedAttribute{
 			Optional: true,
+			PlanModifiers: []planmodifier.Object{
+				objectplanmodifier.RequiresReplace(),
+			},
 			Attributes: map[string]schema.Attribute{
 				"cache_mode": schema.StringAttribute{
 					Description: "the cache mode to use for this disk offering. none, writeback or writethrough",
@@ -159,6 +164,9 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 		},
 		"disk_hypervisor": schema.SingleNestedAttribute{
 			Optional: true,
+			PlanModifiers: []planmodifier.Object{
+				objectplanmodifier.RequiresReplace(),
+			},
 			Attributes: map[string]schema.Attribute{
 				"bytes_read_rate": schema.Int64Attribute{
 					Description: "io requests read rate of the disk offering",
@@ -206,6 +214,9 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 		},
 		"disk_storage": schema.SingleNestedAttribute{
 			Optional: true,
+			PlanModifiers: []planmodifier.Object{
+				objectplanmodifier.RequiresReplace(),
+			},
 			Attributes: map[string]schema.Attribute{
 				"customized_iops": schema.BoolAttribute{
 					Description: "true if disk offering uses custom iops, false otherwise",
@@ -234,6 +245,39 @@ func serviceOfferingMergeCommonSchema(s1 map[string]schema.Attribute) map[string
 					PlanModifiers: []planmodifier.Int64{
 						int64planmodifier.RequiresReplace(),
 					},
+				},
+			},
+		},
+		"gpu": schema.SingleNestedAttribute{
+			Optional: true,
+			PlanModifiers: []planmodifier.Object{
+				objectplanmodifier.RequiresReplace(),
+			},
+			Attributes: map[string]schema.Attribute{
+				"vgpu_profile_id": schema.StringAttribute{
+					Description: "the ID of the vGPU profile to associate with the service offering",
+					Required:    true,
+					PlanModifiers: []planmodifier.String{
+						stringplanmodifier.RequiresReplace(),
+					},
+				},
+				"count": schema.Int32Attribute{
+					Description: "the number of GPUs to assign to the guest VM",
+					Optional:    true,
+					Computed:    true,
+					PlanModifiers: []planmodifier.Int32{
+						int32planmodifier.RequiresReplace(),
+					},
+					Default: int32default.StaticInt32(1),
+				},
+				"display": schema.BoolAttribute{
+					Description: "whether the GPU is presented as a display device to the guest VM",
+					Optional:    true,
+					Computed:    true,
+					PlanModifiers: []planmodifier.Bool{
+						boolplanmodifier.RequiresReplace(),
+					},
+					Default: booldefault.StaticBool(false),
 				},
 			},
 		},

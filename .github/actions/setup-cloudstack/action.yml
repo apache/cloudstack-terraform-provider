@@ -96,6 +96,34 @@ runs:
         echo "api_key=$CLOUDSTACK_API_KEY" >> $GITHUB_OUTPUT
         echo "secret_key=$CLOUDSTACK_SECRET_KEY" >> $GITHUB_OUTPUT
 
+    - name: Discover GPU devices
+      shell: bash
+      run: |
+
+        set -euo pipefail
+
+        # GPU management APIs require CloudStack 4.22.0.0 or newer.
+        CURRENT_VERSION="${{ inputs.cloudstack-version }}"
+        if [ "$(printf '%s\n4.22.0.0\n' "$CURRENT_VERSION" | sort -V | head -n1)" != "4.22.0.0" ]; then
+          echo "CloudStack $CURRENT_VERSION predates GPU support (4.22.0.0+); skipping GPU discovery."
+          exit 0
+        fi
+
+        CONTAINER_ID=$(docker container ls --format=json -l | jq -r .ID)
+
+        # Refresh the API cache so cmk knows the 4.22+ GPU APIs (the bundled
+        # cache predates them); "discover gpudevices" maps to discoverGpuDevices.
+        docker exec $CONTAINER_ID cmk -p localcloud sync
+
+        # Discover GPU devices on each routing host so the simulator exposes GPU
+        # cards and vGPU profiles for the GPU acceptance tests. discoverGpuDevices
+        # takes a required "id" argument that is the host's UUID.
+        HOST_IDS=$(docker exec $CONTAINER_ID cmk -p localcloud list hosts type=Routing --output json | jq -r '.host[].id')
+        for HOST_ID in $HOST_IDS; do
+          echo "Discovering GPU devices on host $HOST_ID"
+          docker exec $CONTAINER_ID cmk -p localcloud discover gpudevices id=$HOST_ID
+        done
+
     - name: Install CMK
       shell: bash
       run: |

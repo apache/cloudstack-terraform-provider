@@ -206,6 +206,37 @@ func testAccPreCheckStaticRouteNexthop(t *testing.T) {
 	requireMinimumCloudStackVersion(t, minVersionNum, "Static route nexthop parameter")
 }
 
+// testAccPreCheckGPU checks if the CloudStack version supports GPU features (requires 4.22.0+)
+// and that GPU devices have been discovered on the hosts. vGPU profiles only exist once GPU
+// devices are discovered (via the discoverGpuDevices API); when none are present the GPU tests
+// are skipped so environments without GPU hardware (e.g. the CI simulator) do not fail.
+func testAccPreCheckGPU(t *testing.T) {
+	testAccPreCheck(t)
+
+	const minVersionNum = 4022 // 4.22.0
+	requireMinimumCloudStackVersion(t, minVersionNum, "GPU card and vGPU profile support")
+
+	requireVgpuProfiles(t)
+}
+
+// requireVgpuProfiles skips the test when no vGPU profiles are available. vGPU profiles are only
+// created once GPU devices have been discovered on the hosts (via the discoverGpuDevices API),
+// which is not the case in environments without GPU hardware.
+func requireVgpuProfiles(t *testing.T) {
+	t.Helper()
+	cs := newTestClient(t)
+
+	p := cs.GPU.NewListVgpuProfilesParams()
+	profiles, err := cs.GPU.ListVgpuProfiles(p)
+	if err != nil {
+		t.Fatalf("Failed to list vGPU profiles: %v", err)
+	}
+
+	if profiles.Count == 0 {
+		t.Skip("No vGPU profiles found; discover GPU devices on the hosts (discoverGpuDevices) to run GPU acceptance tests")
+	}
+}
+
 // newTestClient creates a CloudStack client from environment variables for use in test PreCheck functions.
 // This is needed because PreCheck functions run before the test framework configures the provider,
 // so testAccProvider.Meta() is nil at that point.
