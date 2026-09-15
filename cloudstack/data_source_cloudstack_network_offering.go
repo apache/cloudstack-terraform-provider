@@ -245,7 +245,11 @@ func applyNetworkOfferingFilters(networkOffering *cloudstack.NetworkOffering, fi
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		networkOfferingField := networkOfferingJSON[updatedName].(string)
+		networkOfferingFieldValue, networkOfferingFieldFound := networkOfferingJSON[updatedName]
+		if !networkOfferingFieldFound || networkOfferingFieldValue == nil {
+			return false, nil
+		}
+		networkOfferingField := fmt.Sprintf("%v", networkOfferingFieldValue)
 		if !r.MatchString(networkOfferingField) {
 			return false, nil
 		}

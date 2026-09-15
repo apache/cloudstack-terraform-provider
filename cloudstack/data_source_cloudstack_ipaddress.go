@@ -165,7 +165,11 @@ func applyIPAddressFilters(publicIpAddress *cloudstack.PublicIpAddress, filters 
 			return false, fmt.Errorf("Invalid regex: %s", err)
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
-		publicIPAdressField := fmt.Sprintf("%v", publicIPAdressJSON[updatedName])
+		publicIPAdressFieldValue, publicIPAdressFieldFound := publicIPAdressJSON[updatedName]
+		if !publicIPAdressFieldFound || publicIPAdressFieldValue == nil {
+			return false, nil
+		}
+		publicIPAdressField := fmt.Sprintf("%v", publicIPAdressFieldValue)
 		if !r.MatchString(publicIPAdressField) {
 			return false, nil
 		}

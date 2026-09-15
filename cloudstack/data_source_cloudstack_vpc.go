@@ -171,7 +171,11 @@ func applyVPCFilters(vpc *cloudstack.VPC, filters *schema.Set) (bool, error) {
 		}
 		updatedName := strings.ReplaceAll(m["name"].(string), "_", "")
 		log.Print(updatedName)
-		vpcField := vpcJSON[updatedName].(string)
+		vpcFieldValue, vpcFieldFound := vpcJSON[updatedName]
+		if !vpcFieldFound || vpcFieldValue == nil {
+			return false, nil
+		}
+		vpcField := fmt.Sprintf("%v", vpcFieldValue)
 		if !r.MatchString(vpcField) {
 			return false, nil
 		}
