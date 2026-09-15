@@ -421,7 +421,7 @@ func resourceCloudStackEgressFirewallRead(d *schema.ResourceData, meta interface
 
 			// Make a dummy rule to hold the unknown UUID
 			rule := map[string]interface{}{
-				"cidr_list": uuid,
+				"cidr_list": cidrs,
 				"protocol":  uuid,
 				"uuids":     map[string]interface{}{uuid: uuid},
 			}
