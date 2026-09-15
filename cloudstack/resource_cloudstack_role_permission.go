@@ -20,6 +20,7 @@
 package cloudstack
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -44,6 +45,20 @@ func resourceCloudStackRolePermission() *schema.Resource {
 		Read:   resourceCloudStackRolePermissionRead,
 		Update: resourceCloudStackRolePermissionUpdate,
 		Delete: resourceCloudStackRolePermissionDelete,
+		// Duplicate rules are rejected at plan time; by Update the invalid list is already
+		// in state. Rules still unknown at plan time are skipped (they read as "").
+		CustomizeDiff: func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			if !d.NewValueKnown("permission") {
+				return nil
+			}
+			permissions := rolePermissionSpecs(d.Get("permission").([]interface{}))
+			for i := range permissions {
+				if !d.NewValueKnown(fmt.Sprintf("permission.%d.rule", i)) {
+					permissions[i].Rule = ""
+				}
+			}
+			return validateUniqueRolePermissionRules(permissions)
+		},
 		Schema: map[string]*schema.Schema{
 			"role_id": {
 				Type:        schema.TypeString,
@@ -138,7 +153,7 @@ func resourceCloudStackRolePermissionRead(d *schema.ResourceData, meta interface
 	// Keep managed permissions in the order returned by CloudStack. Otherwise an
 	// out-of-band reorder is hidden by refresh and Terraform cannot restore the
 	// order declared in the configuration.
-	readPermissions := make([]interface{}, 0, len(used)+len(missingPermissions))
+	readPermissions := make([]interface{}, 0, len(rolePermissions)+len(missingPermissions))
 	for _, rp := range rolePermissions {
 		if !used[rp.Id] {
 			continue
@@ -150,6 +165,23 @@ func resourceCloudStackRolePermissionRead(d *schema.ResourceData, meta interface
 			Description: rp.Description,
 		}))
 	}
+
+	// When authoritative, undeclared permissions must appear in state or no diff is
+	// produced and Update never runs. They carry no id: an id marks a managed permission,
+	// and reconcile deletes formerly managed ones when authoritative is switched off.
+	if d.Get("authoritative").(bool) {
+		for _, rp := range rolePermissions {
+			if used[rp.Id] {
+				continue
+			}
+			readPermissions = append(readPermissions, rolePermissionState(rolePermissionSpec{
+				Rule:        rp.Rule,
+				Permission:  rp.Permission,
+				Description: rp.Description,
+			}))
+		}
+	}
+
 	readPermissions = append(readPermissions, missingPermissions...)
 
 	if err := d.Set("permission", readPermissions); err != nil {
@@ -205,24 +237,14 @@ func resourceCloudStackRolePermissionDelete(d *schema.ResourceData, meta interfa
 		return nil
 	}
 
-	rolePermissionsByID := make(map[string]*cloudstack.RolePermission)
-	for _, rp := range rolePermissions {
-		rolePermissionsByID[rp.Id] = rp
-	}
-
-	used := make(map[string]bool)
-	for _, permission := range rolePermissionSpecs(d.Get("permission").([]interface{})) {
-		ruleID := permission.ID
-		if ruleID == "" {
-			if rp := findMatchingRolePermission(rolePermissions, permission, used); rp != nil {
-				ruleID = rp.Id
-			}
-		}
-		if ruleID == "" || rolePermissionsByID[ruleID] == nil {
+	// Not authoritative: remove only the permissions this resource manages and
+	// leave anything added outside Terraform in place.
+	desiredPermissions := rolePermissionSpecs(d.Get("permission").([]interface{}))
+	for _, rp := range matchCloudStackRolePermissions(rolePermissions, desiredPermissions) {
+		if rp == nil {
 			continue
 		}
-		used[ruleID] = true
-		if err := deleteCloudStackRolePermission(cs, ruleID); err != nil {
+		if err := deleteCloudStackRolePermission(cs, rp.Id); err != nil {
 			return err
 		}
 	}
@@ -233,6 +255,11 @@ func resourceCloudStackRolePermissionDelete(d *schema.ResourceData, meta interfa
 func reconcileCloudStackRolePermissions(d *schema.ResourceData, meta interface{}, oldPermissions []rolePermissionSpec) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	roleID := d.Get("role_id").(string)
+
+	desiredPermissions := rolePermissionSpecs(d.Get("permission").([]interface{}))
+	if err := validateUniqueRolePermissionRules(desiredPermissions); err != nil {
+		return err
+	}
 
 	rolePermissions, err := listCloudStackRolePermissions(cs, roleID)
 	if err != nil {
@@ -246,8 +273,25 @@ func reconcileCloudStackRolePermissions(d *schema.ResourceData, meta interface{}
 
 	managedIDs := make([]string, 0)
 	managedIDSet := make(map[string]bool)
-	desiredPermissions := rolePermissionSpecs(d.Get("permission").([]interface{}))
+	deleted := make(map[string]bool)
 	matchedPermissions := matchCloudStackRolePermissions(rolePermissions, desiredPermissions)
+
+	// Descriptions cannot be updated in place, so a changed one is recreated. Delete
+	// first: creating the replacement while the old one exists fails with "Rule already exists".
+	for i, desired := range desiredPermissions {
+		rp := matchedPermissions[i]
+		if rp == nil || rp.Description == desired.Description {
+			continue
+		}
+
+		if err := deleteCloudStackRolePermission(cs, rp.Id); err != nil {
+			return err
+		}
+
+		deleted[rp.Id] = true
+		delete(rolePermissionsByID, rp.Id)
+		matchedPermissions[i] = nil
+	}
 
 	for i, desired := range desiredPermissions {
 		rp := matchedPermissions[i]
@@ -275,16 +319,17 @@ func reconcileCloudStackRolePermissions(d *schema.ResourceData, meta interface{}
 
 	if d.Get("authoritative").(bool) {
 		for _, rp := range rolePermissions {
-			if managedIDSet[rp.Id] {
+			if managedIDSet[rp.Id] || deleted[rp.Id] {
 				continue
 			}
 			if err := deleteCloudStackRolePermission(cs, rp.Id); err != nil {
 				return err
 			}
+			deleted[rp.Id] = true
 		}
 	} else {
 		for oldID := range oldManagedIDs {
-			if managedIDSet[oldID] {
+			if managedIDSet[oldID] || deleted[oldID] {
 				continue
 			}
 			if rolePermissionsByID[oldID] == nil {
@@ -293,6 +338,7 @@ func reconcileCloudStackRolePermissions(d *schema.ResourceData, meta interface{}
 			if err := deleteCloudStackRolePermission(cs, oldID); err != nil {
 				return err
 			}
+			deleted[oldID] = true
 		}
 	}
 
@@ -412,46 +458,48 @@ func rolePermissionState(permission rolePermissionSpec) map[string]interface{} {
 	}
 }
 
-func findMatchingRolePermission(rolePermissions []*cloudstack.RolePermission, desired rolePermissionSpec, used map[string]bool) *cloudstack.RolePermission {
-	for _, rp := range rolePermissions {
-		if used[rp.Id] {
-			continue
-		}
-		if rp.Rule == desired.Rule && rp.Description == desired.Description {
-			return rp
-		}
-	}
-
-	return nil
-}
-
+// matchCloudStackRolePermissions pairs each desired permission with the existing one for
+// the same rule. A rule may appear once per role, so it is the permission's identity.
 func matchCloudStackRolePermissions(rolePermissions []*cloudstack.RolePermission, desiredPermissions []rolePermissionSpec) []*cloudstack.RolePermission {
-	permissionsByID := make(map[string]*cloudstack.RolePermission, len(rolePermissions))
+	permissionsByRule := make(map[string]*cloudstack.RolePermission, len(rolePermissions))
 	for _, rp := range rolePermissions {
-		permissionsByID[rp.Id] = rp
+		if _, ok := permissionsByRule[rp.Rule]; !ok {
+			permissionsByRule[rp.Rule] = rp
+		}
 	}
 
 	matchedPermissions := make([]*cloudstack.RolePermission, len(desiredPermissions))
-	used := make(map[string]bool)
+	used := make(map[string]bool, len(desiredPermissions))
 
 	for i, desired := range desiredPermissions {
-		var rp *cloudstack.RolePermission
-		if desired.ID != "" {
-			candidate := permissionsByID[desired.ID]
-			if candidate != nil && !used[candidate.Id] && candidate.Rule == desired.Rule && candidate.Description == desired.Description {
-				rp = candidate
-			}
+		rp := permissionsByRule[desired.Rule]
+		if rp == nil || used[rp.Id] {
+			continue
 		}
-		if rp == nil {
-			rp = findMatchingRolePermission(rolePermissions, desired, used)
-		}
-		if rp != nil {
-			used[rp.Id] = true
-		}
+
+		used[rp.Id] = true
 		matchedPermissions[i] = rp
 	}
 
 	return matchedPermissions
+}
+
+// validateUniqueRolePermissionRules rejects a rule listed more than once.
+func validateUniqueRolePermissionRules(permissions []rolePermissionSpec) error {
+	seen := make(map[string]int, len(permissions))
+	for i, permission := range permissions {
+		if permission.Rule == "" {
+			continue
+		}
+		if first, ok := seen[permission.Rule]; ok {
+			return fmt.Errorf(
+				"duplicate rule %q in permission entries %d and %d: a rule may appear at most once per role",
+				permission.Rule, first+1, i+1)
+		}
+		seen[permission.Rule] = i
+	}
+
+	return nil
 }
 
 func rolePermissionLock(roleID string) *sync.Mutex {

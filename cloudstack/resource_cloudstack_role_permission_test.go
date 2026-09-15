@@ -26,6 +26,8 @@ import (
 	"github.com/apache/cloudstack-go/v2/cloudstack"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"regexp"
+	"strings"
 )
 
 func TestAccCloudStackRolePermission_basic(t *testing.T) {
@@ -642,6 +644,156 @@ resource "cloudstack_role_permission" "foo" {
   permission {
     rule       = "listZones"
     permission = "allow"
+  }
+}
+`
+
+func TestMatchCloudStackRolePermissions_descriptionChangeMatchesByRule(t *testing.T) {
+	rolePermissions := []*cloudstack.RolePermission{
+		{Id: "list-id", Rule: "listVirtualMachines", Permission: "allow", Description: "old"},
+		{Id: "deploy-id", Rule: "deployVirtualMachine", Permission: "deny", Description: "no deploy"},
+	}
+	desiredPermissions := []rolePermissionSpec{
+		{ID: "list-id", Rule: "listVirtualMachines", Permission: "allow", Description: "new"},
+		{ID: "deploy-id", Rule: "deployVirtualMachine", Permission: "allow", Description: "no deploy"},
+	}
+
+	matchedPermissions := matchCloudStackRolePermissions(rolePermissions, desiredPermissions)
+	assertRolePermissionIDs(t, matchedPermissions, []string{"list-id", "deploy-id"})
+}
+
+func TestValidateUniqueRolePermissionRules(t *testing.T) {
+	if err := validateUniqueRolePermissionRules([]rolePermissionSpec{
+		{Rule: "listVirtualMachines"}, {Rule: "listVolumes"},
+	}); err != nil {
+		t.Fatalf("unexpected error for unique rules: %s", err)
+	}
+
+	if err := validateUniqueRolePermissionRules([]rolePermissionSpec{
+		{Rule: ""}, {Rule: "listVolumes"}, {Rule: ""},
+	}); err != nil {
+		t.Fatalf("unexpected error for unknown (empty) rules: %s", err)
+	}
+
+	err := validateUniqueRolePermissionRules([]rolePermissionSpec{
+		{Rule: "listVirtualMachines"}, {Rule: "listVolumes"}, {Rule: "listVirtualMachines"},
+	})
+	if err == nil {
+		t.Fatal("expected an error for a duplicated rule")
+	}
+	for _, want := range []string{`"listVirtualMachines"`, "entries 1 and 3"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q should mention %s", err, want)
+		}
+	}
+}
+
+func TestAccCloudStackRolePermission_descriptionChange(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackRolePermissionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackRolePermission_basic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					resource.TestCheckResourceAttr("cloudstack_role_permission.foo", "permission.0.description", "terraform test role permission"),
+				),
+			},
+			{
+				Config: testAccCloudStackRolePermission_descriptionChanged,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listVirtualMachines"}),
+					resource.TestCheckResourceAttr("cloudstack_role_permission.foo", "permission.0.description", "terraform test role permission (updated)"),
+				),
+			},
+		},
+	})
+}
+
+// Unlike _authoritative, the config is identical in both steps, so only the refresh
+// can detect the externally added permission.
+func TestAccCloudStackRolePermission_authoritativeDrift(t *testing.T) {
+	var externalRuleID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackRolePermissionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackRolePermission_authoritative,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCreateCloudStackRolePermission("cloudstack_role_permission.foo", "listVirtualMachines", "allow", "external role permission", &externalRuleID),
+				),
+				// The Check adds a permission out of band; the post-step refresh seeing it
+				// as drift is the behaviour under test.
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				Config: testAccCloudStackRolePermission_authoritative,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackRolePermissionExists("cloudstack_role_permission.foo"),
+					testAccCheckCloudStackRolePermissionRuleMissing("cloudstack_role_permission.foo", &externalRuleID),
+					testAccCheckCloudStackRolePermissionOrder("cloudstack_role_permission.foo", []string{"listZones"}),
+				),
+			},
+		},
+	})
+}
+
+const testAccCloudStackRolePermission_descriptionChanged = `
+resource "cloudstack_role" "foo" {
+  name = "terraform-role"
+  type = "User"
+}
+
+resource "cloudstack_role_permission" "foo" {
+  role_id = cloudstack_role.foo.id
+
+  permission {
+    rule        = "listVirtualMachines"
+    permission  = "allow"
+    description = "terraform test role permission (updated)"
+  }
+}
+`
+
+func TestAccCloudStackRolePermission_duplicateRuleRejected(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackRolePermissionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccCloudStackRolePermission_duplicateRule,
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`duplicate rule "listVirtualMachines" in permission entries 1 and 2`),
+			},
+		},
+	})
+}
+
+const testAccCloudStackRolePermission_duplicateRule = `
+resource "cloudstack_role" "foo" {
+  name = "terraform-role"
+  type = "User"
+}
+
+resource "cloudstack_role_permission" "foo" {
+  role_id = cloudstack_role.foo.id
+
+  permission {
+    rule       = "listVirtualMachines"
+    permission = "allow"
+  }
+
+  permission {
+    rule       = "listVirtualMachines"
+    permission = "deny"
   }
 }
 `
