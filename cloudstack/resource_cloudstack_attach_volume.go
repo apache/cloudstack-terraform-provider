@@ -64,7 +64,7 @@ func resourceCloudStackAttachVolumeCreate(d *schema.ResourceData, meta interface
 
 	p := cs.Volume.NewAttachVolumeParams(d.Get("volume_id").(string), d.Get("virtual_machine_id").(string))
 	if v, ok := d.GetOk("device_id"); ok {
-		p.SetDeviceid(v.(int64))
+		p.SetDeviceid(int64(v.(int)))
 	}
 
 	r, err := cs.Volume.AttachVolume(p)
