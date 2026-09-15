@@ -268,7 +268,7 @@ func resourceCloudStackDiskUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	// If the device ID changed, just detach here so we can re-attach the
 	// volume at the end of this function
-	if d.HasChange("device_id") || d.HasChange("virtual_machine") {
+	if d.HasChange("device_id") || d.HasChange("virtual_machine_id") {
 		// Detach the volume
 		if err := resourceCloudStackDiskDetach(d, meta); err != nil {
 			return fmt.Errorf("Error detaching disk %s from virtual machine: %s", name, err)
@@ -385,9 +385,19 @@ func resourceCloudStackDiskDetach(d *schema.ResourceData, meta interface{}) erro
 	// Detach the currently attached volume
 	_, err := cs.Volume.DetachVolume(p)
 	if err != nil {
-		if virtualmachineid, ok := d.GetOk("virtual_machine_id"); ok {
+		// The disk is on the VM currently holding it, which is the old value
+		// while virtual_machine_id is being changed.
+		vmid := ""
+		if d.HasChange("virtual_machine_id") {
+			oldVM, _ := d.GetChange("virtual_machine_id")
+			vmid = oldVM.(string)
+		} else if v, ok := d.GetOk("virtual_machine_id"); ok {
+			vmid = v.(string)
+		}
+
+		if vmid != "" {
 			// Create a new parameter struct
-			pd := cs.VirtualMachine.NewStopVirtualMachineParams(virtualmachineid.(string))
+			pd := cs.VirtualMachine.NewStopVirtualMachineParams(vmid)
 
 			// Stop the virtual machine in order to be able to detach the disk
 			if _, err := cs.VirtualMachine.StopVirtualMachine(pd); err != nil {
@@ -400,7 +410,7 @@ func resourceCloudStackDiskDetach(d *schema.ResourceData, meta interface{}) erro
 			}
 
 			// Create a new parameter struct
-			pu := cs.VirtualMachine.NewStartVirtualMachineParams(virtualmachineid.(string))
+			pu := cs.VirtualMachine.NewStartVirtualMachineParams(vmid)
 
 			// Start the virtual machine again
 			if _, err := cs.VirtualMachine.StartVirtualMachine(pu); err != nil {
