@@ -104,6 +104,12 @@ func resourceCloudStackDisk() *schema.Resource {
 				Computed: true,
 			},
 
+			"expunge": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -323,10 +329,14 @@ func resourceCloudStackDiskDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	// Create a new parameter struct
-	p := cs.Volume.NewDeleteVolumeParams(d.Id())
+	p := cs.Volume.NewDestroyVolumeParams(d.Id())
 
-	// Delete the voluem
-	if _, err := cs.Volume.DeleteVolume(p); err != nil {
+	if d.Get("expunge").(bool) {
+		p.SetExpunge(true)
+	}
+
+	// Destroy the volume
+	if _, err := cs.Volume.DestroyVolume(p); err != nil {
 		// This is a very poor way to be told the ID does no longer exist :(
 		if strings.Contains(err.Error(), fmt.Sprintf(
 			"Invalid parameter id value=%s due to incorrect long value format, "+

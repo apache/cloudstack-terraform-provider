@@ -59,6 +59,9 @@ The following arguments are supported:
 * `delete_protection` - (Optional) Set delete protection for the volume. If true, the volume will be protected from deletion.
     Note: If the volume is managed by another service like autoscaling groups or CKS, delete protection will be ignored.
 
+* `expunge` - (Optional) This determines if the disk volume is expunged when it is
+    destroyed (defaults false).
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -117,7 +117,7 @@ func TestAccCloudStackDisk_import(t *testing.T) {
 				ResourceName:            "cloudstack_disk.foo",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"shrink_ok", "reattach_on_change"},
+				ImportStateVerifyIgnore: []string{"expunge", "shrink_ok", "reattach_on_change"},
 			},
 		},
 	})
@@ -246,6 +246,7 @@ resource "cloudstack_disk" "foo" {
   attach = false
   disk_offering = "Small"
   zone = "Sandbox-simulator"
+  expunge = true
   tags = {
     terraform-tag = "true"
   }
@@ -256,6 +257,7 @@ resource "cloudstack_disk" "foo" {
   name = "terraform-disk"
   disk_offering = "Small"
   zone = "Sandbox-simulator"
+  expunge = true
 }`
 
 const testAccCloudStackDisk_resize = `
@@ -263,6 +265,7 @@ resource "cloudstack_disk" "foo" {
   name = "terraform-disk"
   disk_offering = "Medium"
   zone = "Sandbox-simulator"
+  expunge = true
 }`
 
 const testAccCloudStackDisk_deviceID = `
@@ -291,6 +294,7 @@ resource "cloudstack_disk" "foo" {
   disk_offering = "Small"
   virtual_machine_id = cloudstack_instance.foobar.id
   zone = cloudstack_instance.foobar.zone
+  expunge = true
 }`
 
 const testAccCloudStackDisk_deleteProtection = `
@@ -300,6 +304,7 @@ resource "cloudstack_disk" "foo" {
   disk_offering = "Small"
   zone = "Sandbox-simulator"
   delete_protection = %t
+  expunge = true
   tags = {
     terraform-tag = "true"
   }
