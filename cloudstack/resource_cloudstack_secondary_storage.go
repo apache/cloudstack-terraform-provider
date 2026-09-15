@@ -93,8 +93,12 @@ func resourceCloudStackSecondaryStorageCreate(d *schema.ResourceData, meta inter
 func resourceCloudStackSecondaryStorageRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	r, _, err := cs.ImageStore.GetImageStoreByID(d.Id())
+	r, count, err := cs.ImageStore.GetImageStoreByID(d.Id())
 	if err != nil {
+		if count == 0 {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
