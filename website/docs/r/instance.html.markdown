@@ -181,10 +181,14 @@ The following arguments are supported:
     this instance.
 
 * `security_group_ids` - (Optional) List of security group IDs to apply to this
-    instance. Changing this forces a new resource to be created.
+    instance. Changing this temporarily stops a running instance, updates its
+    security groups, and starts it again. An instance that is already stopped
+    remains stopped.
 
 * `security_group_names` - (Optional) List of security group names to apply to
-    this instance. Changing this forces a new resource to be created.
+    this instance. Changing this temporarily stops a running instance, updates
+    its security groups, and starts it again. An instance that is already
+    stopped remains stopped.
 
 * `project` - (Optional) The name or ID of the project to deploy this
     instance to. Changing this forces a new resource to be created. If not

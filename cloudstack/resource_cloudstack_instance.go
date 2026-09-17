@@ -126,7 +126,6 @@ func resourceCloudStackInstance() *schema.Resource {
 			"security_group_ids": {
 				Type:          schema.TypeSet,
 				Optional:      true,
-				ForceNew:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				Set:           schema.HashString,
 				ConflictsWith: []string{"security_group_names"},
@@ -135,7 +134,6 @@ func resourceCloudStackInstance() *schema.Resource {
 			"security_group_names": {
 				Type:          schema.TypeSet,
 				Optional:      true,
-				ForceNew:      true,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				Set:           schema.HashString,
 				ConflictsWith: []string{"security_group_ids"},
@@ -647,7 +645,66 @@ func resourceCloudStackInstanceRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func stopInstanceForUpdate(
+	cs *cloudstack.CloudStackClient,
+	id, project, name string,
+) (bool, error) {
+	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(
+		id,
+		cloudstack.WithProject(project),
+	)
+	if count == 0 && project == "" {
+		vm, count, err = cs.VirtualMachine.GetVirtualMachineByID(
+			id,
+			cloudstack.WithProject("-1"),
+		)
+	}
+	if err != nil {
+		return false, fmt.Errorf("Error reading instance %s before making changes: %w", name, err)
+	}
+	if count == 0 {
+		return false, fmt.Errorf("Error reading instance %s before making changes: instance not found", name)
+	}
+
+	if strings.EqualFold(vm.State, "Stopped") {
+		return false, nil
+	}
+	if !strings.EqualFold(vm.State, "Running") {
+		return false, fmt.Errorf(
+			"Error updating instance %s: instance must be Running or Stopped, currently %s",
+			name, vm.State)
+	}
+
+	_, err = cs.VirtualMachine.StopVirtualMachine(
+		cs.VirtualMachine.NewStopVirtualMachineParams(id))
+	if err != nil {
+		return false, fmt.Errorf(
+			"Error stopping instance %s before making changes: %w", name, err)
+	}
+
+	return true, nil
+}
+
+func restartInstanceAfterUpdate(
+	cs *cloudstack.CloudStackClient,
+	id, name string,
+	updateErr error,
+) error {
+	_, restartErr := cs.VirtualMachine.StartVirtualMachine(
+		cs.VirtualMachine.NewStartVirtualMachineParams(id))
+	if restartErr == nil {
+		return updateErr
+	}
+	if updateErr != nil {
+		return fmt.Errorf(
+			"%w; additionally failed to restart instance %s: %v",
+			updateErr, name, restartErr)
+	}
+	return fmt.Errorf(
+		"Error starting instance %s after making changes: %w", name, restartErr)
+}
+
+func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) (retErr error) {
 
 	cs := meta.(*cloudstack.CloudStackClient)
 
@@ -693,15 +750,20 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	// Attributes that require reboot to update
 	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") ||
+		d.HasChange("affinity_group_names") || d.HasChange("security_group_ids") ||
+		d.HasChange("security_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") ||
 		d.HasChange("user_data") || d.HasChange("userdata_id") || d.HasChange("userdata_details") {
 
-		// Before we can actually make these changes, the virtual machine must be stopped
-		_, err := cs.VirtualMachine.StopVirtualMachine(
-			cs.VirtualMachine.NewStopVirtualMachineParams(d.Id()))
+		restartNeeded, err := stopInstanceForUpdate(cs, d.Id(), d.Get("project").(string), name)
 		if err != nil {
-			return fmt.Errorf(
-				"Error stopping instance %s before making changes: %s", name, err)
+			return err
+		}
+		if restartNeeded {
+			defer func() {
+				if restartNeeded {
+					retErr = restartInstanceAfterUpdate(cs, d.Id(), name, retErr)
+				}
+			}()
 		}
 
 		// Check if the name has changed and if so, update the name
@@ -791,6 +853,35 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return fmt.Errorf(
 					"Error updating the affinity groups for instance %s: %s", name, err)
+			}
+		}
+
+		// Update security groups once, even when switching between names and IDs.
+		if d.HasChange("security_group_ids") || d.HasChange("security_group_names") {
+			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+			ids := d.Get("security_group_ids").(*schema.Set)
+			names := d.Get("security_group_names").(*schema.Set)
+
+			groups := names
+			useIDs := ids.Len() > 0 || (names.Len() == 0 && d.HasChange("security_group_ids"))
+			if useIDs {
+				groups = ids
+			}
+
+			values := make([]string, 0, groups.Len())
+			for _, group := range groups.List() {
+				values = append(values, group.(string))
+			}
+
+			if useIDs {
+				p.SetSecuritygroupids(values)
+			} else {
+				p.SetSecuritygroupnames(values)
+			}
+
+			_, err = cs.VirtualMachine.UpdateVirtualMachine(p)
+			if err != nil {
+				return fmt.Errorf("Error updating the security groups for instance %s: %w", name, err)
 			}
 		}
 
@@ -886,13 +977,14 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 
-		// Start the virtual machine again
-		_, err = cs.VirtualMachine.StartVirtualMachine(
-			cs.VirtualMachine.NewStartVirtualMachineParams(d.Id()))
-		if err != nil {
-			return fmt.Errorf(
-				"Error starting instance %s after making changes", name)
+		if restartNeeded {
+			restartErr := restartInstanceAfterUpdate(cs, d.Id(), name, nil)
+			restartNeeded = false
+			if restartErr != nil {
+				return restartErr
+			}
 		}
+
 	}
 
 	// Check if the tags have changed and if so, update the tags
