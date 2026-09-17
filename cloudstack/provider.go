@@ -111,6 +111,7 @@ func Provider() *schema.Provider {
 			"cloudstack_security_group":            dataSourceCloudstackSecurityGroup(),
 			"cloudstack_vgpu_profile":              dataSourceCloudstackVgpuProfile(),
 			"cloudstack_gpu_card":                  dataSourceCloudstackGpuCard(),
+			"cloudstack_network":                   dataSourceCloudstackNetwork(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
