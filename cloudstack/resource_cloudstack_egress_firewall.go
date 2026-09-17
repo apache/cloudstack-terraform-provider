@@ -65,7 +65,7 @@ func resourceCloudStackEgressFirewall() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"cidr_list": {
 							Type:     schema.TypeSet,
-							Optional: true,
+							Required: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Set:      schema.HashString,
 						},
@@ -542,7 +542,7 @@ func deleteEgressFirewallRules(d *schema.ResourceData, meta interface{}, rules *
 	return errs.ErrorOrNil()
 }
 
-func deleteEgressFirewallRule(d *schema.ResourceData, meta interface{}, rule map[string]interface{}) error {
+func deleteEgressFirewallRule(_ *schema.ResourceData, meta interface{}, rule map[string]interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 	uuids := rule["uuids"].(map[string]interface{})
 
@@ -589,7 +589,18 @@ func verifyEgressFirewallParams(d *schema.ResourceData) error {
 	return nil
 }
 
-func verifyEgressFirewallRuleParams(d *schema.ResourceData, rule map[string]interface{}) error {
+func verifyEgressFirewallRuleParams(_ *schema.ResourceData, rule map[string]interface{}) error {
+	cidrList, ok := rule["cidr_list"].(*schema.Set)
+	if !ok {
+		return fmt.Errorf("cidr_list must be a set of CIDR strings")
+	}
+	if cidrList.Len() == 0 {
+		return fmt.Errorf("cidr_list must not be empty in egress firewall rules")
+	}
+	if cidrList.Contains("0.0.0.0/0") {
+		return fmt.Errorf("CIDR 0.0.0.0/0 is not allowed in egress firewall rules, as CloudStack silently rewrites it to the network CIDR, causing perpetual Terraform diffs")
+	}
+
 	protocol := rule["protocol"].(string)
 	if strings.ToLower(protocol) != "all" && protocol != "tcp" && protocol != "udp" && protocol != "icmp" {
 		return fmt.Errorf(
