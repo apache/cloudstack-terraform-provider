@@ -88,54 +88,64 @@ func resourceCloudStackNICCreate(d *schema.ResourceData, meta interface{}) error
 		return fmt.Errorf("Error creating the new NIC: %s", err)
 	}
 
-	found := false
-	for _, n := range r.(*cloudstack.AddNicToVirtualMachineResponse).Nic {
-		if n.Networkid == d.Get("network_id").(string) {
-			d.SetId(n.Id)
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return fmt.Errorf("Could not find NIC ID for network ID: %s", d.Get("network_id").(string))
-	}
-
-	return resourceCloudStackNICRead(d, meta)
+	return setCloudStackNICStateFromCreateResponse(
+		d,
+		r.(*cloudstack.AddNicToVirtualMachineResponse),
+	)
 }
 
 func resourceCloudStackNICRead(d *schema.ResourceData, meta interface{}) error {
 	cs := meta.(*cloudstack.CloudStackClient)
 
-	// Get the virtual machine details
-	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(d.Get("virtual_machine_id").(string))
-	if err != nil {
-		if count == 0 {
-			log.Printf("[DEBUG] Instance %s does no longer exist", d.Get("virtual_machine_id").(string))
-			d.SetId("")
-			return nil
-		}
+	p := cs.Nic.NewListNicsParams(d.Get("virtual_machine_id").(string))
+	p.SetNicid(d.Id())
 
+	l, err := cs.Nic.ListNics(p)
+	if err != nil {
 		return err
 	}
 
-	// Read NIC info
-	found := false
-	for _, n := range vm.Nic {
-		if n.Id == d.Id() {
-			d.Set("ip_address", n.Ipaddress)
-			d.Set("network_id", n.Networkid)
-			d.Set("virtual_machine_id", vm.Id)
-			d.Set("mac_address", n.Macaddress)
-			found = true
-			break
+	switch len(l.Nics) {
+	case 0:
+		log.Printf("[DEBUG] NIC %s no longer exists", d.Id())
+		d.SetId("")
+		return nil
+	case 1:
+		return setCloudStackNICState(d, l.Nics[0])
+	default:
+		return fmt.Errorf("found more than one NIC for ID %s: %v", d.Id(), l.Nics)
+	}
+}
+
+func setCloudStackNICStateFromCreateResponse(
+	d *schema.ResourceData,
+	r *cloudstack.AddNicToVirtualMachineResponse,
+) error {
+	networkID := d.Get("network_id").(string)
+	for i := range r.Nic {
+		if r.Nic[i].Networkid == networkID {
+			return setCloudStackNICState(d, &r.Nic[i])
 		}
 	}
 
-	if !found {
-		log.Printf("[DEBUG] NIC for network ID %s does no longer exist", d.Get("network_id").(string))
-		d.SetId("")
+	return fmt.Errorf("could not find NIC ID for network ID: %s", networkID)
+}
+
+func setCloudStackNICState(d *schema.ResourceData, nic *cloudstack.Nic) error {
+	if nic == nil || nic.Id == "" {
+		return fmt.Errorf("NIC response did not contain an ID")
 	}
+
+	d.Set("ip_address", nic.Ipaddress)
+	d.Set("network_id", nic.Networkid)
+	// The NIC embedded in an addNicToVirtualMachine response may omit the
+	// virtual machine ID. Preserve the configured value in that case so a
+	// subsequent refresh does not call listNics with an empty required ID.
+	if nic.Virtualmachineid != "" {
+		d.Set("virtual_machine_id", nic.Virtualmachineid)
+	}
+	d.Set("mac_address", nic.Macaddress)
+	d.SetId(nic.Id)
 
 	return nil
 }
