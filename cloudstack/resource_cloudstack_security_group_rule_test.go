@@ -39,6 +39,7 @@ func TestAccCloudStackSecurityGroupRule_basic(t *testing.T) {
 				Config: testAccCloudStackSecurityGroupRule_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackSecurityGroupRulesExist("cloudstack_security_group.foo"),
+					testAccCheckCloudStackSecurityGroupRuleTargetScope("cloudstack_security_group.foo", false),
 					resource.TestCheckResourceAttr(
 						"cloudstack_security_group_rule.foo", "rule.#", "3"),
 					resource.TestCheckTypeSetElemNestedAttrs(
@@ -69,6 +70,47 @@ func TestAccCloudStackSecurityGroupRule_basic(t *testing.T) {
 	})
 }
 
+func TestCloudStackSecurityGroupRuleOwnership_project(t *testing.T) {
+	p := new(cloudstack.SecurityGroupService).NewAuthorizeSecurityGroupIngressParams()
+	sg := &cloudstack.SecurityGroup{
+		Account:   "admin",
+		Domainid:  "domain-id",
+		Projectid: "project-id",
+	}
+
+	setSecurityGroupRuleOwnership(p, sg)
+
+	if projectID, ok := p.GetProjectid(); !ok || projectID != "project-id" {
+		t.Fatalf("expected project-id ownership, got %q, %t", projectID, ok)
+	}
+
+	if account, ok := p.GetAccount(); ok {
+		t.Fatalf("expected no account ownership for project rule, got %q", account)
+	}
+}
+
+func TestCloudStackSecurityGroupRuleOwnership_account(t *testing.T) {
+	p := new(cloudstack.SecurityGroupService).NewAuthorizeSecurityGroupEgressParams()
+	sg := &cloudstack.SecurityGroup{
+		Account:  "admin",
+		Domainid: "domain-id",
+	}
+
+	setSecurityGroupRuleOwnership(p, sg)
+
+	if account, ok := p.GetAccount(); !ok || account != "admin" {
+		t.Fatalf("expected admin account ownership, got %q, %t", account, ok)
+	}
+
+	if domainID, ok := p.GetDomainid(); !ok || domainID != "domain-id" {
+		t.Fatalf("expected domain-id ownership, got %q, %t", domainID, ok)
+	}
+
+	if projectID, ok := p.GetProjectid(); ok {
+		t.Fatalf("expected no project ownership for account rule, got %q", projectID)
+	}
+}
+
 func TestAccCloudStackSecurityGroupRule_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -79,6 +121,7 @@ func TestAccCloudStackSecurityGroupRule_update(t *testing.T) {
 				Config: testAccCloudStackSecurityGroupRule_basic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackSecurityGroupRulesExist("cloudstack_security_group.foo"),
+					testAccCheckCloudStackSecurityGroupRuleTargetScope("cloudstack_security_group.foo", false),
 					resource.TestCheckResourceAttr(
 						"cloudstack_security_group_rule.foo", "rule.#", "3"),
 					resource.TestCheckTypeSetElemNestedAttrs(
@@ -110,6 +153,7 @@ func TestAccCloudStackSecurityGroupRule_update(t *testing.T) {
 				Config: testAccCloudStackSecurityGroupRule_update,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStackSecurityGroupRulesExist("cloudstack_security_group.foo"),
+					testAccCheckCloudStackSecurityGroupRuleTargetScope("cloudstack_security_group.foo", false),
 					resource.TestCheckResourceAttr(
 						"cloudstack_security_group_rule.foo", "rule.#", "4"),
 					resource.TestCheckTypeSetElemNestedAttrs(
@@ -147,6 +191,39 @@ func TestAccCloudStackSecurityGroupRule_update(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackSecurityGroupRule_project(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackSecurityGroupRule_project,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackSecurityGroupRulesExist("cloudstack_security_group.foo"),
+					testAccCheckCloudStackSecurityGroupRuleTargetScope("cloudstack_security_group.foo", true),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group.foo", "project", "terraform"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "project", "terraform"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "rule.#", "1"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "rule.0.protocol", "tcp"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "rule.0.ports.#", "1"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "rule.0.ports.0", "80"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "rule.0.traffic_type", "ingress"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_security_group_rule.foo", "rule.0.user_security_group_list.0", "terraform-project-security-group-bar"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackSecurityGroupRulesExist(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -159,7 +236,10 @@ func testAccCheckCloudStackSecurityGroupRulesExist(n string) resource.TestCheckF
 		}
 
 		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
-		sg, count, err := cs.SecurityGroup.GetSecurityGroupByID(rs.Primary.ID)
+		sg, count, err := cs.SecurityGroup.GetSecurityGroupByID(
+			rs.Primary.ID,
+			cloudstack.WithProject(rs.Primary.Attributes["project"]),
+		)
 		if err != nil {
 			if count == 0 {
 				return fmt.Errorf("Security group %s not found", rs.Primary.ID)
@@ -188,6 +268,40 @@ func testAccCheckCloudStackSecurityGroupRulesExist(n string) resource.TestCheckF
 	}
 }
 
+func testAccCheckCloudStackSecurityGroupRuleTargetScope(n string, wantProject bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
+		sg, _, err := cs.SecurityGroup.GetSecurityGroupByID(
+			rs.Primary.ID,
+			cloudstack.WithProject(rs.Primary.Attributes["project"]),
+		)
+		if err != nil {
+			return err
+		}
+
+		if wantProject {
+			if sg.Projectid == "" {
+				return fmt.Errorf("security group %s is not assigned to a project", rs.Primary.ID)
+			}
+			return nil
+		}
+
+		if sg.Projectid != "" {
+			return fmt.Errorf("security group %s is unexpectedly assigned to project %s", rs.Primary.ID, sg.Projectid)
+		}
+		if sg.Account == "" || sg.Domainid == "" {
+			return fmt.Errorf("security group %s is missing account/domain ownership", rs.Primary.ID)
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckCloudStackSecurityGroupRuleDestroy(s *terraform.State) error {
 	cs := testAccProvider.Meta().(*cloudstack.CloudStackClient)
 
@@ -200,7 +314,10 @@ func testAccCheckCloudStackSecurityGroupRuleDestroy(s *terraform.State) error {
 			return fmt.Errorf("No security group rule ID is set")
 		}
 
-		sg, count, err := cs.SecurityGroup.GetSecurityGroupByID(rs.Primary.ID)
+		sg, count, err := cs.SecurityGroup.GetSecurityGroupByID(
+			rs.Primary.ID,
+			cloudstack.WithProject(rs.Primary.Attributes["project"]),
+		)
 		if err != nil {
 			if count == 0 {
 				continue
@@ -265,6 +382,33 @@ resource "cloudstack_security_group_rule" "foo" {
 	depends_on = ["cloudstack_security_group.bar"]
 }`
 
+const testAccCloudStackSecurityGroupRule_project = `
+resource "cloudstack_security_group" "foo" {
+  name = "terraform-project-security-group-foo"
+  description = "terraform-security-group-text"
+  project = "terraform"
+}
+
+resource "cloudstack_security_group" "bar" {
+  name = "terraform-project-security-group-bar"
+  description = "terraform-security-group-text"
+  project = "terraform"
+}
+
+resource "cloudstack_security_group_rule" "foo" {
+  security_group_id = cloudstack_security_group.foo.id
+  project = "terraform"
+
+  rule {
+    protocol = "tcp"
+    ports = ["80"]
+    traffic_type = "ingress"
+		user_security_group_list = ["terraform-project-security-group-bar"]
+  }
+
+  depends_on = ["cloudstack_security_group.bar"]
+}`
+
 const testAccCloudStackSecurityGroupRule_update = `
 resource "cloudstack_security_group" "foo" {
   name = "terraform-security-group-foo"
@@ -306,5 +450,5 @@ resource "cloudstack_security_group_rule" "foo" {
 		user_security_group_list = ["terraform-security-group-bar"]
   }
 
-	depends_on = ["cloudstack_security_group.bar"]
+  depends_on = ["cloudstack_security_group.bar"]
 }`

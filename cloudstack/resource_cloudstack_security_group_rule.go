@@ -33,9 +33,12 @@ import (
 )
 
 type authorizeSecurityGroupParams interface {
+	SetAccount(string)
 	SetCidrlist([]string)
+	SetDomainid(string)
 	SetIcmptype(int)
 	SetIcmpcode(int)
+	SetProjectid(string)
 	SetStartport(int)
 	SetEndport(int)
 	SetProtocol(string)
@@ -155,6 +158,14 @@ func createSecurityGroupRules(d *schema.ResourceData, meta interface{}, rules *s
 	cs := meta.(*cloudstack.CloudStackClient)
 	var errs *multierror.Error
 
+	sg, _, err := cs.SecurityGroup.GetSecurityGroupByID(
+		d.Id(),
+		cloudstack.WithProject(d.Get("project").(string)),
+	)
+	if err != nil {
+		return err
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(nrs.Len())
 
@@ -186,6 +197,7 @@ func createSecurityGroupRules(d *schema.ResourceData, meta interface{}, rules *s
 					}
 
 					p.SetSecuritygroupid(d.Id())
+					setSecurityGroupRuleOwnership(p, sg)
 					p.SetCidrlist([]string{cidr.(string)})
 
 					// Create a single rule
@@ -198,10 +210,12 @@ func createSecurityGroupRules(d *schema.ResourceData, meta interface{}, rules *s
 
 			if usgList, ok := rule["user_security_group_list"].(*schema.Set); ok && usgList.Len() > 0 {
 				for _, usg := range usgList.List() {
-					sg, _, err := cs.SecurityGroup.GetSecurityGroupByName(
-						usg.(string),
-						cloudstack.WithProject(d.Get("project").(string)),
-					)
+					sourceSG, err := getSecurityGroupRuleSourceGroup(cs, sg, usg.(string))
+					if err != nil {
+						errs = multierror.Append(errs, err)
+						continue
+					}
+					sourceAccount, err := getSecurityGroupRuleSourceAccount(cs, sourceSG)
 					if err != nil {
 						errs = multierror.Append(errs, err)
 						continue
@@ -216,7 +230,8 @@ func createSecurityGroupRules(d *schema.ResourceData, meta interface{}, rules *s
 					}
 
 					p.SetSecuritygroupid(d.Id())
-					p.SetUsersecuritygrouplist(map[string]string{sg.Account: usg.(string)})
+					setSecurityGroupRuleOwnership(p, sg)
+					p.SetUsersecuritygrouplist(map[string]string{sourceAccount: usg.(string)})
 
 					// Create a single rule
 					err = createSecurityGroupRule(d, meta, rule, p, usg.(string))
@@ -238,6 +253,64 @@ func createSecurityGroupRules(d *schema.ResourceData, meta interface{}, rules *s
 	wg.Wait()
 
 	return errs.ErrorOrNil()
+}
+
+func setSecurityGroupRuleOwnership(p authorizeSecurityGroupParams, sg *cloudstack.SecurityGroup) {
+	if sg.Projectid != "" {
+		p.SetProjectid(sg.Projectid)
+		return
+	}
+
+	if sg.Domainid != "" {
+		p.SetDomainid(sg.Domainid)
+
+		if sg.Account != "" {
+			p.SetAccount(sg.Account)
+		}
+	}
+}
+
+func getSecurityGroupRuleSourceGroup(cs *cloudstack.CloudStackClient, targetSG *cloudstack.SecurityGroup, name string) (*cloudstack.SecurityGroup, error) {
+	p := cs.SecurityGroup.NewListSecurityGroupsParams()
+	p.SetSecuritygroupname(name)
+
+	if targetSG.Projectid != "" {
+		p.SetProjectid(targetSG.Projectid)
+	}
+
+	l, err := cs.SecurityGroup.ListSecurityGroups(p)
+	if err != nil {
+		return nil, err
+	}
+
+	if l.Count == 0 {
+		return nil, fmt.Errorf("No match found for security group %q", name)
+	}
+
+	if l.Count > 1 {
+		return nil, fmt.Errorf("There is more then one result for SecurityGroup name: %s", name)
+	}
+
+	return l.SecurityGroups[0], nil
+}
+
+func getSecurityGroupRuleSourceAccount(cs *cloudstack.CloudStackClient, sourceSG *cloudstack.SecurityGroup) (string, error) {
+	if sourceSG.Projectid == "" {
+		if sourceSG.Account == "" {
+			return "", fmt.Errorf("security group %q is missing account ownership", sourceSG.Name)
+		}
+		return sourceSG.Account, nil
+	}
+
+	project, _, err := cs.Project.GetProjectByID(sourceSG.Projectid)
+	if err != nil {
+		return "", err
+	}
+	if project.Projectaccountname == "" {
+		return "", fmt.Errorf("project %q is missing project account ownership", sourceSG.Projectid)
+	}
+
+	return project.Projectaccountname, nil
 }
 
 func createSecurityGroupRule(d *schema.ResourceData, meta interface{}, rule map[string]interface{}, p authorizeSecurityGroupParams, uuid string) error {
