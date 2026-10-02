@@ -163,6 +163,28 @@ func TestAccCloudStackPortForward_projectInheritance(t *testing.T) {
 	})
 }
 
+func TestAccCloudStackPortForward_project(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCloudStackPortForwardDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCloudStackPortForward_project,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCloudStackPortForwardsExist("cloudstack_port_forward.foo"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_port_forward.foo", "project", "terraform"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_port_forward.foo", "forward.#", "1"),
+					resource.TestCheckResourceAttrSet(
+						"cloudstack_port_forward.foo", "forward.0.uuid"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckCloudStackPortForwardsExist(n string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -459,3 +481,38 @@ resource "cloudstack_port_forward" "foo" {
     virtual_machine_id = cloudstack_instance.foobar.id
   }
 }`
+
+const testAccCloudStackPortForward_project = `
+resource "cloudstack_network" "foo" {
+  name             = "terraform-port-forward-project-network"
+  display_text     = "terraform-port-forward-project-network"
+  cidr             = "10.1.3.0/24"
+  network_offering = "DefaultIsolatedNetworkOfferingWithSourceNatService"
+  project          = "terraform"
+  source_nat_ip    = true
+  zone             = "Sandbox-simulator"
+}
+
+resource "cloudstack_instance" "foobar" {
+  name             = "terraform-port-forward-project-instance"
+  display_name     = "terraform-port-forward-project-instance"
+  service_offering = "Medium Instance"
+  network_id       = cloudstack_network.foo.id
+  template         = "CentOS 5.6 (64-bit) no GUI (Simulator)"
+  zone             = "Sandbox-simulator"
+  project          = "terraform"
+  expunge          = true
+}
+
+resource "cloudstack_port_forward" "foo" {
+  ip_address_id = cloudstack_network.foo.source_nat_ip_id
+  project      = "terraform"
+
+  forward {
+    protocol           = "tcp"
+    private_port       = 443
+    public_port        = 8443
+    virtual_machine_id = cloudstack_instance.foobar.id
+  }
+}
+`

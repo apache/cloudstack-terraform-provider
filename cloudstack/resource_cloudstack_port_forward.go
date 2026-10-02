@@ -194,9 +194,10 @@ func createPortForward(d *schema.ResourceData, meta interface{}, forward map[str
 		return err
 	}
 
-	// Query VM without project filter - it will be found regardless of project
+	// Pass the project so account-level keys can resolve project-scoped VMs.
 	vm, _, err := cs.VirtualMachine.GetVirtualMachineByID(
 		forward["virtual_machine_id"].(string),
+		cloudstack.WithProject(d.Get("project").(string)),
 	)
 	if err != nil {
 		return err
