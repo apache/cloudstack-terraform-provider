@@ -37,6 +37,11 @@ func TestAccServiceOfferingConstrained(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      "cloudstack_service_offering_constrained.constrained1",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccServiceOfferingCustomConstrained1ZoneAll,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("cloudstack_service_offering_constrained.constrained1", "name", "constrained1"),
