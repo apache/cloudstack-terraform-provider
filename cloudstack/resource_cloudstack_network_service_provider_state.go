@@ -174,6 +174,9 @@ func virtualRouterElementState(cs *cloudstack.CloudStackClient, nsp *cloudstack.
 			vreID = e.Id
 			break
 		}
+	}
+
+	if vreID == "" {
 		return fmt.Errorf("Service provider element id (nspod) not found: %s.", nsp.Id)
 	}
 
@@ -202,6 +205,9 @@ func internalLbVmElementState(cs *cloudstack.CloudStackClient, nsp *cloudstack.N
 			ilbeID = e.Id
 			break
 		}
+	}
+
+	if ilbeID == "" {
 		return fmt.Errorf("Service provider element id (nspod) not found: %s.", nsp.Id)
 	}
 
