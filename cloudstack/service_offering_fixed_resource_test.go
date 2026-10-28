@@ -66,6 +66,11 @@ func TestAccServiceOfferingFixed(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_fixed.disk_storage", "name", "disk_storage"),
 				),
 			},
+			{
+				ResourceName:      "cloudstack_service_offering_fixed.disk_storage",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32planmodifier"
@@ -33,8 +34,9 @@ import (
 )
 
 var (
-	_ resource.Resource              = &serviceOfferingFixedResource{}
-	_ resource.ResourceWithConfigure = &serviceOfferingFixedResource{}
+	_ resource.Resource                = &serviceOfferingFixedResource{}
+	_ resource.ResourceWithConfigure   = &serviceOfferingFixedResource{}
+	_ resource.ResourceWithImportState = &serviceOfferingFixedResource{}
 )
 
 func NewserviceOfferingFixedResource() resource.Resource {
@@ -238,4 +240,12 @@ func (r *serviceOfferingFixedResource) Configure(_ context.Context, req resource
 // Metadata returns the resource type name.
 func (r *serviceOfferingFixedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_service_offering_fixed"
+}
+
+func (r *serviceOfferingFixedResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

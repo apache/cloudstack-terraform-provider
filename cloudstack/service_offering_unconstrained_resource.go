@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,8 +32,9 @@ import (
 )
 
 var (
-	_ resource.Resource              = &serviceOfferingUnconstrainedResource{}
-	_ resource.ResourceWithConfigure = &serviceOfferingUnconstrainedResource{}
+	_ resource.Resource                = &serviceOfferingUnconstrainedResource{}
+	_ resource.ResourceWithConfigure   = &serviceOfferingUnconstrainedResource{}
+	_ resource.ResourceWithImportState = &serviceOfferingUnconstrainedResource{}
 )
 
 func NewserviceOfferingUnconstrainedResource() resource.Resource {
@@ -191,4 +193,12 @@ func (r *serviceOfferingUnconstrainedResource) Configure(_ context.Context, req 
 
 func (r *serviceOfferingUnconstrainedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_service_offering_unconstrained"
+}
+
+func (r *serviceOfferingUnconstrainedResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

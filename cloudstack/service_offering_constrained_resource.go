@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/apache/cloudstack-go/v2/cloudstack"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32planmodifier"
@@ -34,8 +35,9 @@ import (
 )
 
 var (
-	_ resource.Resource              = &serviceOfferingConstrainedResource{}
-	_ resource.ResourceWithConfigure = &serviceOfferingConstrainedResource{}
+	_ resource.Resource                = &serviceOfferingConstrainedResource{}
+	_ resource.ResourceWithConfigure   = &serviceOfferingConstrainedResource{}
+	_ resource.ResourceWithImportState = &serviceOfferingConstrainedResource{}
 )
 
 func NewserviceOfferingConstrainedResource() resource.Resource {
@@ -300,4 +302,12 @@ func (r *serviceOfferingConstrainedResource) Configure(_ context.Context, req re
 // Metadata returns the resource type name.
 func (r *serviceOfferingConstrainedResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_service_offering_constrained"
+}
+
+func (r *serviceOfferingConstrainedResource) ImportState(
+	ctx context.Context,
+	req resource.ImportStateRequest,
+	resp *resource.ImportStateResponse,
+) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

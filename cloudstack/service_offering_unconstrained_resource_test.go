@@ -66,6 +66,11 @@ func TestAccServiceOfferingUnconstrained(t *testing.T) {
 					resource.TestCheckResourceAttr("cloudstack_service_offering_unconstrained.disk_storage", "name", "disk_storage"),
 				),
 			},
+			{
+				ResourceName:      "cloudstack_service_offering_unconstrained.disk_storage",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
