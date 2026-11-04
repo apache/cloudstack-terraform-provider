@@ -214,6 +214,20 @@ func resourceCloudStackKubernetesCluster() *schema.Resource {
 				ForceNew:    true,
 				Description: "An optional map of node roles to instance templates. If not specified, system VM template will be used. Valid roles are: worker, control, etcd",
 			},
+
+			"external_load_balancer_ip_address": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The external load balancer IP address for HA clusters (multiple control nodes) on Shared networks",
+			},
+
+			"enable_csi": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Enable CloudStack CSI (Container Storage Interface) for the Kubernetes cluster",
+			},
 		},
 	}
 }
@@ -340,6 +354,14 @@ func resourceCloudStackKubernetesClusterCreate(d *schema.ResourceData, meta inte
 		p.SetCniconfigdetails(cniConfigDetailsFormatted)
 	}
 
+	if externalLoadBalancerIPAddress, ok := d.GetOk("external_load_balancer_ip_address"); ok {
+		p.SetExternalloadbalanceripaddress(externalLoadBalancerIPAddress.(string))
+	}
+
+	if enableCSI, ok := d.GetOkExists("enable_csi"); ok {
+		p.SetEnablecsi(enableCSI.(bool))
+	}
+
 	log.Printf("[DEBUG] Creating Kubernetes Cluster %s", name)
 	r, err := cs.Kubernetes.CreateKubernetesCluster(p)
 	if err != nil {
@@ -410,6 +432,8 @@ func resourceCloudStackKubernetesClusterRead(d *schema.ResourceData, meta interf
 
 	d.Set("etcd_nodes_size", cluster.Etcdnodes)
 	d.Set("cni_configuration_id", cluster.Cniconfigurationid)
+	d.Set("external_load_balancer_ip_address", cluster.Externalloadbalanceripaddress)
+	d.Set("enable_csi", cluster.Enablecsi)
 
 	setValueOrID(d, "kubernetes_version", cluster.Kubernetesversionname, cluster.Kubernetesversionid)
 	setValueOrID(d, "service_offering", cluster.Serviceofferingname, cluster.Serviceofferingid)
