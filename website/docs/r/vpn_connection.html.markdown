@@ -31,6 +31,11 @@ The following arguments are supported:
 * `vpn_gateway_id` - (Required) The VPN Gateway ID to connect. Changing
     this forces a new resource to be created.
 
+* `passive` - (Optional) If `true`, the connection waits for the remote side
+    to initiate it instead of connecting itself. When connecting two VPCs to
+    each other, set this on one of the two connections. Defaults to `false`.
+    Changing this forces a new resource to be created.
+
 ## Attributes Reference
 
 The following attributes are exported:

@@ -43,6 +43,10 @@ func TestAccCloudStackVPNConnection_basic(t *testing.T) {
 						"cloudstack_vpn_connection.foo-bar", &vpnConnection),
 					testAccCheckCloudStackVPNConnectionExists(
 						"cloudstack_vpn_connection.bar-foo", &vpnConnection),
+					resource.TestCheckResourceAttr(
+						"cloudstack_vpn_connection.foo-bar", "passive", "false"),
+					resource.TestCheckResourceAttr(
+						"cloudstack_vpn_connection.bar-foo", "passive", "true"),
 				),
 			},
 		},
@@ -167,4 +171,5 @@ resource "cloudstack_vpn_connection" "foo-bar" {
 resource "cloudstack_vpn_connection" "bar-foo" {
   customer_gateway_id = cloudstack_vpn_customer_gateway.bar.id
   vpn_gateway_id = cloudstack_vpn_gateway.foo.id
+  passive = true
 }`
