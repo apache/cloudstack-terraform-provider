@@ -692,8 +692,9 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	// Attributes that require reboot to update
-	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("affinity_group_ids") ||
-		d.HasChange("affinity_group_names") || d.HasChange("keypair") || d.HasChange("keypairs") ||
+	if d.HasChange("name") || d.HasChange("service_offering") || d.HasChange("details") ||
+		d.HasChange("affinity_group_ids") || d.HasChange("affinity_group_names") ||
+		d.HasChange("keypair") || d.HasChange("keypairs") ||
 		d.HasChange("user_data") || d.HasChange("userdata_id") || d.HasChange("userdata_details") {
 
 		// Before we can actually make these changes, the virtual machine must be stopped
@@ -704,186 +705,34 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				"Error stopping instance %s before making changes: %s", name, err)
 		}
 
-		// Check if the name has changed and if so, update the name
-		if d.HasChange("name") {
-			log.Printf("[DEBUG] Name for %s changed to %s, starting update", d.Id(), name)
-
-			// Create a new parameter struct
-			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-
-			// Set the new name
-			p.SetName(name)
-
-			// Update the display name
-			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error updating the name for instance %s: %s", name, err)
-			}
-
+		// Apply each attribute change that requires the VM to be stopped.
+		// Each helper is a no-op unless its own attribute changed.
+		if err := updateInstanceName(cs, d, name); err != nil {
+			return err
 		}
-
-		// Check if the service offering is changed and if so, update the offering
-		if d.HasChange("service_offering") {
-			log.Printf("[DEBUG] Service offering changed for %s, starting update", name)
-
-			// Retrieve the zone ID first (needed for service_offering lookup)
-			zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
-			if e != nil {
-				return e.Error()
-			}
-
-			// Retrieve the service_offering ID (filtered by zone)
-			serviceofferingid, e := retrieveServiceOfferingID(cs, zoneid, d.Get("service_offering").(string))
-			if e != nil {
-				return e.Error()
-			}
-
-			// Create a new parameter struct
-			p := cs.VirtualMachine.NewChangeServiceForVirtualMachineParams(d.Id(), serviceofferingid)
-
-			// Change the service offering
-			_, err = cs.VirtualMachine.ChangeServiceForVirtualMachine(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error changing the service offering for instance %s: %s", name, err)
-			}
+		if err := updateServiceOffering(cs, d, name); err != nil {
+			return err
 		}
-
-		// Check if the affinity group IDs have changed and if so, update the IDs
-		if d.HasChange("affinity_group_ids") {
-			p := cs.AffinityGroup.NewUpdateVMAffinityGroupParams(d.Id())
-			groups := []string{}
-
-			if agIDs := d.Get("affinity_group_ids").(*schema.Set); agIDs.Len() > 0 {
-				for _, group := range agIDs.List() {
-					groups = append(groups, group.(string))
-				}
-			}
-
-			// Set the new groups
-			p.SetAffinitygroupids(groups)
-
-			// Update the affinity groups
-			_, err = cs.AffinityGroup.UpdateVMAffinityGroup(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error updating the affinity groups for instance %s: %s", name, err)
-			}
+		if err := updateComputeDetails(cs, d, name); err != nil {
+			return err
 		}
-
-		// Check if the affinity group names have changed and if so, update the names
-		if d.HasChange("affinity_group_names") {
-			p := cs.AffinityGroup.NewUpdateVMAffinityGroupParams(d.Id())
-			groups := []string{}
-
-			if agNames := d.Get("affinity_group_names").(*schema.Set); agNames.Len() > 0 {
-				for _, group := range agNames.List() {
-					groups = append(groups, group.(string))
-				}
-			}
-
-			// Set the new groups
-			p.SetAffinitygroupnames(groups)
-
-			// Update the affinity groups
-			_, err = cs.AffinityGroup.UpdateVMAffinityGroup(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error updating the affinity groups for instance %s: %s", name, err)
-			}
+		if err := updateAffinityGroupIds(cs, d, name); err != nil {
+			return err
 		}
-
-		// Check if the keypair has changed and if so, update the keypair
-		if d.HasChange("keypair") || d.HasChange("keypairs") {
-			log.Printf("[DEBUG] SSH keypair(s) changed for %s, starting update", name)
-
-			p := cs.SSH.NewResetSSHKeyForVirtualMachineParams(d.Id())
-
-			if keypair, ok := d.GetOk("keypair"); ok {
-				p.SetKeypair(keypair.(string))
-			}
-
-			if keypairs, ok := d.GetOk("keypairs"); ok {
-
-				// Convert keypairsInterface to []interface{}
-				keypairsInterfaces := keypairs.([]interface{})
-
-				// Now, safely convert []interface{} to []string with error handling
-				strKeyPairs := make([]string, len(keypairsInterfaces))
-
-				for i, v := range keypairsInterfaces {
-					switch v := v.(type) {
-					case string:
-						strKeyPairs[i] = v
-					default:
-						log.Printf("Value at index %d is not a string: %v", i, v)
-						continue
-					}
-				}
-				p.SetKeypairs(strKeyPairs)
-			}
-
-			// If there is a project supplied, we retrieve and set the project id
-			if err := setProjectid(p, cs, d); err != nil {
-				return err
-			}
-			// Change the ssh keypair
-			_, err = cs.SSH.ResetSSHKeyForVirtualMachine(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error changing the SSH keypair(s) for instance %s: %s", name, err)
-			}
+		if err := updateAffinityGroupNames(cs, d, name); err != nil {
+			return err
 		}
-
-		// Check if the user data has changed and if so, update the user data
-		if d.HasChange("user_data") {
-			log.Printf("[DEBUG] user_data changed for %s, starting update", name)
-
-			ud, err := getUserData(d.Get("user_data").(string))
-			if err != nil {
-				return err
-			}
-
-			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-			p.SetUserdata(ud)
-			_, err = cs.VirtualMachine.UpdateVirtualMachine(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error updating user_data for instance %s: %s", name, err)
-			}
+		if err := updateKeypair(cs, d, name); err != nil {
+			return err
 		}
-
-		if d.HasChange("userdata_id") {
-			log.Printf("[DEBUG] userdata_id changed for %s, starting update", name)
-
-			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-			if userdataID, ok := d.GetOk("userdata_id"); ok {
-				p.SetUserdataid(userdataID.(string))
-			}
-			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error updating userdata_id for instance %s: %s", name, err)
-			}
+		if err := updateUserData(cs, d, name); err != nil {
+			return err
 		}
-
-		if d.HasChange("userdata_details") {
-			log.Printf("[DEBUG] userdata_details changed for %s, starting update", name)
-
-			p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-			if userdataDetails, ok := d.GetOk("userdata_details"); ok {
-				ud := make(map[string]string)
-				for k, v := range userdataDetails.(map[string]interface{}) {
-					ud[k] = v.(string)
-				}
-				p.SetUserdatadetails(ud)
-			}
-			_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
-			if err != nil {
-				return fmt.Errorf(
-					"Error updating userdata_details for instance %s: %s", name, err)
-			}
+		if err := updateUserdataId(cs, d, name); err != nil {
+			return err
+		}
+		if err := updateUserdataDetails(cs, d, name); err != nil {
+			return err
 		}
 
 		// Start the virtual machine again
@@ -895,43 +744,324 @@ func resourceCloudStackInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	// Check if the tags have changed and if so, update the tags
-	if d.HasChange("tags") {
-		if err := updateTags(cs, d, "UserVm"); err != nil {
-			return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
-		}
+	if err := updateInstanceTags(cs, d, name); err != nil {
+		return err
 	}
-
-	// Check if the details have changed and if so, update the details
-	if d.HasChange("details") {
-		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-		vmDetails := make(map[string]string)
-		if details := d.Get("details"); details != nil {
-			for k, v := range details.(map[string]interface{}) {
-				vmDetails[k] = v.(string)
-			}
-		}
-		p.SetDetails(vmDetails)
-		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
-		if err != nil {
-			return fmt.Errorf(
-				"Error updating the details for instance %s: %s", vmDetails, err)
-		}
-	}
-
-	// Check if the delete protection has changed and if so, update the deleteprotection
-	if d.HasChange("delete_protection") {
-		p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
-		p.SetDeleteprotection(d.Get("delete_protection").(bool))
-
-		_, err := cs.VirtualMachine.UpdateVirtualMachine(p)
-		if err != nil {
-			return fmt.Errorf(
-				"Error updating the delete protection for instance %s: %s", name, err)
-		}
+	if err := updateDeleteProtection(cs, d, name); err != nil {
+		return err
 	}
 
 	return resourceCloudStackInstanceRead(d, meta)
+}
+
+// updateInstanceTags applies changed resource tags to the VM.
+func updateInstanceTags(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("tags") {
+		return nil
+	}
+
+	if err := updateTags(cs, d, "UserVm"); err != nil {
+		return fmt.Errorf("Error updating tags on instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateDeleteProtection toggles delete protection on the VM.
+func updateDeleteProtection(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("delete_protection") {
+		return nil
+	}
+
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+	p.SetDeleteprotection(d.Get("delete_protection").(bool))
+
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error updating the delete protection for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateInstanceName renames the (stopped) VM when the name attribute changed.
+func updateInstanceName(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("name") {
+		return nil
+	}
+
+	log.Printf("[DEBUG] Name for %s changed to %s, starting update", d.Id(), name)
+
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+	p.SetName(name)
+
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error updating the name for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateServiceOffering scales the (stopped) VM to a new service offering.
+func updateServiceOffering(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("service_offering") {
+		return nil
+	}
+
+	oldOffering, newOffering := d.GetChange("service_offering")
+	log.Printf("[DEBUG] Service offering changed for %s from %s to %s, starting scale", name, oldOffering, newOffering)
+
+	// Retrieve the zone ID first (needed for service_offering lookup)
+	zoneid, e := retrieveID(cs, "zone", d.Get("zone").(string))
+	if e != nil {
+		return e.Error()
+	}
+
+	// Retrieve the service_offering ID (filtered by zone)
+	serviceofferingid, e := retrieveServiceOfferingID(cs, zoneid, d.Get("service_offering").(string))
+	if e != nil {
+		return e.Error()
+	}
+
+	p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), serviceofferingid)
+	if _, err := cs.VirtualMachine.ScaleVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error scaling VM %s from %s to %s: %s", name, oldOffering, newOffering, err)
+	}
+
+	return nil
+}
+
+// updateComputeDetails scales the (stopped) VM when the compute-related details
+// (cpuNumber, cpuSpeed, memory) changed, keeping the current service offering.
+func updateComputeDetails(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("details") {
+		return nil
+	}
+
+	oldDetails, newDetails := d.GetChange("details")
+
+	// Safely coerce details, treating nil as empty map
+	var oldDetailsMap, newDetailsMap map[string]interface{}
+	if oldDetails != nil {
+		oldDetailsMap = oldDetails.(map[string]interface{})
+	} else {
+		oldDetailsMap = make(map[string]interface{})
+	}
+	if newDetails != nil {
+		newDetailsMap = newDetails.(map[string]interface{})
+	} else {
+		newDetailsMap = make(map[string]interface{})
+	}
+
+	// Convert details map for API call, safely stringifying values
+	detailsForAPI := make(map[string]string)
+	for k, v := range newDetailsMap {
+		detailsForAPI[k] = fmt.Sprintf("%v", v)
+	}
+
+	// Check if any compute-related details changed (cpuNumber, cpuSpeed, memory)
+	computeDetailsChanged := false
+	for _, key := range []string{"cpuNumber", "cpuSpeed", "memory"} {
+		if oldDetailsMap[key] != newDetailsMap[key] {
+			computeDetailsChanged = true
+			break
+		}
+	}
+
+	// Compute-related detail changes must go through ScaleVirtualMachine so
+	// CPU/memory are actually resized on the (stopped) VM.
+	if computeDetailsChanged {
+		log.Printf("[DEBUG] Compute details changed for %s, scaling VM", name)
+
+		// Get current service offering ID for details-only scaling
+		currentServiceOfferingID, e := retrieveID(cs, "service_offering", d.Get("service_offering").(string))
+		if e != nil {
+			return e.Error()
+		}
+
+		p := cs.VirtualMachine.NewScaleVirtualMachineParams(d.Id(), currentServiceOfferingID)
+		p.SetDetails(detailsForAPI)
+
+		if _, err := cs.VirtualMachine.ScaleVirtualMachine(p); err != nil {
+			return fmt.Errorf(
+				"Error scaling compute resources for instance %s: %s", name, err)
+		}
+	}
+
+	// Persist the full details map via UpdateVirtualMachine so non-compute
+	// detail changes (custom keys) are applied even when no compute key changed.
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+	p.SetDetails(detailsForAPI)
+
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error updating the details for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateAffinityGroupIds re-applies the affinity groups by ID for the (stopped) VM.
+func updateAffinityGroupIds(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("affinity_group_ids") {
+		return nil
+	}
+
+	p := cs.AffinityGroup.NewUpdateVMAffinityGroupParams(d.Id())
+	groups := []string{}
+
+	if agIDs := d.Get("affinity_group_ids").(*schema.Set); agIDs.Len() > 0 {
+		for _, group := range agIDs.List() {
+			groups = append(groups, group.(string))
+		}
+	}
+
+	p.SetAffinitygroupids(groups)
+
+	if _, err := cs.AffinityGroup.UpdateVMAffinityGroup(p); err != nil {
+		return fmt.Errorf(
+			"Error updating the affinity groups for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateAffinityGroupNames re-applies the affinity groups by name for the (stopped) VM.
+func updateAffinityGroupNames(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("affinity_group_names") {
+		return nil
+	}
+
+	p := cs.AffinityGroup.NewUpdateVMAffinityGroupParams(d.Id())
+	groups := []string{}
+
+	if agNames := d.Get("affinity_group_names").(*schema.Set); agNames.Len() > 0 {
+		for _, group := range agNames.List() {
+			groups = append(groups, group.(string))
+		}
+	}
+
+	p.SetAffinitygroupnames(groups)
+
+	if _, err := cs.AffinityGroup.UpdateVMAffinityGroup(p); err != nil {
+		return fmt.Errorf(
+			"Error updating the affinity groups for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateKeypair resets the SSH keypair(s) for the (stopped) VM.
+func updateKeypair(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("keypair") && !d.HasChange("keypairs") {
+		return nil
+	}
+
+	log.Printf("[DEBUG] SSH keypair(s) changed for %s, starting update", name)
+
+	p := cs.SSH.NewResetSSHKeyForVirtualMachineParams(d.Id())
+
+	if keypair, ok := d.GetOk("keypair"); ok {
+		p.SetKeypair(keypair.(string))
+	}
+
+	if keypairs, ok := d.GetOk("keypairs"); ok {
+		keypairsInterfaces := keypairs.([]interface{})
+
+		// Safely convert []interface{} to []string, skipping non-string values
+		strKeyPairs := make([]string, len(keypairsInterfaces))
+		for i, v := range keypairsInterfaces {
+			switch v := v.(type) {
+			case string:
+				strKeyPairs[i] = v
+			default:
+				log.Printf("Value at index %d is not a string: %v", i, v)
+				continue
+			}
+		}
+		p.SetKeypairs(strKeyPairs)
+	}
+
+	// If there is a project supplied, we retrieve and set the project id
+	if err := setProjectid(p, cs, d); err != nil {
+		return err
+	}
+
+	if _, err := cs.SSH.ResetSSHKeyForVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error changing the SSH keypair(s) for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateUserData applies a changed inline user_data to the (stopped) VM.
+func updateUserData(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("user_data") {
+		return nil
+	}
+
+	log.Printf("[DEBUG] user_data changed for %s, starting update", name)
+
+	ud, err := getUserData(d.Get("user_data").(string))
+	if err != nil {
+		return err
+	}
+
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+	p.SetUserdata(ud)
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error updating user_data for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateUserdataId applies a changed userdata_id to the (stopped) VM.
+func updateUserdataId(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("userdata_id") {
+		return nil
+	}
+
+	log.Printf("[DEBUG] userdata_id changed for %s, starting update", name)
+
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+	if userdataID, ok := d.GetOk("userdata_id"); ok {
+		p.SetUserdataid(userdataID.(string))
+	}
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error updating userdata_id for instance %s: %s", name, err)
+	}
+
+	return nil
+}
+
+// updateUserdataDetails applies changed userdata_details to the (stopped) VM.
+func updateUserdataDetails(cs *cloudstack.CloudStackClient, d *schema.ResourceData, name string) error {
+	if !d.HasChange("userdata_details") {
+		return nil
+	}
+
+	log.Printf("[DEBUG] userdata_details changed for %s, starting update", name)
+
+	p := cs.VirtualMachine.NewUpdateVirtualMachineParams(d.Id())
+	if userdataDetails, ok := d.GetOk("userdata_details"); ok {
+		ud := make(map[string]string)
+		for k, v := range userdataDetails.(map[string]interface{}) {
+			ud[k] = v.(string)
+		}
+		p.SetUserdatadetails(ud)
+	}
+	if _, err := cs.VirtualMachine.UpdateVirtualMachine(p); err != nil {
+		return fmt.Errorf(
+			"Error updating userdata_details for instance %s: %s", name, err)
+	}
+
+	return nil
 }
 
 func resourceCloudStackInstanceDelete(d *schema.ResourceData, meta interface{}) error {
